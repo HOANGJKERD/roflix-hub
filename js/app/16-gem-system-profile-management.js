@@ -65,76 +65,6 @@ function getCards() { return JSON.parse(localStorage.getItem('roflix-cards')) ||
 function saveCards(data) { localStorage.setItem('roflix-cards', JSON.stringify(data)); }
 
 // ============================================================
-// WATCH-TIME GEM: exactly 1 RoGem per 15 minutes of active watch
-// ============================================================
-const RF_GEM_WATCH_INTERVAL = 15 * 60;
-let rfGemWatchTimer = null;
-function rfWatchRewardKey() {
-    const userId = window.rfSupabaseCurrentUser?.id || window.currentUser?.id || 'guest';
-    return `roflix-watch-gem-timer:${userId}`;
-}
-function rfGetWatchRewardState() {
-    try {
-        const saved = JSON.parse(localStorage.getItem(rfWatchRewardKey()) || 'null');
-        if (saved && Number.isFinite(Number(saved.seconds))) {
-            return { seconds: Math.max(0, Number(saved.seconds)), lastTick: Number(saved.lastTick) || Date.now() };
-        }
-    } catch (_) {}
-    return { seconds: 0, lastTick: Date.now() };
-}
-function rfSaveWatchRewardState(state) {
-    localStorage.setItem(rfWatchRewardKey(), JSON.stringify({
-        seconds: Math.max(0, Number(state.seconds) || 0),
-        lastTick: Number(state.lastTick) || Date.now()
-    }));
-}
-function rfElementVisible(el) {
-    if (!el) return false;
-    const rect = el.getBoundingClientRect();
-    const style = getComputedStyle(el);
-    return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
-}
-function rfIsActivelyWatching() {
-    if (document.hidden) return false;
-    const playingVideo = Array.from(document.querySelectorAll('video')).some(v => !v.paused && !v.ended && rfElementVisible(v));
-    if (playingVideo) return true;
-    // Cross-origin players cannot expose play/pause state. We only count a visible
-    // player iframe while the document is visible, never background-tab time.
-    return Array.from(document.querySelectorAll('iframe[src]')).some(frame => {
-        if (!rfElementVisible(frame)) return false;
-        const src = String(frame.getAttribute('src') || '').toLowerCase();
-        return /embed|player|stream|video|movie|watch|vsmov|kkphim/.test(src);
-    });
-}
-function rfGrantWatchGem() {
-    addGem(1, true);
-    const state = rfGetWatchRewardState();
-    state.seconds = Math.max(0, state.seconds - RF_GEM_WATCH_INTERVAL);
-    state.lastTick = Date.now();
-    rfSaveWatchRewardState(state);
-}
-function rfWatchRewardTick() {
-    const state = rfGetWatchRewardState();
-    const now = Date.now();
-    const elapsed = Math.max(0, Math.min(2, (now - state.lastTick) / 1000));
-    state.lastTick = now;
-    if (rfIsActivelyWatching()) {
-        state.seconds += elapsed;
-        if (state.seconds >= RF_GEM_WATCH_INTERVAL) rfGrantWatchGem();
-    }
-    rfSaveWatchRewardState(state);
-}
-function rfStartWatchGemReward() {
-    if (rfGemWatchTimer) return;
-    rfGemWatchTimer = setInterval(rfWatchRewardTick, 1000);
-    document.addEventListener('visibilitychange', () => {
-        const state = rfGetWatchRewardState();
-        state.lastTick = Date.now();
-        rfSaveWatchRewardState(state);
-    });
-}
-
-// ============================================================
 // GACHA SELL-BACK
 // ============================================================
 const RF_CARD_SELL_VALUES = { common: 10, rare: 20, 'super-rare': 40, epic: 80, legendary: 150, secret: 300 };
@@ -171,8 +101,6 @@ function rfRemoveOldRewardUI() {
         (box && box !== document.body ? box : el).remove();
     }));
 
-    // Remove old reward cards by their visible title, but never remove a parent
-    // containing the entire profile page.
     document.querySelectorAll('h1,h2,h3,h4,h5,strong,span,p,button,div').forEach(el => {
         if (el.children.length > 0) return;
         const text = String(el.textContent || '').trim().toLowerCase();
@@ -212,9 +140,6 @@ function rfInstallCardSellControls() {
         cardEl.appendChild(sell);
     });
 }
-
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', rfStartWatchGemReward, { once: true });
-else rfStartWatchGemReward();
 
 setInterval(() => {
     rfRemoveOldRewardUI();
