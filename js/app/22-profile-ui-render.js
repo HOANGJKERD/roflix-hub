@@ -1,7 +1,21 @@
 // ============================================================
 // PROFILE UI RENDER
 // ============================================================
+function removeLeaderboardFromProfile() {
+    document.querySelectorAll('.tab-btn[data-tab="leaderboard"], [data-tab="leaderboard"]').forEach(el => el.remove());
+    const leaderboardTab = document.getElementById('tab-leaderboard');
+    if (leaderboardTab) leaderboardTab.remove();
+    const leaderboardList = document.getElementById('leaderboard-list');
+    if (leaderboardList) {
+        const parentTab = leaderboardList.closest('.tab-content');
+        if (parentTab) parentTab.remove();
+        else leaderboardList.remove();
+    }
+}
+
 function renderProfile() {
+    removeLeaderboardFromProfile();
+
     const profile = getProfile();
     const levelData = getLevelData();
     const gems = getGem();
@@ -51,11 +65,10 @@ function renderProfile() {
     document.getElementById('gacha-gem-count').textContent = gems;
     
     updateDailyQuest();
-    rfRenderGachaAlbum?.();
+    if (typeof rfRenderGachaAlbum === 'function') rfRenderGachaAlbum();
     renderAchievements();
     renderFavoritesTab();
     renderHistoryTab();
-    renderLeaderboard();
 }
 
 function updateProfileUI() {
