@@ -105,8 +105,6 @@ body {
     white-space: nowrap;
 }
 
-/* BXH is no longer shown in the main desktop navigation.
-   The Game Center remains available for the full leaderboard. */
 .header-ios nav > a.nav-link-ios[onclick*="filterBy('rating', 9)"] {
     display: none !important;
 }
@@ -166,28 +164,23 @@ body {
         gap: 7px !important;
         min-height: 58px;
     }
-
     .header-ios > div:first-child > .flex:first-child {
         gap: 7px !important;
         min-width: 0;
     }
-
     .header-ios > div:first-child > .flex:first-child > a {
         flex: 0 0 auto;
         font-size: 1.08rem !important;
         letter-spacing: .01em !important;
     }
-
     .header-ios > div:first-child > .flex:first-child > a > div {
         width: 32px !important;
         height: 32px !important;
         border-radius: 10px !important;
     }
-
     .header-ios > div:first-child > .flex:first-child > a > span:last-child {
         display: none;
     }
-
     .header-ios .search-ios-mobile {
         display: flex !important;
         flex: 1 1 auto !important;
@@ -196,19 +189,16 @@ body {
         min-width: 72px !important;
         height: 34px;
     }
-
     .header-ios .search-ios-mobile input {
         font-size: 12px !important;
         padding-left: 30px !important;
         padding-right: 7px !important;
     }
-
     .header-ios > div:first-child > div:last-child {
         flex: 0 0 auto;
         gap: 5px !important;
         min-width: 0;
     }
-
     .header-ios > div:first-child > div:last-child > button,
     .header-ios > div:first-child > div:last-child .relative > button,
     .header-ios > div:first-child > div:last-child > div > button {
@@ -216,7 +206,6 @@ body {
         height: 34px !important;
         flex: 0 0 34px;
     }
-
     .header-ios #user-login-button {
         width: 34px !important;
         height: 34px !important;
@@ -224,23 +213,19 @@ body {
         justify-content: center;
         flex: 0 0 34px;
     }
-
     .header-ios #user-login-button span {
         display: none;
     }
-
     .header-ios .btn-continue,
     .header-ios #user-nav-container > .btn-continue {
         display: none !important;
     }
-
     .header-ios #notification-panel,
     .header-ios .notification-panel {
         max-width: calc(100vw - 20px) !important;
         width: min(330px, calc(100vw - 20px)) !important;
         right: -4px !important;
     }
-
     #mobile-menu {
         position: absolute !important;
         left: 8px !important;
@@ -253,7 +238,6 @@ body {
         -webkit-overflow-scrolling: touch;
         z-index: 1001 !important;
     }
-
     #mobile-menu a,
     #mobile-menu button {
         min-height: 34px;
@@ -286,11 +270,135 @@ body {
     }
 }
 
-/* Keep controls from shifting because of long labels/content. */
 .header-ios * {
     box-sizing: border-box;
 }
 .header-ios img,
 .header-ios svg {
     max-width: 100%;
+}
+
+/* ===== COMPACT 3-LINE MENU ===== */
+#rf-hamburger-button {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    margin: 0 2px;
+    padding: 0;
+    border: 1px solid rgba(245,158,11,.24);
+    border-radius: 11px;
+    background: rgba(18,20,29,.78);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,.18);
+    transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+#rf-hamburger-button:hover,
+#rf-hamburger-button.is-open {
+    border-color: rgba(245,158,11,.7);
+    background: rgba(245,158,11,.12);
+    transform: translateY(-1px);
+}
+#rf-hamburger-button span {
+    width: 17px;
+    height: 2px;
+    border-radius: 99px;
+    background: currentColor;
+    transition: transform .2s ease, opacity .2s ease;
+}
+#rf-hamburger-button.is-open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+#rf-hamburger-button.is-open span:nth-child(2) { opacity: 0; }
+#rf-hamburger-button.is-open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+#rf-hamburger-menu {
+    position: absolute;
+    top: calc(100% + 9px);
+    right: 0;
+    z-index: 1200;
+    width: 190px;
+    padding: 7px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 15px;
+    background: rgba(15,17,26,.96);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 18px 50px rgba(0,0,0,.42), 0 0 0 1px rgba(245,158,11,.04);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px) scale(.98);
+    transform-origin: top right;
+    pointer-events: none;
+    transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
+}
+#rf-hamburger-menu.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+#rf-hamburger-menu button {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 11px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #e5e7eb;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+#rf-hamburger-menu button:hover,
+#rf-hamburger-menu button:focus-visible {
+    background: rgba(245,158,11,.11);
+    color: #fbbf24;
+    outline: none;
+    transform: translateX(2px);
+}
+#rf-hamburger-menu button i {
+    width: 18px;
+    text-align: center;
+    color: #f59e0b;
+}
+
+@media (max-width: 640px) {
+    #rf-hamburger-button {
+        width: 34px;
+        height: 34px;
+        flex-basis: 34px;
+        border-radius: 10px;
+    }
+    #rf-hamburger-menu {
+        position: fixed;
+        top: 66px;
+        right: 9px;
+        width: min(205px, calc(100vw - 18px));
+    }
+}
+
+@media (max-width: 380px) {
+    #rf-hamburger-button {
+        width: 31px;
+        height: 31px;
+        flex-basis: 31px;
+    }
+    #rf-hamburger-menu {
+        top: 61px;
+        right: 7px;
+        width: min(195px, calc(100vw - 14px));
+    }
 }
