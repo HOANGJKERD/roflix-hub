@@ -6,7 +6,7 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt = v => v ? new Date(v).toLocaleString('vi-VN',{dateStyle:'medium',timeStyle:'short'}) : '';
   function toast(msg){ if(typeof window.showToastPro==='function') window.showToastPro('info','Lịch phim',msg); else alert(msg); }
-  async function isAdmin(){ const {data}=await sb.auth.getUser(); if(!data?.user)return false; const {data:p}=await sb.from('profiles').select('role').eq('id',data.user.id).maybeSingle(); return p?.role==='admin'; }
+  async function isAdmin(){ const {data,error}=await sb.auth.getUser(); if(error||!data?.user)return false; const {data:p,error:pe}=await sb.from('profiles').select('role').eq('id',data.user.id).maybeSingle(); return !pe&&p?.role==='admin'; }
   async function sync(){ try{await sb.rpc('roflix_sync_release_schedule');}catch(_){} }
   const SOURCES={
     kkphim:{list:'https://phimapi.com/v1/api',detail:'https://phimapi.com',name:'KKPhim'},
@@ -68,9 +68,29 @@
   }
   function clear(){['sch-slug','sch-title','sch-origin','sch-poster','sch-summary','sch-note'].forEach(id=>{if($(id))$(id).value='';});if($('sch-release'))$('sch-release').value='';if($('sch-featured'))$('sch-featured').checked=false;window.rfScheduleEditing=null; if($('schedule-save'))$('schedule-save').textContent='Lưu lịch phim'; if($('sch-pick-search'))$('sch-pick-search').value=''; if($('sch-pick-results'))$('sch-pick-results').innerHTML='<div class="muted">Tìm phim rồi bấm <b>Chọn</b>. Thông tin phim sẽ tự điền vào lịch.</div>'; window._rfScheduleSearchResults=[];}
   window.rfScheduleEditing=null;
-  window.rfEditSchedule=async function(id){const {data}=await sb.from('roflix_release_schedule').select('*').eq('id',id).maybeSingle();if(!data)return;window.rfScheduleEditing=id; $('sch-slug').value=data.movie_slug||'';$('sch-title').value=data.title||'';$('sch-origin').value=data.origin_name||'';$('sch-source').value=data.source_id||'kkphim';$('sch-poster').value=data.poster_url||'';$('sch-summary').value=data.summary||'';$('sch-note').value=data.note||'';$('sch-featured').checked=!!data.featured; const d=new Date(data.release_at); const pad=n=>String(n).padStart(2,'0'); $('sch-release').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; $('schedule-save').textContent='Cập nhật lịch'; window.scrollTo({top:0,behavior:'smooth'});};
-  window.rfDeleteSchedule=async function(id){if(!confirm('Xóa lịch phim này?'))return;const {error}=await sb.from('roflix_release_schedule').delete().eq('id',id);if(error)alert(error.message);else{toast('Đã xóa lịch phim.');await load();}};
-  async function save(){if(!(await isAdmin()))return alert('Bạn không có quyền Admin.'); const {data:userData}=await sb.auth.getUser(); const payload={movie_slug:$('sch-slug').value.trim(),title:$('sch-title').value.trim(),origin_name:$('sch-origin').value.trim(),source_id:$('sch-source').value,poster_url:$('sch-poster').value.trim()||null,release_at:new Date($('sch-release').value).toISOString(),summary:$('sch-summary').value.trim(),note:$('sch-note').value.trim(),featured:$('sch-featured').checked,status:'scheduled',created_by:userData?.user?.id||null}; if(!payload.movie_slug||!payload.title||!$('sch-release').value){alert('Nhập slug, tên phim và thời gian ra phim.');return;} let res; if(window.rfScheduleEditing){res=await sb.from('roflix_release_schedule').update(payload).eq('id',window.rfScheduleEditing);}else{res=await sb.from('roflix_release_schedule').insert(payload);} if(res.error){alert(res.error.message);return;} toast(window.rfScheduleEditing?'Đã cập nhật lịch.':'Đã tạo lịch phim.');clear();await load();}
+  window.rfEditSchedule=async function(id){const {data,error}=await sb.from('roflix_release_schedule').select('*').eq('id',id).maybeSingle();if(error){alert('Không đọc được lịch: '+error.message);return;}if(!data){alert('Không tìm thấy lịch phim.');return;}window.rfScheduleEditing=id; $('sch-slug').value=data.movie_slug||'';$('sch-title').value=data.title||'';$('sch-origin').value=data.origin_name||'';$('sch-source').value=data.source_id||'kkphim';$('sch-poster').value=data.poster_url||'';$('sch-summary').value=data.summary||'';$('sch-note').value=data.note||'';$('sch-featured').checked=!!data.featured; const d=new Date(data.release_at); const pad=n=>String(n).padStart(2,'0'); $('sch-release').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; $('schedule-save').textContent='Cập nhật lịch'; window.scrollTo({top:0,behavior:'smooth'});};
+  window.rfDeleteSchedule=async function(id){if(!confirm('Xóa lịch phim này?'))return;const {data,error}=await sb.rpc('roflix_admin_release_schedule_delete',{p_id:id});if(error){alert('Không thể xóa lịch: '+error.message);return;}if(!data){alert('Không tìm thấy lịch để xóa.');return;}toast('Đã xóa lịch phim.');await load();};
+  function getReleaseAt(){
+    const raw=($('sch-release')?.value||'').trim();
+    if(!raw)return {error:'Vui lòng chọn ngày và giờ phát sóng.'};
+    const d=new Date(raw);
+    if(Number.isNaN(d.getTime()))return {error:'Ngày giờ phát sóng không hợp lệ.'};
+    return {value:d.toISOString()};
+  }
+  async function save(){
+    if(!(await isAdmin()))return alert('Bạn không có quyền Admin.');
+    const slug=($('sch-slug')?.value||'').trim();
+    const title=($('sch-title')?.value||'').trim();
+    const release=getReleaseAt();
+    if(!slug||!title){alert('Nhập slug và tên phim.');return;}
+    if(release.error){alert(release.error);return;}
+    const payload={p_id:window.rfScheduleEditing||null,p_movie_slug:slug,p_title:title,p_origin_name:($('sch-origin')?.value||'').trim(),p_source_id:$('sch-source')?.value||'kkphim',p_poster_url:($('sch-poster')?.value||'').trim()||null,p_release_at:release.value,p_summary:($('sch-summary')?.value||'').trim(),p_note:($('sch-note')?.value||'').trim(),p_featured:!!$('sch-featured')?.checked};
+    const {error}=await sb.rpc('roflix_admin_release_schedule_save',payload);
+    if(error){alert('Không thể lưu lịch: '+error.message);console.error('[RoFlix schedule]',error);return;}
+    toast(window.rfScheduleEditing?'Đã cập nhật lịch.':'Đã tạo lịch phim.');
+    clear();
+    await load();
+  }
   window.rfLoadAdminSchedule = load;
   document.addEventListener('DOMContentLoaded',()=>{ $('schedule-save')?.addEventListener('click',save); $('sch-pick-btn')?.addEventListener('click',searchScheduleMovies); $('sch-pick-search')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchScheduleMovies();}}); load(); setInterval(load,30000); });
 })();
