@@ -4,6 +4,16 @@
 let deferredPWAPrompt = null;
 let roflixPwaRegistration = null;
 let roflixUpdateBanner = null;
+let roflixUpdateTimer = null;
+
+function loadRoFlixUpdateStyles() {
+    if (document.querySelector('link[data-roflix-update-css]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/css/pwa-update-notice.css?v=1';
+    link.dataset.roflixUpdateCss = '1';
+    document.head.appendChild(link);
+}
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -62,19 +72,28 @@ function roflixShowUpdateNotice() {
     const banner = createRoFlixUpdateBanner();
     const copy = banner.querySelector('.roflix-update-copy span');
     if (copy) copy.textContent = 'Đang cập nhật để bạn dùng bản mới nhất...';
+
+    // Auto-update after a short notice. The button remains available for an
+    // immediate update if the user does not want to wait.
+    clearTimeout(roflixUpdateTimer);
+    roflixUpdateTimer = setTimeout(() => roflixApplyUpdate(), 2500);
 }
 
 function roflixApplyUpdate() {
+    clearTimeout(roflixUpdateTimer);
+
     if (!roflixPwaRegistration || !roflixPwaRegistration.waiting) {
         window.location.reload();
         return;
     }
 
     const button = document.getElementById('roflix-update-now');
+    const copy = roflixUpdateBanner?.querySelector('.roflix-update-copy span');
     if (button) {
         button.disabled = true;
         button.textContent = 'Đang cập nhật...';
     }
+    if (copy) copy.textContent = 'Đang áp dụng bản mới...';
 
     roflixPwaRegistration.waiting.postMessage({ type: 'ROFLIX_SKIP_WAITING' });
 }
@@ -103,6 +122,8 @@ function registerServiceWorker() {
 
     window.addEventListener('load', async () => {
         try {
+            loadRoFlixUpdateStyles();
+
             const registration = await navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' });
             watchForRoFlixUpdate(registration);
 
