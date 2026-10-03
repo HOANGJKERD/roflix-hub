@@ -67,3 +67,230 @@
             font-weight: 700;
             color: #f59e0b;
         }
+
+/* ===== ROFLIX HEADER: NO OVERFLOW + STABLE MOBILE LAYOUT ===== */
+body {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+}
+
+.header-ios {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    width: 100%;
+    max-width: 100vw;
+    overflow: visible;
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+.header-ios > div:first-child {
+    width: 100%;
+    max-width: 1280px;
+    min-width: 0;
+}
+
+.header-ios > div:first-child > .flex:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.header-ios nav {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    white-space: nowrap;
+}
+
+/* BXH is no longer shown in the main desktop navigation.
+   The Game Center remains available for the full leaderboard. */
+.header-ios nav > a.nav-link-ios[onclick*="filterBy('rating', 9)"] {
+    display: none !important;
+}
+
+.header-ios .nav-link-ios {
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.header-ios .search-ios {
+    flex: 0 1 210px;
+    min-width: 0;
+}
+
+.header-ios .search-ios input {
+    min-width: 0;
+    width: 100%;
+}
+
+.header-ios .search-ios-mobile {
+    flex: 1 1 90px;
+    min-width: 0;
+    max-width: 150px;
+}
+
+.header-ios button,
+.header-ios a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 1280px) and (min-width: 1025px) {
+    .header-ios > div:first-child {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+    .header-ios > div:first-child > .flex:first-child {
+        gap: 14px !important;
+    }
+    .header-ios nav {
+        gap: 0 !important;
+    }
+    .header-ios nav .nav-link-ios {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    .header-ios > div:first-child {
+        gap: 8px !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .header-ios > div:first-child {
+        padding: 8px 10px !important;
+        gap: 7px !important;
+        min-height: 58px;
+    }
+
+    .header-ios > div:first-child > .flex:first-child {
+        gap: 7px !important;
+        min-width: 0;
+    }
+
+    .header-ios > div:first-child > .flex:first-child > a {
+        flex: 0 0 auto;
+        font-size: 1.08rem !important;
+        letter-spacing: .01em !important;
+    }
+
+    .header-ios > div:first-child > .flex:first-child > a > div {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 10px !important;
+    }
+
+    .header-ios > div:first-child > .flex:first-child > a > span:last-child {
+        display: none;
+    }
+
+    .header-ios .search-ios-mobile {
+        display: flex !important;
+        flex: 1 1 auto !important;
+        width: auto !important;
+        max-width: 128px !important;
+        min-width: 72px !important;
+        height: 34px;
+    }
+
+    .header-ios .search-ios-mobile input {
+        font-size: 12px !important;
+        padding-left: 30px !important;
+        padding-right: 7px !important;
+    }
+
+    .header-ios > div:first-child > div:last-child {
+        flex: 0 0 auto;
+        gap: 5px !important;
+        min-width: 0;
+    }
+
+    .header-ios > div:first-child > div:last-child > button,
+    .header-ios > div:first-child > div:last-child .relative > button,
+    .header-ios > div:first-child > div:last-child > div > button {
+        width: 34px !important;
+        height: 34px !important;
+        flex: 0 0 34px;
+    }
+
+    .header-ios #user-login-button {
+        width: 34px !important;
+        height: 34px !important;
+        padding: 0 !important;
+        justify-content: center;
+        flex: 0 0 34px;
+    }
+
+    .header-ios #user-login-button span {
+        display: none;
+    }
+
+    .header-ios .btn-continue,
+    .header-ios #user-nav-container > .btn-continue {
+        display: none !important;
+    }
+
+    .header-ios #notification-panel,
+    .header-ios .notification-panel {
+        max-width: calc(100vw - 20px) !important;
+        width: min(330px, calc(100vw - 20px)) !important;
+        right: -4px !important;
+    }
+
+    #mobile-menu {
+        position: absolute !important;
+        left: 8px !important;
+        right: 8px !important;
+        top: calc(100% + 6px) !important;
+        max-height: calc(100dvh - 74px) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        z-index: 1001 !important;
+    }
+
+    #mobile-menu a,
+    #mobile-menu button {
+        min-height: 34px;
+    }
+}
+
+@media (max-width: 380px) {
+    .header-ios > div:first-child {
+        padding-left: 7px !important;
+        padding-right: 7px !important;
+        gap: 4px !important;
+    }
+    .header-ios > div:first-child > .flex:first-child {
+        gap: 4px !important;
+    }
+    .header-ios .search-ios-mobile {
+        max-width: 105px !important;
+        min-width: 64px !important;
+    }
+    .header-ios > div:first-child > div:last-child {
+        gap: 3px !important;
+    }
+    .header-ios > div:first-child > div:last-child > button,
+    .header-ios > div:first-child > div:last-child .relative > button,
+    .header-ios > div:first-child > div:last-child > div > button,
+    .header-ios #user-login-button {
+        width: 31px !important;
+        height: 31px !important;
+        flex-basis: 31px;
+    }
+}
+
+/* Keep controls from shifting because of long labels/content. */
+.header-ios * {
+    box-sizing: border-box;
+}
+.header-ios img,
+.header-ios svg {
+    max-width: 100%;
+}
