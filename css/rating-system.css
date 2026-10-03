@@ -1,0 +1,45 @@
+/* ===== RATING SYSTEM ===== */
+        .rating-system {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            flex-wrap: wrap;
+        }
+        .rating-system .stars {
+            display: flex;
+            gap: 4px;
+        }
+        .rating-system .stars .star {
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: var(--ro-text-muted);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .rating-system .stars .star.active {
+            color: #fbbf24;
+            transform: scale(1.1);
+        }
+        .rating-system .stars .star:hover {
+            transform: scale(1.2);
+            color: #fbbf24;
+        }
+        .rating-system .stars .star:hover ~ .star {
+            color: var(--ro-text-muted);
+        }
+        .rating-system .rating-text {
+            font-size: 0.85rem;
+            color: var(--ro-text-secondary);
+            font-weight: 600;
+        }
+        .rating-system .rating-avg {
+            font-size: 0.8rem;
+            color: var(--ro-text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .rating-system .rating-avg i {
+            color: #fbbf24;
+        }

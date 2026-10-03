@@ -1,0 +1,42 @@
+/* ===== SKELETON ===== */
+        .skeleton-card-premium {
+            background: var(--ro-bg-surface);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--ro-border-color);
+            animation: shimmer 1.8s ease-in-out infinite;
+            position: relative;
+        }
+        .skeleton-card-premium .skeleton-poster {
+            aspect-ratio: 2/3;
+            background: linear-gradient(135deg, var(--ro-bg-surface), var(--ro-bg-surface-elevated));
+            position: relative;
+            overflow: hidden;
+        }
+        .skeleton-card-premium .skeleton-poster::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255,255,255,0.03) 50%,
+                transparent 100%
+            );
+            animation: shimmerSlide 1.2s ease-in-out infinite;
+        }
+        .skeleton-card-premium .skeleton-info {
+            padding: 12px 14px;
+        }
+        .skeleton-card-premium .skeleton-info .skeleton-line {
+            height: 12px;
+            border-radius: 6px;
+            background: var(--ro-bg-surface-elevated);
+            margin-bottom: 6px;
+        }
+        .skeleton-card-premium .skeleton-info .skeleton-line.short {
+            width: 60%;
+        }
+        .skeleton-card-premium .skeleton-info .skeleton-line:last-child {
+            margin-bottom: 0;
+        }
