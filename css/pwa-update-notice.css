@@ -1,0 +1,82 @@
+#roflix-update-banner {
+    position: fixed;
+    top: 78px;
+    right: 18px;
+    z-index: 2147483000;
+    width: min(420px, calc(100vw - 36px));
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    border: 1px solid rgba(245, 158, 11, .32);
+    border-radius: 18px;
+    background: rgba(13, 15, 24, .97);
+    box-shadow: 0 18px 55px rgba(0, 0, 0, .48), 0 0 30px rgba(245, 158, 11, .10);
+    color: #fff;
+    opacity: 0;
+    transform: translateY(-14px) scale(.98);
+    pointer-events: none;
+    transition: opacity .25s ease, transform .25s ease;
+}
+
+#roflix-update-banner.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.roflix-update-icon {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, .20), rgba(168, 85, 247, .18));
+    font-size: 21px;
+}
+
+.roflix-update-copy {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.roflix-update-copy strong {
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 800;
+}
+
+.roflix-update-copy span {
+    color: rgba(255, 255, 255, .62);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+#roflix-update-now {
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 11px;
+    padding: 9px 12px;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #111;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform .18s ease, filter .18s ease;
+}
+
+#roflix-update-now:hover { transform: translateY(-1px); filter: brightness(1.08); }
+#roflix-update-now:disabled { cursor: wait; opacity: .7; transform: none; }
+
+@media (max-width: 560px) {
+    #roflix-update-banner {
+        top: auto;
+        right: 12px;
+        bottom: 16px;
+        width: calc(100vw - 24px);
+    }
+}
