@@ -5,60 +5,69 @@
   window.__ROFLIX_HEADER_HAMBURGER__ = true;
 
   const getText = el => (el?.textContent || '').replace(/\s+/g, ' ').trim();
+  let originalActions = { continue: null, random: null, rating: null };
 
-  function isSecondary(el) {
-    if (!el || el.closest('#rf-hamburger-menu,#rf-hamburger-button')) return false;
+  function getActionType(el) {
+    if (!el || el.closest('#rf-hamburger-menu,#rf-hamburger-button')) return null;
     const text = getText(el);
     const onclick = el.getAttribute('onclick') || '';
-    return /^xem\s*tiếp$/i.test(text)
-      || /^random$/i.test(text)
-      || /ngẫu\s*nhiên/i.test(text)
-      || /filterBy\(['\"]rating['\"]\s*,\s*9/i.test(onclick)
-      || /\bbxh\b/i.test(text);
+    if (/^xem\s*tiếp$/i.test(text) || /continue/i.test(onclick)) return 'continue';
+    if (/^random$/i.test(text) || /ngẫu\s*nhiên/i.test(text) || /random/i.test(onclick)) return 'random';
+    if (/filterBy\(['\"]rating['\"]\s*,\s*9/i.test(onclick) || /\bbxh\b/i.test(text)) return 'rating';
+    return null;
   }
 
-  /* Completely remove secondary items from the visible header layout.
-     Do not only mark them with data attributes, because the old header
-     still reserves space for them and can create duplicate "Xem tiếp". */
   function hideOldItems() {
     const header = document.querySelector('header.header-ios');
     if (!header) return;
+
     header.querySelectorAll('a,button').forEach(el => {
-      if (!isSecondary(el)) return;
+      const type = getActionType(el);
+      if (!type) return;
+
+      if (!originalActions[type]) {
+        originalActions[type] = () => {
+          try {
+            el.click();
+          } catch (_) {}
+        };
+      }
+
+      /* Keep the original handler available, but remove the old control from
+         the visual/header layout so the hamburger is the only visible copy. */
       el.dataset.rfSecondaryHidden = 'true';
+      el.setAttribute('aria-hidden', 'true');
+      el.hidden = true;
       el.style.setProperty('display', 'none', 'important');
       el.style.setProperty('visibility', 'hidden', 'important');
       el.style.setProperty('pointer-events', 'none', 'important');
     });
   }
 
-  function findOriginal(patterns) {
-    return [...document.querySelectorAll('header.header-ios a,header.header-ios button')].find(el => {
-      if (el.closest('#rf-hamburger-menu,#rf-hamburger-button')) return false;
-      const value = `${getText(el)} ${el.getAttribute('onclick') || ''}`;
-      return patterns.some(re => re.test(value));
-    });
-  }
-
   function runAction(type) {
+    const original = originalActions[type];
+    if (original) {
+      original();
+      return;
+    }
+
     if (type === 'continue') {
-      const target = findOriginal([/xem\s*tiếp/i, /continue/i]);
-      if (target) { target.click(); return; }
       const ids = ['continue-watching-section', 'continue-watching', 'watch-continue', 'section-continue'];
       const el = ids.map(id => document.getElementById(id)).find(Boolean);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
+
     if (type === 'random') {
-      const target = findOriginal([/^\s*🎲?\s*random\s*$/i, /ngẫu\s*nhiên/i, /random/i]);
-      if (target) { target.click(); return; }
       for (const name of ['randomMovie', 'playRandomMovie', 'showRandomMovie', 'openRandomMovie']) {
-        if (typeof window[name] === 'function') { window[name](); return; }
+        if (typeof window[name] === 'function') {
+          window[name]();
+          return;
+        }
       }
       return;
     }
-    const target = findOriginal([/filterBy\(['\"]rating['\"]\s*,\s*9/i, /\bbxh\b/i]);
-    if (target) { target.click(); return; }
+
     if (typeof window.filterBy === 'function') window.filterBy('rating', 9);
   }
 
@@ -97,8 +106,9 @@
 
     button.addEventListener('click', e => {
       e.stopPropagation();
+      hideOldItems();
       const open = !menu.classList.contains('is-open');
-      if (open) menu.classList.add('is-open'); else menu.classList.remove('is-open');
+      menu.classList.toggle('is-open', open);
       button.classList.toggle('is-open', open);
       button.setAttribute('aria-expanded', String(open));
     });
@@ -117,9 +127,11 @@
     });
 
     hideOldItems();
-    /* Re-apply once after other header scripts finish rendering. */
-    setTimeout(hideOldItems, 250);
-    setTimeout(hideOldItems, 1000);
+
+    /* Header items can be re-rendered by other UI modules. Keep the header
+       single-source-of-truth even when another script inserts the old links. */
+    const observer = new MutationObserver(() => hideOldItems());
+    observer.observe(header, { childList: true, subtree: true });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
