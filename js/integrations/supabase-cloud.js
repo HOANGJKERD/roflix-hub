@@ -27,4 +27,6 @@
  const originalOpen=window.openRoflixTools;
  window.openRoflixTools=function(which){originalOpen(which);if(which==='community'){const box=$('roflix-tools-content');box.insertAdjacentHTML('afterbegin','<div id="rf-auth-community" style="margin-bottom:14px"></div><div style="color:#9ca3af;font-size:12px;margin-bottom:10px">Bài đăng được chia sẻ qua Supabase với người dùng khác. Cần đăng nhập để đăng bài.</div>');authBox('rf-auth-community').then(renderCommunity);}else if(which==='admin'){window.location.href='admin.html';return;}};
  sb.auth.onAuthStateChange(()=>{if($('rf-auth-community')){authBox('rf-auth-community').then(renderCommunity);}if($('rf-auth-admin')){authBox('rf-auth-admin').then(renderAdmin);}});
+ const loadCloudCenter=()=>{if(document.getElementById('rf-cloud-center-script'))return;const s=document.createElement('script');s.id='rf-cloud-center-script';s.src='js/features/cloud-center.js';s.async=true;document.head.appendChild(s)};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadCloudCenter,{once:true});else loadCloudCenter();
 })();
