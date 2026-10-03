@@ -40,6 +40,7 @@
   function loadRoFlixEnhancements(){
     loadRoFlixEnhancementScript('roflix-header-menu-script','js/features/header-hamburger.js?v=4');
     loadRoFlixEnhancementScript('roflix-cloud-user-data-script','js/features/cloud-user-data.js?v=1');
+    loadRoFlixEnhancementScript('roflix-comments-realtime-script','js/features/comments-realtime.js?v=2');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadRoFlixEnhancements,{once:true}); else loadRoFlixEnhancements();
 })();
