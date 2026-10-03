@@ -251,3 +251,17 @@ tailwind.config = {
         push: () => activeUserId && pushCloudForUser(activeUserId)
     };
 })();
+
+// Header compact-menu loader. Kept here because this config file is already loaded on every page.
+(function rfLoadHeaderHamburger() {
+    if (window.__RF_HEADER_HAMBURGER_LOADER__) return;
+    window.__RF_HEADER_HAMBURGER_LOADER__ = true;
+    const load = () => {
+        const script = document.createElement('script');
+        script.src = 'js/features/header-hamburger.js';
+        script.defer = true;
+        document.head.appendChild(script);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load, { once: true });
+    else load();
+})();
