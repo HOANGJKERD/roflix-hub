@@ -1,0 +1,21 @@
+{
+  "name": "RoFlix Pro",
+  "short_name": "RoFlix",
+  "description": "RoFlix Pro, nền tảng xem phim trực tuyến.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#090a0f",
+  "theme_color": "#f59e0b",
+  "lang": "vi-VN",
+  "categories": ["entertainment", "video"],
+  "icons": [
+    {
+      "src": "/icons/roflix-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
