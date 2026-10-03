@@ -1,218 +1,34 @@
-/* RoFlix Production Runtime 1.0
- * Designed for small-group production: ~30-40 concurrent users.
- * - server-authoritative RoGem + Gacha roll
- * - user-scoped cloud profile/history/collection
- * - low-frequency heartbeat + batched analytics
- * - visibility-aware timers to reduce idle traffic
- */
+/* RoFlix Production Runtime 1.1 */
 (function () {
   'use strict';
-
-  const BOOT_KEY = '__RF_PRODUCTION_RUNTIME__';
-  if (window[BOOT_KEY]) return;
-  window[BOOT_KEY] = true;
-
+  if (window.__RF_PRODUCTION_RUNTIME__) return;
+  window.__RF_PRODUCTION_RUNTIME__ = true;
   const sb = () => window.rfSupabase || null;
   const json = (v, fallback) => { try { return JSON.parse(v); } catch (_) { return fallback; } };
   const sessionKey = 'roflix-prod-session';
-  const sessionId = (() => {
-    let v = localStorage.getItem(sessionKey);
-    if (!v) { v = (crypto.randomUUID ? crypto.randomUUID() : 'rf-' + Date.now() + '-' + Math.random().toString(36).slice(2)); localStorage.setItem(sessionKey, v); }
-    return v;
-  })();
-
-  let heartbeatTimer = 0;
-  let analyticsTimer = 0;
-  let gachaPatched = false;
+  const sessionId = (() => { let v = localStorage.getItem(sessionKey); if (!v) { v = crypto.randomUUID ? crypto.randomUUID() : 'rf-' + Date.now() + '-' + Math.random().toString(36).slice(2); localStorage.setItem(sessionKey, v); } return v; })();
+  let heartbeatTimer = 0, analyticsTimer = 0, gachaPatched = false;
   const analyticsQueue = [];
-
-  function toast(type, title, message) {
-    try { if (typeof showToast === 'function') showToast(type, title, message); } catch (_) {}
-  }
-
-  async function getUser() {
-    const client = sb();
-    if (!client?.auth?.getUser) return null;
-    try { const { data } = await client.auth.getUser(); return data?.user || null; } catch (_) { return null; }
-  }
-
-  function setLocalUser(user) {
-    if (!user?.id) return;
-    window.__rfProductionUserId = user.id;
-    localStorage.setItem('roflix-current-user', JSON.stringify({
-      id: user.id,
-      email: user.email || '',
-      name: user.user_metadata?.display_name || user.user_metadata?.name || (user.email || '').split('@')[0]
-    }));
-  }
-
-  async function cloudPull(user) {
-    const client = sb();
-    if (!client || !user?.id) return;
-    try {
-      const [gem, profile, cards, history] = await Promise.all([
-        client.rpc('roflix_user_get_gem'),
-        client.rpc('roflix_profile_get'),
-        client.rpc('roflix_gacha_get'),
-        client.rpc('roflix_watch_history_get')
-      ]);
-
-      if (!gem.error && gem.data?.gems != null) localStorage.setItem('roflix-gem', String(Math.max(0, Number(gem.data.gems) || 0)));
-
-      if (!profile.error && profile.data?.profile_data) {
-        const current = json(localStorage.getItem('roflix-profile') || '{}', {});
-        localStorage.setItem('roflix-profile', JSON.stringify({ ...current, ...profile.data.profile_data }));
-      }
-
-      if (!cards.error && Array.isArray(cards.data)) {
-        const local = json(localStorage.getItem('roflix-cards') || '[]', []);
-        const map = new Map();
-        [...cards.data, ...(Array.isArray(local) ? local : [])].forEach(c => {
-          const key = String(c.cloudKey || c.card_key || c.baseId || c.id || '') + '|' + String(c.obtainedAt || c.obtained_at || '');
-          if (key !== '|') map.set(key, c);
-        });
-        localStorage.setItem('roflix-cards', JSON.stringify([...map.values()].slice(-500)));
-      }
-
-      if (!history.error && Array.isArray(history.data)) {
-        const key = `roflix-watch-history:user:${user.id}`;
-        const local = json(localStorage.getItem(key) || '[]', []);
-        const map = new Map();
-        [...history.data, ...(Array.isArray(local) ? local : [])].forEach(h => {
-          if (!h?.slug) return;
-          const normalized = { ...h, timestamp: new Date(h.updated_at || h.timestamp || 0).getTime() || Date.now() };
-          const old = map.get(h.slug);
-          if (!old || normalized.timestamp >= old.timestamp) map.set(h.slug, normalized);
-        });
-        localStorage.setItem(key, JSON.stringify([...map.values()].slice(-100)));
-      }
-
-      try { if (typeof updateProfileUI === 'function') updateProfileUI(); } catch (_) {}
-      try { if (typeof renderCollection === 'function') renderCollection(); } catch (_) {}
-      try { if (typeof renderContinueWatching === 'function') renderContinueWatching(); } catch (_) {}
-    } catch (e) { console.debug('[RoFlix production] cloud pull:', e?.message || e); }
-  }
-
-  async function cloudPushProfile() {
-    const client = sb();
-    const user = await getUser();
-    if (!client || !user?.id) return;
-    const profile = json(localStorage.getItem('roflix-profile') || '{}', {});
-    if (!profile || typeof profile !== 'object') return;
-    try { await client.rpc('roflix_profile_sync', { p_profile: profile }); } catch (_) {}
-  }
-
-  async function heartbeat() {
-    const client = sb();
-    if (!client) return;
-    const page = document.visibilityState === 'visible' ? location.pathname : 'background';
-    let movieSlug = null;
-    let movieTitle = null;
-    try {
-      movieSlug = window.currentMovie?.slug || window.currentMovieSlug || null;
-      movieTitle = window.currentMovie?.name || window.currentMovie?.title || null;
-    } catch (_) {}
-    try { await client.rpc('roflix_heartbeat', { p_session_id: sessionId, p_page: page, p_movie_slug: movieSlug, p_movie_title: movieTitle }); } catch (_) {}
-  }
-
-  function queueEvent(event_type, metadata) {
-    analyticsQueue.push({ event_type, page: location.pathname, movie_slug: window.currentMovie?.slug || null, movie_title: window.currentMovie?.name || window.currentMovie?.title || null, metadata: metadata || {} });
-    if (analyticsQueue.length > 20) analyticsQueue.splice(0, analyticsQueue.length - 20);
-  }
-
-  async function flushAnalytics() {
-    const client = sb();
-    if (!client || !analyticsQueue.length) return;
-    const batch = analyticsQueue.splice(0, Math.min(10, analyticsQueue.length));
-    for (const item of batch) {
-      try { await client.rpc('roflix_track_event', { p_event_type: item.event_type, p_session_id: sessionId, p_page: item.page, p_movie_slug: item.movie_slug, p_movie_title: item.movie_title, p_metadata: item.metadata }); } catch (_) {}
-    }
-  }
-
-  async function secureGacha(count) {
-    const client = sb();
-    const user = await getUser();
-    if (!client || !user?.id) return false;
-    if (typeof loadJikanGachaPool === 'function') await loadJikanGachaPool();
-
-    const { data, error } = await client.rpc('roflix_gacha_roll', { p_count: count });
-    if (error) {
-      toast('error', 'Gacha không thực hiện được', error.message || 'Vui lòng thử lại.');
-      return true;
-    }
-
-    const results = Array.isArray(data?.results) ? data.results : [];
-    const pool = Array.isArray(window.GACHA_POOL) ? window.GACHA_POOL : [];
-    const cards = results.map((result, i) => {
-      const same = pool.filter(c => c.rarity === result.rarity);
-      const source = same.length ? same[Math.floor(Math.random() * same.length)] : pool[i % Math.max(pool.length, 1)];
-      return source ? { ...source, baseId: source.id, obtainedAt: new Date().toISOString(), cloudKey: `${source.id}|${Date.now()}|${i}` } : null;
-    }).filter(Boolean);
-
-    localStorage.setItem('roflix-gem', String(Math.max(0, Number(data.gems) || 0)));
-    localStorage.setItem('roflix-gacha-pity', String(Math.max(0, Number(data.pity) || 0)));
-    const local = json(localStorage.getItem('roflix-cards') || '[]', []);
-    const merged = [...(Array.isArray(local) ? local : []), ...cards].slice(-500);
-    localStorage.setItem('roflix-cards', JSON.stringify(merged));
-
-    if (cards.length) {
-      try { await client.rpc('roflix_gacha_merge', { p_cards: cards }); } catch (e) { console.debug('[RoFlix production] collection sync:', e?.message || e); }
-    }
-
-    try { if (count === 1 && typeof showGachaPull === 'function') showGachaPull(cards[0]); } catch (_) {}
-    try { if (count === 10 && typeof showGachaBatch === 'function') showGachaBatch(cards); } catch (_) {}
-    try { if (typeof renderCollection === 'function') renderCollection(); } catch (_) {}
-    try { if (typeof updateProfileUI === 'function') updateProfileUI(); } catch (_) {}
-    return true;
-  }
-
-  function patchGacha() {
-    if (gachaPatched || typeof window.performGacha !== 'function' || typeof window.performGacha10 !== 'function') return;
-    gachaPatched = true;
-    window.performGacha = () => secureGacha(1);
-    window.performGacha10 = () => secureGacha(10);
-  }
-
-  async function boot() {
-    const user = await getUser();
-    if (user?.id) {
-      setLocalUser(user);
-      await cloudPull(user);
-      await heartbeat();
-      await cloudPushProfile();
-      queueEvent('page_view', { visibility: document.visibilityState });
-    } else {
-      window.__rfProductionUserId = null;
-    }
-    patchGacha();
-  }
-
-  function startTimers() {
-    clearInterval(heartbeatTimer);
-    clearInterval(analyticsTimer);
-    heartbeatTimer = setInterval(() => { if (document.visibilityState === 'visible') heartbeat(); }, 30000);
-    analyticsTimer = setInterval(() => { if (document.visibilityState === 'visible') flushAnalytics(); }, 12000);
-  }
-
-  startTimers();
-  setTimeout(boot, 1200);
-  const patchTimer = setInterval(() => { patchGacha(); if (gachaPatched) clearInterval(patchTimer); }, 500);
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { heartbeat(); flushAnalytics(); } else { flushAnalytics(); }
-  });
-  window.addEventListener('pagehide', () => { flushAnalytics(); });
-
-  const waitAuth = setInterval(() => {
-    const client = sb();
-    if (!client?.auth?.onAuthStateChange || window.__RF_PROD_AUTH_HOOK__) return;
-    window.__RF_PROD_AUTH_HOOK__ = true;
-    client.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') setTimeout(boot, 250);
-      if (event === 'SIGNED_OUT') window.__rfProductionUserId = null;
-    });
-    clearInterval(waitAuth);
-  }, 500);
-
-  window.rfProduction = { boot, heartbeat, queueEvent, flushAnalytics, secureGacha };
+  const toast = (type,title,message) => { try { if (typeof showToast === 'function') showToast(type,title,message); } catch (_) {} };
+  async function getUser(){ const client=sb(); if(!client?.auth?.getUser) return null; try{const {data}=await client.auth.getUser();return data?.user||null;}catch(_){return null;} }
+  function setLocalUser(user){ if(!user?.id)return; window.__rfProductionUserId=user.id; localStorage.setItem('roflix-current-user',JSON.stringify({id:user.id,email:user.email||'',name:user.user_metadata?.display_name||user.user_metadata?.name||(user.email||'').split('@')[0]})); }
+  async function cloudPull(user){ const client=sb(); if(!client||!user?.id)return; try{
+    const [gem,profile,cards,history]=await Promise.all([client.rpc('roflix_user_get_gem'),client.rpc('roflix_profile_get'),client.rpc('roflix_gacha_get'),client.rpc('roflix_watch_history_get')]);
+    if(!gem.error&&gem.data?.gems!=null)localStorage.setItem('roflix-gem',String(Math.max(0,Number(gem.data.gems)||0)));
+    if(!profile.error&&profile.data?.profile_data){const current=json(localStorage.getItem('roflix-profile')||'{}',{});localStorage.setItem('roflix-profile',JSON.stringify({...current,...profile.data.profile_data}));}
+    if(!cards.error&&Array.isArray(cards.data)){const local=json(localStorage.getItem('roflix-cards')||'[]',[]),map=new Map();[...cards.data,...(Array.isArray(local)?local:[])].forEach(c=>{const k=String(c.cloudKey||c.card_key||c.baseId||c.id||'')+'|'+String(c.obtainedAt||c.obtained_at||'');if(k!=='|')map.set(k,c);});localStorage.setItem('roflix-cards',JSON.stringify([...map.values()].slice(-500)));}
+    if(!history.error&&Array.isArray(history.data)){const key=`roflix-watch-history:user:${user.id}`,local=json(localStorage.getItem(key)||'[]',[]),map=new Map();[...history.data,...(Array.isArray(local)?local:[])].forEach(h=>{if(!h?.slug)return;const x={...h,timestamp:new Date(h.updated_at||h.timestamp||0).getTime()||Date.now()},old=map.get(h.slug);if(!old||x.timestamp>=old.timestamp)map.set(h.slug,x);});localStorage.setItem(key,JSON.stringify([...map.values()].slice(-100)));}
+    try{if(typeof updateProfileUI==='function')updateProfileUI();}catch(_){} try{if(typeof renderCollection==='function')renderCollection();}catch(_){} try{if(typeof renderContinueWatching==='function')renderContinueWatching();}catch(_){}
+  }catch(e){console.debug('[RoFlix production] cloud pull:',e?.message||e);} }
+  async function cloudPushProfile(){const client=sb(),user=await getUser();if(!client||!user?.id)return;const profile=json(localStorage.getItem('roflix-profile')||'{}',{});if(!profile||typeof profile!=='object')return;try{await client.rpc('roflix_profile_sync',{p_profile:profile});}catch(_){} }
+  async function heartbeat(){const client=sb();if(!client)return;let movieSlug=null,movieTitle=null;try{movieSlug=window.currentMovie?.slug||window.currentMovieSlug||null;movieTitle=window.currentMovie?.name||window.currentMovie?.title||null;}catch(_){}try{await client.rpc('roflix_heartbeat',{p_session_id:sessionId,p_page:document.visibilityState==='visible'?location.pathname:'background',p_movie_slug:movieSlug,p_movie_title:movieTitle});}catch(_){} }
+  function queueEvent(event_type,metadata){analyticsQueue.push({event_type,page:location.pathname,movie_slug:window.currentMovie?.slug||null,movie_title:window.currentMovie?.name||window.currentMovie?.title||null,metadata:metadata||{}});if(analyticsQueue.length>20)analyticsQueue.splice(0,analyticsQueue.length-20);}
+  async function flushAnalytics(){const client=sb();if(!client||!analyticsQueue.length)return;const batch=analyticsQueue.splice(0,Math.min(10,analyticsQueue.length));for(const item of batch){try{await client.rpc('roflix_track_event',{p_event_type:item.event_type,p_session_id:sessionId,p_page:item.page,p_movie_slug:item.movie_slug,p_movie_title:item.movie_title,p_metadata:item.metadata});}catch(_){} } }
+  async function secureGacha(count){const client=sb(),user=await getUser();if(!client||!user?.id)return false;if(typeof loadJikanGachaPool==='function')await loadJikanGachaPool();const {data,error}=await client.rpc('roflix_gacha_roll',{p_count:count});if(error){toast('error','Gacha không thực hiện được',error.message||'Vui lòng thử lại.');return true;}const results=Array.isArray(data?.results)?data.results:[];const pool=typeof GACHA_POOL!=='undefined'&&Array.isArray(GACHA_POOL)?GACHA_POOL:[];const cards=results.map((result,i)=>{const same=pool.filter(c=>c.rarity===result.rarity),source=same.length?same[Math.floor(Math.random()*same.length)]:pool.length?pool[i%pool.length]:null;return source?{...source,baseId:source.id,obtainedAt:new Date().toISOString(),cloudKey:`${source.id}|${Date.now()}|${i}`}:null;}).filter(Boolean);localStorage.setItem('roflix-gem',String(Math.max(0,Number(data.gems)||0)));localStorage.setItem('roflix-gacha-pity',String(Math.max(0,Number(data.pity)||0)));const local=json(localStorage.getItem('roflix-cards')||'[]',[]);localStorage.setItem('roflix-cards',JSON.stringify([...(Array.isArray(local)?local:[]),...cards].slice(-500)));if(cards.length){try{await client.rpc('roflix_gacha_merge',{p_cards:cards});}catch(e){console.debug('[RoFlix production] collection sync:',e?.message||e);}}try{if(count===1&&typeof showGachaPull==='function'&&cards[0])showGachaPull(cards[0]);}catch(_){}try{if(count===10&&typeof showGachaBatch==='function')showGachaBatch(cards);}catch(_){}try{if(typeof renderCollection==='function')renderCollection();}catch(_){}try{if(typeof updateProfileUI==='function')updateProfileUI();}catch(_){}return true;}
+  function patchGacha(){if(gachaPatched||typeof window.performGacha!=='function'||typeof window.performGacha10!=='function')return;gachaPatched=true;window.performGacha=()=>secureGacha(1);window.performGacha10=()=>secureGacha(10);}
+  async function boot(){const user=await getUser();if(user?.id){setLocalUser(user);await cloudPull(user);await heartbeat();await cloudPushProfile();queueEvent('page_view',{visibility:document.visibilityState});}else window.__rfProductionUserId=null;patchGacha();}
+  heartbeatTimer=setInterval(()=>{if(document.visibilityState==='visible')heartbeat();},30000);analyticsTimer=setInterval(()=>{if(document.visibilityState==='visible')flushAnalytics();},12000);setTimeout(boot,1200);const patchTimer=setInterval(()=>{patchGacha();if(gachaPatched)clearInterval(patchTimer);},500);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){heartbeat();flushAnalytics();}else flushAnalytics();});window.addEventListener('pagehide',()=>flushAnalytics());
+  const waitAuth=setInterval(()=>{const client=sb();if(!client?.auth?.onAuthStateChange||window.__RF_PROD_AUTH_HOOK__)return;window.__RF_PROD_AUTH_HOOK__=true;client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'||event==='TOKEN_REFRESHED')setTimeout(boot,250);if(event==='SIGNED_OUT')window.__rfProductionUserId=null;});clearInterval(waitAuth);},500);
+  window.rfProduction={boot,heartbeat,queueEvent,flushAnalytics,secureGacha};
 })();
