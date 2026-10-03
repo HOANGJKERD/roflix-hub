@@ -13,15 +13,22 @@ function removeLeaderboardFromProfile() {
     }
 }
 
+function removeAchievementsFromProfile() {
+    document.querySelectorAll('[data-tab="achievements"], .tab-btn[data-tab="achievements"]').forEach(el => el.remove());
+    ['tab-achievements', 'achievements-section', 'profile-achievements', 'achievement-list', 'achievements-list'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    });
+}
+
 function renderProfile() {
     removeLeaderboardFromProfile();
+    removeAchievementsFromProfile();
 
     const profile = getProfile();
     const levelData = getLevelData();
     const gems = getGem();
     const stats = getStats();
-    const cards = getCards();
-    const achievements = getAchievements();
     const favorites = getFavorites();
     
     document.getElementById('profile-display-name').textContent = profile.name || 'Người dùng';
@@ -40,7 +47,6 @@ function renderProfile() {
     document.getElementById('stat-gem').textContent = gems.toLocaleString();
     document.getElementById('stat-favorites').textContent = favorites.length || 0;
     document.getElementById('stat-comments').textContent = stats.totalComments || 0;
-    document.getElementById('stat-achievements').textContent = achievements.length || 0;
     
     const avatarImg = document.getElementById('profile-avatar');
     if (avatarImg) {
@@ -64,11 +70,10 @@ function renderProfile() {
     document.getElementById('profile-movie-count').textContent = stats.totalMoviesWatched || 0;
     document.getElementById('gacha-gem-count').textContent = gems;
     
-    updateDailyQuest();
+    if (typeof updateDailyQuest === 'function') updateDailyQuest();
     if (typeof rfRenderGachaAlbum === 'function') rfRenderGachaAlbum();
-    renderAchievements();
-    renderFavoritesTab();
-    renderHistoryTab();
+    if (typeof renderFavoritesTab === 'function') renderFavoritesTab();
+    if (typeof renderHistoryTab === 'function') renderHistoryTab();
 }
 
 function updateProfileUI() {
