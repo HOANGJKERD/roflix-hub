@@ -28,7 +28,7 @@
   window.rfRefreshPlayerRecommendations=renderPlayerRecommendations;
   document.addEventListener('DOMContentLoaded',()=>{ensureMovieStateGlobals();setTimeout(()=>{const note=document.getElementById('source-note');if(note)note.textContent='KKPhim là nguồn chính · VSMOV là nguồn phụ';},0);});
 
-  /* Load isolated header and cross-device user data after the base app exists. */
+  /* Load isolated header, cross-device user data and realtime comments after the base app exists. */
   function loadRoFlixEnhancementScript(id,src){
     if(document.getElementById(id)) return;
     const s=document.createElement('script');
@@ -42,5 +42,15 @@
     loadRoFlixEnhancementScript('roflix-cloud-user-data-script','js/features/cloud-user-data.js?v=1');
     loadRoFlixEnhancementScript('roflix-comments-realtime-script','js/features/comments-realtime.js?v=2');
   }
+
+  /* Installable mobile app mode. Supabase remains the shared backend, so admin changes and user data stay cloud-backed. */
+  function registerRoFlixPWA(){
+    if(!('serviceWorker' in navigator)) return;
+    window.addEventListener('load',()=>{
+      navigator.serviceWorker.register('/service-worker.js',{scope:'/'}).catch(err=>console.debug('[RoFlix PWA] registration skipped',err));
+    },{once:true});
+  }
+
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadRoFlixEnhancements,{once:true}); else loadRoFlixEnhancements();
+  registerRoFlixPWA();
 })();
