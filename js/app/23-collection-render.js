@@ -2,8 +2,10 @@
 // ROFLIX GACHA COLLECTION ALBUM 3.1
 // ============================================================
 function renderCollection() {
-    rfGachaInjectStyles?.();
-    const cards = getCards();
+    // Gacha is an optional feature. Never let its renderer break the account/profile page.
+    if (typeof rfGachaInjectStyles === 'function') rfGachaInjectStyles();
+
+    const cards = typeof getCards === 'function' ? getCards() : [];
     const pool = Array.isArray(GACHA_POOL) ? GACHA_POOL : [];
     const totalCards = pool.length;
 
@@ -34,8 +36,9 @@ function renderCollection() {
         const owned = cards.filter(c => (c.baseId || c.id) === card.id).length;
         const locked = !owned;
         const safeName = String(card.name || 'Unknown').replace(/"/g, '&quot;');
+        const safeCardJson = JSON.stringify(card).replace(/\\/g, '\\\\').replace(/'/g, '&#39;');
         return `
-            <button type="button" class="rf-gacha-card ${locked ? 'is-locked' : ''}" onclick='rfOpenGachaDetail(${JSON.stringify(card).replace(/'/g,"&#39;")},${owned})' title="${safeName}">
+            <button type="button" class="rf-gacha-card ${locked ? 'is-locked' : ''}" onclick='rfOpenGachaDetail(${safeCardJson},${owned})' title="${safeName}">
                 <img src="${card.image}" alt="${safeName}" loading="lazy" onerror="this.src='https://placehold.co/400x600/171a25/9ca3af?text=No+Image'">
                 <span class="rf-gacha-rarity" style="border:1px solid ${RARITY_COLORS?.[card.rarity] || '#6b7280'}66">${RARITY_NAMES?.[card.rarity] || '★ Common'}</span>
                 ${locked ? '<span class="rf-gacha-lock">🔒</span>' : `<span class="rf-gacha-owned">×${owned}</span>`}
@@ -62,7 +65,7 @@ function rfRenderGachaAlbum() {
                 <button data-rarity="epic">★★★★</button>
                 <button data-rarity="legendary">★★★★★</button>
                 <button data-rarity="secret">🌈</button>
-            </div>`;
+            </div>`);
         const filter = shell.querySelector('#rf-gacha-rarity-filter');
         filter?.addEventListener('click', e => {
             const btn = e.target.closest('button[data-rarity]');
