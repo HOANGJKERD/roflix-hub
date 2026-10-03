@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc = (s) => String(s ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   const sourceName = (sid) => sid === 'vsmov' ? 'VSMOV' : 'KKPhim';
 
   function renderRecoCards(containerId, movies) {
@@ -28,12 +28,12 @@
   window.rfRefreshPlayerRecommendations=renderPlayerRecommendations;
   document.addEventListener('DOMContentLoaded',()=>{ensureMovieStateGlobals();setTimeout(()=>{const note=document.getElementById('source-note');if(note)note.textContent='KKPhim là nguồn chính · VSMOV là nguồn phụ';},0);});
 
-  /* Load the isolated header menu from a file that is guaranteed to be loaded by index.html. */
+  /* Load the isolated header menu after the base header exists. */
   function loadRoFlixHeaderMenu(){
     if(document.getElementById('roflix-header-menu-script')) return;
     const s=document.createElement('script');
     s.id='roflix-header-menu-script';
-    s.src='js/features/header-hamburger.js?v=3';
+    s.src='js/features/header-hamburger.js?v=4';
     s.async=false;
     document.head.appendChild(s);
   }
