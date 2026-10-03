@@ -29,6 +29,12 @@ body { overflow-x: hidden; overscroll-behavior-x: none; }
 .header-ios * { box-sizing: border-box; }
 .header-ios img, .header-ios svg { max-width: 100%; }
 
+/* Solid dropdown surfaces for Danh Mục / Thể Loại / header menus. */
+.header-ios nav > .relative.group > div.absolute { background: #10131d !important; background-color: #10131d !important; border: 1px solid rgba(255,255,255,.11) !important; box-shadow: 0 20px 55px rgba(0,0,0,.55), 0 4px 18px rgba(0,0,0,.3); backdrop-filter: none !important; -webkit-backdrop-filter: none !important; opacity: 0; }
+.header-ios nav > .relative.group:hover > div.absolute, .header-ios nav > .relative.group:focus-within > div.absolute { opacity: 1; }
+.header-ios nav > .relative.group > div.absolute a { background: transparent; }
+.header-ios nav > .relative.group > div.absolute a:hover, .header-ios nav > .relative.group > div.absolute a:focus-visible { background: rgba(245,158,11,.12) !important; color: #fbbf24 !important; outline: none; }
+
 /* Items moved into the hamburger are removed from the flex layout entirely. */
 .header-ios [data-rf-secondary-hidden="true"] { display: none !important; }
 .header-ios .rf-header-actions-host { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; flex: 0 0 auto; }
