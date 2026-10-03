@@ -28,14 +28,18 @@
   window.rfRefreshPlayerRecommendations=renderPlayerRecommendations;
   document.addEventListener('DOMContentLoaded',()=>{ensureMovieStateGlobals();setTimeout(()=>{const note=document.getElementById('source-note');if(note)note.textContent='KKPhim là nguồn chính · VSMOV là nguồn phụ';},0);});
 
-  /* Load the isolated header menu after the base header exists. */
-  function loadRoFlixHeaderMenu(){
-    if(document.getElementById('roflix-header-menu-script')) return;
+  /* Load isolated header and cross-device user data after the base app exists. */
+  function loadRoFlixEnhancementScript(id,src){
+    if(document.getElementById(id)) return;
     const s=document.createElement('script');
-    s.id='roflix-header-menu-script';
-    s.src='js/features/header-hamburger.js?v=4';
+    s.id=id;
+    s.src=src;
     s.async=false;
     document.head.appendChild(s);
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadRoFlixHeaderMenu,{once:true}); else loadRoFlixHeaderMenu();
+  function loadRoFlixEnhancements(){
+    loadRoFlixEnhancementScript('roflix-header-menu-script','js/features/header-hamburger.js?v=4');
+    loadRoFlixEnhancementScript('roflix-cloud-user-data-script','js/features/cloud-user-data.js?v=1');
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadRoFlixEnhancements,{once:true}); else loadRoFlixEnhancements();
 })();
