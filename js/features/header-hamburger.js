@@ -46,7 +46,7 @@
       document.querySelectorAll(selector).forEach((el) => { el.dataset.rfHiddenSecondary = '1'; el.style.display = 'none'; });
     });
 
-    const labels = [/^xem tiếp$/i, /^random$/i, /^ngẫu nhiên$/i, /^🎲\s*random$/i];
+    const labels = [/xem\s*tiếp/i, /random/i, /ngẫu\s*nhiên/i];
     document.querySelectorAll('header a, header button').forEach((el) => {
       if (el.closest('#rf-hamburger-menu, #rf-hamburger-button')) return;
       const label = text(el);
@@ -80,7 +80,6 @@
       <button type="button" data-rf-action="rating"><i class="fa-solid fa-ranking-star"></i><span>BXH</span></button>
     `;
 
-    const anchor = inner.querySelector('div.flex.items-center.gap-6') || inner.firstElementChild;
     const actions = inner.lastElementChild;
     const host = actions || inner;
     host.insertBefore(button, host.firstChild);
