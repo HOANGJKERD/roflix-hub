@@ -8,7 +8,7 @@
     const flat=[];
     const walk=v=>{if(Array.isArray(v))return v.forEach(walk);if(v&&typeof v==='object')return Object.values(v).forEach(walk);if(v!=null)flat.push(String(v).toLowerCase())};
     walk(values);
-    return flat.some(v=>/\b18\s*\+\b|18plus|adult|người lớn|nguoi lon|hentai/.test(v));
+    return flat.some(v=>/18\s*\+|18plus|adult|người lớn|nguoi lon|hentai/.test(v));
   }
   async function detail(slug,source){
     const sid=source==='vsmov'?'vsmov':'kkphim',key=sid+':'+slug;
