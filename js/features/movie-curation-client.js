@@ -44,7 +44,7 @@
   }
   function wrapGenericFilter(){
     const original=window.filterBy;if(typeof original!=='function'||original.__rfCuration)return;
-    const wrapped=async function(){const args=arguments;const result=original.apply(this,args);await ready;try{if(String(args[0]||'').toLowerCase()==='genre')appendMatches('',String(args[1]||''));}catch(_){}return result};
+    const wrapped=function(){const args=arguments;const result=original.apply(this,args);if(String(args[0]||'').toLowerCase()==='genre'){ready.then(()=>setTimeout(()=>{try{appendMatches('',String(args[1]||''))}catch(_){}},550))}return result};
     wrapped.__rfCuration=true;window.filterBy=wrapped;
   }
   function install(){wrap('filterByList','list');wrap('filterByGenre','genre');wrapGenericFilter()}
