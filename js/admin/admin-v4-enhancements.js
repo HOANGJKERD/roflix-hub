@@ -17,7 +17,7 @@
   host.innerHTML=checks.map((x,i)=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #252a39"><span>${x[0]}</span><span id="rf-health-${i}" class="pill">checking</span></div>`).join('');
   for(let i=0;i<checks.length;i++){try{const r=await sb.from(checks[i][1]).select('*',{head:true,count:'exact'});const el=$('rf-health-'+i);if(r.error){el.textContent='ERROR';el.classList.add('pill-banned')}else{el.textContent='ONLINE';el.classList.add('pill-active')}}catch(_){}}
  }
- function loadMovieControl(){if(document.getElementById('roflix-movie-control-admin'))return;const s=document.createElement('script');s.id='roflix-movie-control-admin';s.src='js/admin/movie-control-admin.js?v=1';s.async=false;document.body.appendChild(s)}
+ function loadMovieControl(){if(!document.getElementById('roflix-movie-control-css')){const l=document.createElement('link');l.id='roflix-movie-control-css';l.rel='stylesheet';l.href='css/admin/movie-control.css?v=1';document.head.appendChild(l)}if(document.getElementById('roflix-movie-control-admin'))return;const s=document.createElement('script');s.id='roflix-movie-control-admin';s.src='js/admin/movie-control-admin.js?v=1';s.async=false;document.body.appendChild(s)}
  window.rfAdminLoadLiveComments=comments;window.rfAdminCheckSources=health;
  document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{comments();health();loadMovieControl()},700);const nav=$('admin-nav');if(nav&&!document.getElementById('rf-admin-v4-badge')){const b=document.createElement('span');b.id='rf-admin-v4-badge';b.className='badge';b.textContent='v4';document.querySelector('.topbar-left')?.appendChild(b)}});
 })();
