@@ -377,9 +377,10 @@
                 </div>
                 <div class="source-switch" id="source-switch">
                     <span class="src-label">Nguồn phim</span>
-                    <button type="button" class="source-pill active" data-source="kkphim" onclick="switchSource('kkphim')">KKPhim · chính</button>
-                    <button type="button" class="source-pill sub" data-source="vsmov" onclick="switchSource('vsmov')">VSMOV · phụ</button>
-                    <span class="source-note" id="source-note">KKPhim là nguồn chính · VSMOV là nguồn phụ</span>
+                    <button type="button" class="source-pill auto active" data-source="auto" onclick="switchSource('auto')">Tự động · cả 2</button>
+                    <button type="button" class="source-pill" data-source="kkphim" onclick="switchSource('kkphim')">Chỉ KKPhim</button>
+                    <button type="button" class="source-pill sub" data-source="vsmov" onclick="switchSource('vsmov')">Chỉ VSMOV</button>
+                    <span class="source-note" id="source-note">Đang gộp KKPhim + VSMOV, không cần chuyển tay</span>
                 </div>
                 <div class="country-filter" id="country-filter">
                     <button class="country-pill active" data-country="" onclick="filterByCountry('', 'Tất cả')">

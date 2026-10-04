@@ -33,6 +33,36 @@
             return { items: Array.isArray(items) ? items : [], pag };
         }
 
+        function unwrapDetailPayload(data) {
+            if (!data || typeof data !== 'object') return null;
+            let movie = null;
+            let episodes = Array.isArray(data.episodes) ? data.episodes : [];
+            if (data.movie && typeof data.movie === 'object') movie = data.movie;
+            else if (data.data && data.data.item && typeof data.data.item === 'object') movie = data.data.item;
+            else if (data.data && (data.data.slug || data.data.name)) movie = data.data;
+            else if (data.item && (data.item.slug || data.item.name)) movie = data.item;
+            else if (data.slug || data.name) movie = data;
+            if (!movie) return null;
+            if (Array.isArray(movie.episodes) && movie.episodes.length) episodes = movie.episodes;
+            movie.episodes = episodes;
+            return movie;
+        }
+
+        function mergeMovieLists(groups) {
+            const seen = new Set();
+            const out = [];
+            const max = Math.max(0, ...groups.map(g => g.length));
+            for (let i = 0; i < max; i++) {
+                for (const g of groups) {
+                    const m = g[i];
+                    if (!m || !m.slug || seen.has(m.slug)) continue;
+                    seen.add(m.slug);
+                    out.push(m);
+                }
+            }
+            return out;
+        }
+
         // Cache nhẹ trong bộ nhớ để tránh gọi lại API khi quay lại trang/thể loại vừa xem
         const _apiCache = new Map();
         const API_CACHE_TTL = 120000; // 2 phút
@@ -78,27 +108,25 @@
         // tự chuyển sang nguồn còn lại (VSMOV <-> KKPhim) để trang không bị "trắng" khi 1 nguồn sập.
         // path: đường dẫn KHÔNG kèm domain, ví dụ '/quoc-gia/au-my?page=1'
         async function fetchListWithFallback(path) {
-            const primary = currentSourceId;
-            const secondary = primary === 'kkphim' ? 'vsmov' : 'kkphim';
-            try {
-                const data = await fetchJson(srcListUrl(path, primary));
-                return { data, sid: primary };
-            } catch (e1) {
-                try {
-                    const data = await fetchJson(srcListUrl(path, secondary));
-                    return { data, sid: secondary };
-                } catch (e2) {
-                    throw e2;
-                }
-            }
+            const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : [currentSourceId, currentSourceId === 'kkphim' ? 'vsmov' : 'kkphim'];
+            const settled = await Promise.allSettled(
+                ids.map(sid => fetchJson(srcListUrl(path, sid)).then(data => ({ data, sid })))
+            );
+            const ok = settled.filter(s => s.status === 'fulfilled').map(s => s.value);
+            if (!ok.length) throw new Error('all sources failed for ' + path);
+            const groups = ok.map(r => unwrapList(r.data).items.map(m => { m._src = r.sid; return m; }));
+            const items = mergeMovieLists(groups);
+            const pag = unwrapList(ok[0].data).pag || {};
+            return { data: { items, pagination: pag }, sid: ok[0].sid };
         }
 
-        // Map nhanh danh sách item trả về từ fetchListWithFallback, gán đúng _src cho từng phim
-        // (để lấy đúng CDN ảnh của nguồn đã thực sự trả dữ liệu, tránh lệch nguồn).
         function mapListResultItems(result, limit) {
             const items = unwrapList(result.data).items;
             const sliced = typeof limit === 'number' ? items.slice(0, limit) : items;
-            return sliced.map(m => { m._src = result.sid; return mapMovieData(m); });
+            return sliced.map(m => {
+                m._src = m._src || result.sid;
+                return mapMovieData(m);
+            });
         }
 
         async function fetchMovies(page = 1) {
@@ -107,26 +135,23 @@
                     && currentListEndpoint === 'phim-moi-cap-nhat') {
                     return await fetchHomePriorityMovies(page);
                 }
-                const primary = currentSourceId;
-                const secondary = primary === 'kkphim' ? 'vsmov' : 'kkphim';
-                try {
-                    const primaryMovies = await fetchMoviesFromSource(primary, page);
-                    // Với thể loại/quốc gia/danh mục, một số nguồn trả HTTP 200 nhưng danh sách rỗng
-                    // do taxonomy khác nhau. Thử nguồn còn lại trước khi hiển thị trạng thái rỗng.
-                    if (primaryMovies.length || (!currentGenreSlug && !currentCountrySlug)) return primaryMovies;
-                    console.warn(primary + ' trả danh sách rỗng, thử nguồn ' + secondary);
-                    const backupMovies = await fetchMoviesFromSource(secondary, page);
-                    return backupMovies.length ? backupMovies : primaryMovies;
-                } catch (e1) {
-                    console.warn(primary + ' fail, fallback ' + secondary, e1);
-                    const movies = await fetchMoviesFromSource(secondary, page);
-                    if (typeof showToastPro === 'function') {
-                        showToastPro('warning', 'Nguồn phụ', getSource(primary).name + ' lỗi — đang dùng ' + getSource(secondary).name);
-                    } else {
-                        showToast('error', 'Nguồn phụ', 'Đã chuyển sang ' + getSource(secondary).name);
-                    }
-                    return movies;
-                }
+                const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : [currentSourceId];
+                const settled = await Promise.allSettled(ids.map(sid => fetchMoviesFromSource(sid, page)));
+                const lists = [];
+                let maxPages = 1;
+                let sumItems = 0;
+                settled.forEach(s => {
+                    if (s.status !== 'fulfilled') return;
+                    lists.push(s.value);
+                    maxPages = Math.max(maxPages, totalPages || 1);
+                    sumItems += totalItems || s.value.length;
+                });
+                if (!lists.length) throw new Error('all sources failed');
+                const merged = mergeMovieLists(lists);
+                totalPages = maxPages;
+                totalItems = sumItems || merged.length;
+                currentPage = page;
+                return merged;
             } catch (error) {
                 console.error('Lỗi tải phim:', error);
                 showToast('error', 'Lỗi kết nối', 'Không thể tải danh sách phim. Vui lòng thử lại!');
@@ -135,28 +160,41 @@
         }
 
         async function fetchHomePriorityMovies(page = 1) {
-            const sid = currentSourceId;
-            const other = sid === 'kkphim' ? 'vsmov' : 'kkphim';
-            const [auRes, krRes] = await Promise.all([
-                fetch(srcListUrl(`/quoc-gia/au-my?page=${page}`, sid)),
-                fetch(srcListUrl(`/quoc-gia/han-quoc?page=${page}`, sid))
-            ]);
-            if (!auRes.ok && !krRes.ok) {
-                const [au2, kr2] = await Promise.all([
-                    fetch(srcListUrl(`/quoc-gia/au-my?page=${page}`, other)),
-                    fetch(srcListUrl(`/quoc-gia/han-quoc?page=${page}`, other))
-                ]);
-                if (!au2.ok && !kr2.ok) throw new Error('home priority fetch failed');
-                return mergeHomePriority(au2, kr2, page, other);
+            const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : [currentSourceId];
+            const jobs = [];
+            ids.forEach(sid => {
+                jobs.push(fetch(srcListUrl(`/quoc-gia/au-my?page=${page}`, sid)).then(r => ({ r, sid, kind: 'au' })));
+                jobs.push(fetch(srcListUrl(`/quoc-gia/han-quoc?page=${page}`, sid)).then(r => ({ r, sid, kind: 'kr' })));
+            });
+            const settled = await Promise.allSettled(jobs);
+            const auGroups = [];
+            const krGroups = [];
+            let maxPages = 1;
+            let sumItems = 0;
+            for (const s of settled) {
+                if (s.status !== 'fulfilled') continue;
+                const { r, sid, kind } = s.value;
+                const data = r.ok ? await r.json() : { items: [], pagination: {} };
+                const wrap = unwrapList(data);
+                const list = wrap.items.map(m => { m._src = sid; return m; }).filter(m => pickPoster(m, sid));
+                maxPages = Math.max(maxPages, (wrap.pag && wrap.pag.totalPages) || 1);
+                sumItems += (wrap.pag && wrap.pag.totalItems) || list.length;
+                if (kind === 'au') auGroups.push(list); else krGroups.push(list);
             }
-            const primaryMovies = await mergeHomePriority(auRes, krRes, page, sid);
-            if (primaryMovies.length) return primaryMovies;
-            const [au2, kr2] = await Promise.all([
-                fetch(srcListUrl(`/quoc-gia/au-my?page=${page}`, other)),
-                fetch(srcListUrl(`/quoc-gia/han-quoc?page=${page}`, other))
-            ]);
-            if (!au2.ok && !kr2.ok) return primaryMovies;
-            return mergeHomePriority(au2, kr2, page, other);
+            const au = mergeMovieLists(auGroups);
+            const kr = mergeMovieLists(krGroups);
+            const merged = [];
+            let i = 0, j = 0;
+            while (i < au.length || j < kr.length) {
+                if (i < au.length) merged.push(au[i++]);
+                if (i < au.length) merged.push(au[i++]);
+                if (j < kr.length) merged.push(kr[j++]);
+            }
+            totalPages = maxPages;
+            totalItems = sumItems;
+            currentPage = page;
+            if (!merged.length) throw new Error('home priority fetch failed');
+            return merged;
         }
 
         async function mergeHomePriority(auRes, krRes, page, sid) {
@@ -186,22 +224,23 @@
         }
 
         async function fetchMovieDetail(slug, preferredSrc) {
-            const order = [];
             const first = preferredSrc || currentSourceId;
-            order.push(first);
             const other = first === 'kkphim' ? 'vsmov' : 'kkphim';
-            if (!order.includes(other)) order.push(other);
+            const order = [first];
+            if (other !== first) order.push(other);
             let lastErr = null;
             for (const sid of order) {
-                try {
-                    const data = await fetchJson(srcDetailUrl(slug, sid));
-                    const movie = data.movie || data.data || data;
-                    if (!movie || (!movie.slug && !movie.name)) continue;
-                    if (data.episodes && !movie.episodes) movie.episodes = data.episodes;
-                    movie._src = sid;
-                    return movie;
-                } catch (e) {
-                    lastErr = e;
+                const urls = (typeof srcDetailUrls === 'function') ? srcDetailUrls(slug, sid) : [srcDetailUrl(slug, sid)];
+                for (const url of urls) {
+                    try {
+                        const data = await fetchJson(url);
+                        const movie = unwrapDetailPayload(data);
+                        if (!movie || (!movie.slug && !movie.name)) continue;
+                        movie._src = sid;
+                        return movie;
+                    } catch (e) {
+                        lastErr = e;
+                    }
                 }
             }
             console.error('Lỗi tải chi tiết phim:', lastErr);

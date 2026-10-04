@@ -55,7 +55,7 @@
             }
             
             container.innerHTML = mappedMovies.map((m, index) => `
-                <div onclick="viewMovieDetail('${m.slug}')" class="movie-card-premium card-stagger">
+                <div onclick="viewMovieDetail('${m.slug}', '${m._src || ''}')" class="movie-card-premium card-stagger">
                     <div class="card-poster">
                         <img src="${m.poster}" alt="${escapeHtml(m.title)}" loading="lazy" decoding="async"
                              onerror="this.src='https://placehold.co/300x400/1a1a1a/666?text=No+Image'">
@@ -73,6 +73,7 @@
                             </div>
                         </div>
                         <div class="card-badges">
+                            <span class="src-chip">${escapeHtml((m._src || '').toUpperCase())}</span>
                             ${parseFloat(m.rating) >= 8 ? '<span class="badge hot">🔥 Hot</span>' : ''}
                             ${m.episode_total > 1 ? `<span class="badge eps">${m.episode_total} Tập</span>` : '<span class="badge eps">HD</span>'}
                             ${m.status === 'Hoàn thành' ? '<span class="badge" style="background: #10b981; color: white;">✅ Full</span>' : ''}
