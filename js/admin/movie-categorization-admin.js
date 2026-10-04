@@ -26,7 +26,7 @@
     if(/lồng tiếng|long tieng|dub|dubbed/.test(lang))lists.push('long-tieng');
     if(/thuyết minh|thuyet minh/.test(lang))lists.push('thuyet-minh');
     if(/subteam/.test(lang)||detail?.subteam)lists.push('subteam');
-    if(Number(detail?.year)===new Date().getFullYear())lists.push('phim-moi');
+    // 'Phim mới cập nhật' is a curation decision, not inferred from release year.
     return {lists:[...new Set(lists)],genres:[...new Set(g.map(genreKey).filter(Boolean))]};
   }
   function checks(id,items,cls){const box=$(id);box.innerHTML=items.map(x=>'<label class="rf-curation-check"><input class="'+cls+'" type="checkbox" value="'+esc(x[0])+'"><span>'+esc(x[1])+'</span></label>').join('')}
