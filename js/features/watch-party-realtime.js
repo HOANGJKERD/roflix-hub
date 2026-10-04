@@ -1,238 +1,37 @@
-/* RoFlix Watch Party Realtime
- * Supabase Realtime Broadcast + Presence.
- * No service key is used. Works across browsers/devices on the same Supabase project.
+/* RoFlix Watch Party 2.0
+ * Supabase DB room + Realtime Broadcast/Presence.
+ * Persistent room state, member count, host, chat and reconnect.
  */
-(function () {
-  const state = {
-    channel: null,
-    code: '',
-    isHost: false,
-    presenceId: 'u-' + Math.random().toString(36).slice(2, 10),
-    lastState: null,
-    suppress: false,
-    chat: []
-  };
-
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-  const $ = id => document.getElementById(id);
-
-  function getClient() {
-    return window.rfSupabase || null;
-  }
-
-  function currentEpisodeIndex() {
-    const list = window.currentEpisodeList || [];
-    const player = $('movie-player');
-    if (!list.length || !player) return Number(window.rfLastEpisodeIndex || 0) || 0;
-    const src = player.src || '';
-    const idx = list.findIndex(e => e && e.link && src === e.link);
-    return idx >= 0 ? idx : (Number(window.rfLastEpisodeIndex || 0) || 0);
-  }
-
-  function currentRoomState(extra = {}) {
-    const idx = currentEpisodeIndex();
-    const ep = (window.currentEpisodeList || [])[idx] || {};
-    return {
-      code: state.code,
-      movieSlug: window.currentSlug || '',
-      movieTitle: window.currentMovieTitle || '',
-      episodeIndex: idx,
-      episodeName: ep.name || '',
-      sentAt: Date.now(),
-      sender: state.presenceId,
-      ...extra
-    };
-  }
-
-  function renderStatus(text, good = true) {
-    const el = $('rf-party-status');
-    if (el) el.innerHTML = `<span style="color:${good ? '#a7f3d0' : '#fca5a5'}">${esc(text)}</span>`;
-  }
-
-  function renderPresence(presences) {
-    const el = $('rf-party-members');
-    if (!el) return;
-    const entries = Object.values(presences || {});
-    const metas = []; entries.forEach(arr => (arr || []).forEach(m => metas.push(m || {})));
-    const count = Math.max(Object.keys(presences || {}).length, metas.length);
-    el.innerHTML = `<div style="color:#9ca3af;font-size:13px;margin-bottom:8px">👥 Đang ở trong phòng: <b style="color:#fbbf24">${count}</b></div><div class="rf-party-member-list">${metas.slice(0,12).map(m=>`<span class="rf-party-member">${m.host?'👑':'👤'} ${esc(m.name||'RoFlix user')}</span>`).join('')}</div>`;
-  }
-
-  function renderChat() {
-    const box = $('rf-party-chat-list'); if (!box) return;
-    box.innerHTML = state.chat.length ? state.chat.slice(-30).map(m=>`<div class="rf-party-chat-msg"><b>${esc(m.name||'User')}</b><span>${new Date(m.at||Date.now()).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span><p>${esc(m.text||'')}</p></div>`).join('') : '<div class="rf-party-chat-empty">Chưa có tin nhắn. 👋</div>';
-    box.scrollTop = box.scrollHeight;
-  }
-
-  async function sendChat() {
-    const input = $('rf-party-chat-input'); if (!input || !state.channel) return;
-    const text = input.value.trim(); if (!text) return;
-    const user = await getClient()?.auth?.getUser?.();
-    const name = user?.data?.user?.user_metadata?.display_name || user?.data?.user?.email?.split('@')[0] || 'RoFlix user';
-    const msg = {name:name.slice(0,40),text:text.slice(0,500),at:Date.now(),sender:state.presenceId};
-    state.chat.push(msg); renderChat(); input.value='';
-    try { await state.channel.send({type:'broadcast',event:'party_chat',payload:msg}); } catch (_) {}
-  }
-  window.rfWatchPartySendChat = sendChat;
-
-  function channelName(code) {
-    return `roflix-watch-party:${code}`;
-  }
-
-  async function leaveChannel() {
-    if (!state.channel) return;
-    try { await state.channel.untrack(); } catch (_) {}
-    try { await getClient()?.removeChannel(state.channel); } catch (_) {}
-    state.channel = null;
-    state.code = '';
-    state.isHost = false;
-  }
-
-  async function joinRealtimeParty(code, isHost) {
-    const sb = getClient();
-    if (!sb) throw new Error('Supabase chưa sẵn sàng.');
-    await leaveChannel();
-    state.code = code;
-    state.isHost = !!isHost;
-
-    const channel = sb.channel(channelName(code), {
-      config: { broadcast: { self: false }, presence: { key: state.presenceId } }
-    });
-
-    channel
-      .on('broadcast', { event: 'party_state' }, ({ payload }) => {
-        if (!payload || payload.sender === state.presenceId) return;
-        applyRemoteState(payload);
-      })
-      .on('broadcast', { event: 'party_chat' }, ({ payload }) => {
-        if (!payload || payload.sender === state.presenceId) return;
-        state.chat.push(payload); renderChat();
-      })
-      .on('broadcast', { event: 'party_ping' }, ({ payload }) => {
-        if (!payload || payload.sender === state.presenceId) return;
-        if (state.isHost) return;
-        renderStatus(`Đã nhận tín hiệu đồng bộ từ phòng lúc ${new Date(payload.sentAt || Date.now()).toLocaleTimeString()}.`);
-      })
-      .on('presence', { event: 'sync' }, () => renderPresence(channel.presenceState()))
-      .on('presence', { event: 'join' }, () => { renderPresence(channel.presenceState()); if (state.isHost) setTimeout(() => broadcastState({ type: 'member_joined' }), 180); })
-      .on('presence', { event: 'leave' }, () => renderPresence(channel.presenceState()));
-
-    await new Promise((resolve, reject) => {
-      let done = false;
-      channel.subscribe(async status => {
-        if (status === 'SUBSCRIBED') {
-          done = true;
-          try {
-            const u = await getClient()?.auth?.getUser?.();
-            const name = u?.data?.user?.user_metadata?.display_name || u?.data?.user?.email?.split('@')[0] || 'RoFlix user';
-            await channel.track({
-              userId: u?.data?.user?.id || null,
-              joinedAt: new Date().toISOString(),
-              host: state.isHost,
-              name: name.slice(0,40)
-            });
-          } catch (_) {}
-          resolve();
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          if (!done) reject(new Error('Không thể kết nối phòng xem chung.'));
-        }
-      });
-    });
-
-    state.channel = channel;
-    state.chat = [];
-    renderPresence(channel.presenceState()); renderChat();
-    renderStatus(state.isHost ? 'Phòng đã sẵn sàng. Bạn là chủ phòng.' : 'Đã tham gia phòng. Đang chờ chủ phòng đồng bộ.');
-
-    if (state.isHost) {
-      setTimeout(() => broadcastState({ type: 'room_ready' }), 250);
-    }
-  }
-
-  async function broadcastState(extra = {}) {
-    if (!state.channel) return;
-    const payload = currentRoomState(extra);
-    state.lastState = payload;
-    try {
-      await state.channel.send({ type: 'broadcast', event: 'party_state', payload });
-    } catch (e) {
-      console.warn('[RoFlix Watch Party]', e);
-    }
-  }
-
-  async function applyRemoteState(payload) {
-    if (!payload || state.suppress) return;
-    state.suppress = true;
-    try {
-      if (payload.movieSlug && payload.movieSlug !== window.currentSlug && typeof viewMovieDetail === 'function') {
-        await viewMovieDetail(payload.movieSlug, window.currentSourceId);
-        await new Promise(r => setTimeout(r, 250));
-      }
-      if (Number.isFinite(Number(payload.episodeIndex)) && typeof playMovieByIndex === 'function') {
-        const idx = Number(payload.episodeIndex);
-        if ((window.currentEpisodeList || [])[idx]) playMovieByIndex(idx, { fromParty: true });
-      }
-      renderStatus(`Đã đồng bộ: ${payload.movieTitle || 'phim'} · ${payload.episodeName || 'tập ' + ((payload.episodeIndex || 0) + 1)}`);
-    } catch (e) {
-      console.error('[RoFlix Watch Party] apply state', e);
-      renderStatus('Không thể đồng bộ phim/tập từ chủ phòng.', false);
-    } finally {
-      setTimeout(() => { state.suppress = false; }, 500);
-    }
-  }
-
-  window.rfWatchPartyBroadcast = function (extra = {}) {
-    if (state.channel && state.isHost && !state.suppress) broadcastState(extra);
-  };
-
-  window.rfWatchPartyCreate = async function () {
-    const title = ($('rf-party-title')?.value || '').trim() || (window.currentMovieTitle || 'Phòng xem RoFlix');
-    const code = 'RF-' + Math.random().toString(36).slice(2, 7).toUpperCase();
-    const result = $('rf-party-result');
-    if (result) result.innerHTML = '⏳ Đang tạo phòng realtime...';
-    try {
-      await joinRealtimeParty(code, true);
-      if (result) result.innerHTML = `<div style="font-size:14px">Đã tạo phòng <b>${esc(title)}</b></div><div style="margin-top:6px">Mã mời: <strong style="font-size:26px;color:#fbbf24">${code}</strong></div><button onclick="navigator.clipboard?.writeText('${code}')" class="bg-gray-700 rounded-lg px-3 py-2 mt-2">Sao chép mã</button>`;
-      if (window.currentSlug) await broadcastState({ type: 'host_created', roomTitle: title });
-    } catch (e) {
-      if (result) result.innerHTML = `<span style="color:#fca5a5">${esc(e.message || 'Không tạo được phòng.')}</span>`;
-    }
-  };
-
-  window.rfWatchPartyJoin = async function () {
-    const code = ($('rf-party-join')?.value || '').trim().toUpperCase();
-    if (!code) return renderStatus('Nhập mã phòng trước.', false);
-    renderStatus('⏳ Đang kết nối phòng realtime...');
-    try {
-      await joinRealtimeParty(code, false);
-    } catch (e) {
-      renderStatus(e.message || 'Không thể tham gia phòng.', false);
-    }
-  };
-
-  window.rfWatchPartyLeave = async function () {
-    await leaveChannel();
-    renderStatus('Đã rời phòng xem chung.');
-    const members = $('rf-party-members');
-    if (members) members.innerHTML = '';
-  };
-
-  window.rfWatchPartySyncNow = async function () {
-    if (!state.channel) return renderStatus('Bạn chưa tham gia phòng.', false);
-    if (!state.isHost) return renderStatus('Chỉ chủ phòng có thể đồng bộ phim/tập.', false);
-    await broadcastState({ type: 'manual_sync' });
-    renderStatus('Đã gửi trạng thái xem hiện tại cho mọi người.');
-  };
-
-  window.rfWatchPartyIsHost = () => state.isHost;
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const player = $('movie-player');
-    if (!player) return;
-    player.addEventListener('load', () => {
-      if (state.isHost && !state.suppress) setTimeout(() => broadcastState({ type: 'player_loaded' }), 300);
-    });
-  });
-
-  window.addEventListener('beforeunload', () => { try { leaveChannel(); } catch (_) {} });
+(function(){
+ 'use strict';
+ if(window.__RF_WATCH_PARTY_20__)return;window.__RF_WATCH_PARTY_20__=true;
+ const sb=window.rfSupabase,$=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const state={channel:null,code:'',roomId:null,isHost:false,presenceId:'u-'+Math.random().toString(36).slice(2,10),chat:[],reconnectTimer:null,suppress:false};
+ const channelName=code=>`roflix-watch-party:${code}`;
+ function status(t,good=true){const e=$('rf-party-status');if(e)e.innerHTML=`<span style="color:${good?'#a7f3d0':'#fca5a5'}">${esc(t)}</span>`}
+ function episode(){const list=window.currentEpisodeList||[],p=$('movie-player');if(!list.length||!p)return Number(window.rfLastEpisodeIndex||0)||0;const i=list.findIndex(x=>x?.link&&p.src===x.link);return i>=0?i:(Number(window.rfLastEpisodeIndex||0)||0)}
+ function currentState(extra={}){const i=episode(),ep=(window.currentEpisodeList||[])[i]||{};return {code:state.code,movieSlug:window.currentSlug||'',movieTitle:window.currentMovieTitle||'',episodeIndex:i,episodeName:ep.name||'',sentAt:Date.now(),sender:state.presenceId,...extra}}
+ function renderPresence(ps){const e=$('rf-party-members');if(!e)return;const metas=[];Object.values(ps||{}).forEach(a=>(a||[]).forEach(x=>metas.push(x||{})));e.innerHTML=`<div style="color:#9ca3af;font-size:13px;margin-bottom:8px">👥 Đang ở trong phòng: <b style="color:#fbbf24">${metas.length}</b></div><div class="rf-party-member-list">${metas.slice(0,20).map(m=>`<span class="rf-party-member">${m.host?'👑':'👤'} ${esc(m.name||'RoFlix user')}</span>`).join('')}</div>`}
+ function renderChat(){const e=$('rf-party-chat-list');if(!e)return;e.innerHTML=state.chat.length?state.chat.slice(-50).map(m=>`<div class="rf-party-chat-msg"><b>${esc(m.name||'User')}</b><span>${new Date(m.at||Date.now()).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span><p>${esc(m.text||'')}</p></div>`).join(''):'<div class="rf-party-chat-empty">Chưa có tin nhắn. 👋</div>';e.scrollTop=e.scrollHeight}
+ async function currentName(){try{const r=await sb.auth.getUser();const u=r.data?.user;return (u?.user_metadata?.display_name||u?.email?.split('@')[0]||'RoFlix user').slice(0,40)}catch(_){return'RoFlix user'}}
+ async function persistRoom(extra={}){if(!state.roomId||!state.isHost)return;const s=currentState(extra);try{await sb.rpc('roflix_watch_room_update_state',{p_room_id:state.roomId,p_state:s,p_movie_slug:s.movieSlug||null,p_movie_title:s.movieTitle||null,p_episode_index:Number(s.episodeIndex)||0})}catch(e){console.debug('[RoFlix Party] persist',e.message||e)}}
+ async function sendChat(){const input=$('rf-party-chat-input');if(!input||!state.channel)return;const text=input.value.trim();if(!text)return;const msg={name:await currentName(),text:text.slice(0,500),at:Date.now(),sender:state.presenceId};state.chat.push(msg);renderChat();input.value='';try{await state.channel.send({type:'broadcast',event:'party_chat',payload:msg});await sb.rpc('roflix_watch_room_event',{p_room_id:state.roomId,p_event_type:'chat',p_payload:msg})}catch(_){} }
+ window.rfWatchPartySendChat=sendChat;
+ async function leave(){if(state.channel){try{await state.channel.untrack()}catch(_){}try{await sb.removeChannel(state.channel)}catch(_){} }state.channel=null;state.code='';state.roomId=null;state.isHost=false;state.chat=[];window.__rfPartyCode='';window.__rfPartyRoomId=null}
+ async function subscribe(code,isHost){await leave();state.code=code;state.isHost=!!isHost;window.__rfPartyCode=code;const snap=await sb.rpc('roflix_watch_room_snapshot',{p_code:code});if(snap.error)throw snap.error;state.roomId=snap.data?.room?.id||null;window.__rfPartyRoomId=state.roomId;const ch=sb.channel(channelName(code),{config:{broadcast:{self:false},presence:{key:state.presenceId}}});
+  ch.on('broadcast',{event:'party_state'},({payload})=>{if(payload?.sender!==state.presenceId)apply(payload)}).on('broadcast',{event:'party_chat'},({payload})=>{if(payload?.sender!==state.presenceId){state.chat.push(payload);renderChat()}}).on('presence',{event:'sync'},()=>renderPresence(ch.presenceState())).on('presence',{event:'join'},()=>{renderPresence(ch.presenceState());if(state.isHost)setTimeout(()=>broadcast({type:'member_joined'}),150)}).on('presence',{event:'leave'},()=>renderPresence(ch.presenceState()));
+  await new Promise((resolve,reject)=>{let settled=false;ch.subscribe(async st=>{if(st==='SUBSCRIBED'){settled=true;await ch.track({userId:(await sb.auth.getUser()).data?.user?.id||null,host:state.isHost,name:await currentName(),joinedAt:new Date().toISOString()});resolve()}else if((st==='CHANNEL_ERROR'||st==='TIMED_OUT')&&!settled)reject(new Error('Không thể kết nối phòng xem chung.'))})});state.channel=ch;state.chat=[];renderPresence(ch.presenceState());renderChat();status(state.isHost?'Phòng đã sẵn sàng. Bạn là chủ phòng.':'Đã tham gia phòng. Đang nhận trạng thái từ chủ phòng.');if(!state.isHost&&snap.data?.room?.state)await apply(snap.data.room.state);if(state.isHost)setTimeout(()=>broadcast({type:'room_ready'}),200)
+ }
+ async function broadcast(extra={}){if(!state.channel)return;const p=currentState(extra);try{await state.channel.send({type:'broadcast',event:'party_state',payload:p});await persistRoom(extra)}catch(e){console.debug('[RoFlix Party]',e.message||e)}}
+ async function apply(p){if(!p||state.suppress)return;state.suppress=true;try{if(p.movieSlug&&p.movieSlug!==window.currentSlug&&typeof viewMovieDetail==='function'){await viewMovieDetail(p.movieSlug,window.currentSourceId);await new Promise(r=>setTimeout(r,350))}if(Number.isFinite(Number(p.episodeIndex))&&typeof playMovieByIndex==='function'&&(window.currentEpisodeList||[])[Number(p.episodeIndex)])playMovieByIndex(Number(p.episodeIndex),{fromParty:true});status(`Đã đồng bộ: ${p.movieTitle||'phim'} · ${p.episodeName||'tập '+(Number(p.episodeIndex||0)+1)}`)}catch(e){status('Không thể đồng bộ phim/tập.',false)}finally{setTimeout(()=>state.suppress=false,500)}}
+ window.rfWatchPartyBroadcast=extra=>{if(state.isHost&&!state.suppress)broadcast(extra)};
+ window.rfWatchPartyCreate=async function(){const title=($('rf-party-title')?.value||'').trim()||(window.currentMovieTitle||'Phòng xem RoFlix');const result=$('rf-party-result');if(result)result.textContent='⏳ Đang tạo phòng...';try{const r=await sb.rpc('roflix_create_watch_room',{p_name:title,p_movie_slug:window.currentSlug||null,p_movie_title:window.currentMovieTitle||null});if(r.error)throw r.error;await subscribe(r.data.code,true);if(result)result.innerHTML=`<div>Đã tạo phòng <b>${esc(title)}</b></div><div style="margin-top:6px">Mã mời: <strong style="font-size:26px;color:#fbbf24">${esc(r.data.code)}</strong></div><button onclick="navigator.clipboard?.writeText('${esc(r.data.code)}')" class="bg-gray-700 rounded-lg px-3 py-2 mt-2">Sao chép mã</button>`;await broadcast({type:'host_created',roomTitle:title})}catch(e){if(result)result.innerHTML=`<span style="color:#fca5a5">${esc(e.message||'Không tạo được phòng.')}</span>`}};
+ window.rfWatchPartyJoin=async function(){const code=($('rf-party-join')?.value||'').trim().toUpperCase();if(!/^RF-[A-Z0-9]{5,10}$/.test(code))return status('Mã phòng không hợp lệ.',false);status('⏳ Đang kết nối...');try{const r=await sb.rpc('roflix_join_watch_room',{p_code:code});if(r.error)throw r.error;await subscribe(r.data.code,false)}catch(e){status(e.message||'Không thể tham gia phòng.',false)}};
+ window.rfWatchPartyLeave=async()=>{await leave();status('Đã rời phòng xem chung.');if($('rf-party-members'))$('rf-party-members').innerHTML=''};
+ window.rfWatchPartySyncNow=async()=>{if(!state.channel)return status('Bạn chưa tham gia phòng.',false);if(!state.isHost)return status('Chỉ chủ phòng có thể đồng bộ.',false);await broadcast({type:'manual_sync'});status('Đã đồng bộ cho mọi người.')};
+ window.rfWatchPartyIsHost=()=>state.isHost;
+ window.rfWatchPartyGetRoom=()=>({code:state.code,roomId:state.roomId,isHost:state.isHost});
+ window.addEventListener('online',()=>{if(state.code&&!state.channel){clearTimeout(state.reconnectTimer);state.reconnectTimer=setTimeout(()=>subscribe(state.code,state.isHost).catch(()=>{}),500)}});
+ window.addEventListener('beforeunload',()=>{try{leave()}catch(_){}});
+ document.addEventListener('DOMContentLoaded',()=>{const p=$('movie-player');if(p)p.addEventListener('load',()=>{if(state.isHost&&!state.suppress)setTimeout(()=>broadcast({type:'player_loaded'}),250)})});
 })();
