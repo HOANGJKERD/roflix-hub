@@ -7,6 +7,7 @@
   let rows=[];
   const cache=new Map();
   const esc=s=>String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
+  const GENRE_ALIAS={'chinh-kich':'chinh-kich','drama':'chinh-kich','chinh kich':'chinh-kich','tam-ly':'tam-ly','tam ly':'tam-ly','hai':'hai-huoc','hai-huoc':'hai-huoc','hai-hước':'hai-huoc','bi-an':'bi-an','gia-dinh':'gia-dinh','hanh-dong':'hanh-dong','vien-tuong':'vien-tuong','khoa-hoc-vien-tuong':'khoa-hoc-vien-tuong','hinh-su':'hinh-su','kinh-di':'kinh-di','phieu-luu':'phieu-luu','co-trang':'co-trang','vo-thuat':'vo-thuat','tinh-cam':'tinh-cam','lang-man':'tinh-cam','than-thoai':'than-thoai','chien-tranh':'chien-tranh','hoc-duong':'hoc-duong','hoat-hinh':'hoat-hinh','tai-lieu':'tai-lieu','am-nhac':'am-nhac','the-thao':'the-thao','kinh-dien':'kinh-dien','lich-su':'lich-su','mien-tay':'mien-tay'};
   async function load(){
     if(cache.has('all'))return cache.get('all');
     const p=(async()=>{if(!sb)return [];try{const r=await sb.from('roflix_movie_curation').select('source_id,movie_slug,movie_title,origin_name,poster_url,year,type_key,list_keys,genre_keys,quality,lang,status').limit(5000);if(r.error)throw r.error;rows=r.data||[];return rows}catch(e){console.debug('[RoFlix Curation]',e.message||e);return []}})();
@@ -14,6 +15,11 @@
   }
   const ready=load();
   window.rfMovieCuration={ready,rows:()=>rows,get:(source,slug)=>rows.find(x=>x.source_id===source&&x.movie_slug===slug)||null,refresh:async()=>{cache.clear();return load()}};
+  function normalizeGenreKey(value){
+    const raw=String(value||'').toLowerCase().trim();
+    const normalized=raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+    return GENRE_ALIAS[raw]||GENRE_ALIAS[normalized]||normalized;
+  }
   function normalizeSource(raw){return raw&&raw!=='custom'?raw:'kkphim'}
   function existingSlugs(){const set=new Set();document.querySelectorAll('#movie-grid-container .movie-card-premium').forEach(card=>{const x=(card.getAttribute('onclick')||'').match(/viewMovieDetail\(['\"]([^'\"]+)/);if(x?.[1])set.add(x[1])});return set}
   function card(row){
@@ -23,10 +29,10 @@
     const genres=(row.genre_keys||[]).join(', ');
     return '<div onclick="viewMovieDetail(\''+slug+'\',\''+source+'\')" class="movie-card-premium card-stagger rf-curated-card" data-rf-curated="1"><div class="card-poster"><img src="'+esc(poster)+'" alt="'+esc(row.movie_title)+'" loading="lazy" decoding="async" onerror="this.src=\'https://placehold.co/300x400/1a1a1a/666?text=No+Image\'"><div class="card-overlay"><button class="watch-btn btn-ripple" onclick="event.stopPropagation();playMovie(\''+slug+'\',\''+source+'\')"><i class="fa-solid fa-play"></i> Xem Ngay</button></div><div class="card-badges"><span class="badge eps">'+esc(row.quality||'HD')+'</span></div></div><div class="card-info"><div class="card-title">'+esc(row.movie_title)+'</div><div class="card-meta"><span>'+esc(genres)+'</span><span>'+esc(row.year||'')+'</span></div></div></div>';
   }
-  function appendMatches(listKey,genreKey){
+  function appendMatches(listKey,genreArg){
     const box=document.getElementById('movie-grid-container');if(!box)return;
-    const existing=existingSlugs();
-    let matches=rows.filter(r=>r.source_id!=='custom'&&((listKey&&Array.isArray(r.list_keys)&&r.list_keys.includes(listKey))||(genreKey&&Array.isArray(r.genre_keys)&&r.genre_keys.includes(genreKey)))&&!existing.has(r.movie_slug));
+    const existing=existingSlugs();const gKey=normalizeGenreKey(genreArg);
+    const matches=rows.filter(r=>r.source_id!=='custom'&&((listKey&&Array.isArray(r.list_keys)&&r.list_keys.includes(listKey))||(genreArg&&Array.isArray(r.genre_keys)&&r.genre_keys.includes(gKey)))&&!existing.has(r.movie_slug));
     if(!matches.length)return;
     box.insertAdjacentHTML('beforeend',matches.slice(0,24).map(card).join(''));
   }
