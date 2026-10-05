@@ -13,6 +13,7 @@
   const DEFAULT_SERVER = 'DU';
   const cache = new Map();
   let wrapped = false;
+  let wrappedEpisodePlayer = false;
 
   function text(v) { return String(v == null ? '' : v).trim(); }
   function norm(v) {
@@ -135,6 +136,27 @@
     if (typeof showToastPro === 'function') showToastPro(type, title, message);
     else if (typeof showToast === 'function') showToast(type, title, message);
   }
+  function installEpisodePlayer() {
+    if (wrappedEpisodePlayer || typeof window.playMovieByIndex !== 'function') return false;
+    const original = window.playMovieByIndex;
+    window.playMovieByIndex = async function (index, options) {
+      const state = window.__ROFLIX_ANIMAPPER_STATE__;
+      if (state?.resolved?.episodes?.[index] && !currentEpisodeList?.[index]?.link) {
+        try {
+          const ep = state.resolved.episodes[index];
+          notify('info', 'AniMapper', `Đang tải Tập ${ep.name} Vietsub...`);
+          const next = await getSource(ep.episodeId);
+          currentEpisodeList[index] = { name: ep.name, link: next.url };
+        } catch (err) {
+          notify('error', 'Không tải được tập', err.message || 'AniMapper không trả về nguồn.');
+          return;
+        }
+      }
+      return original(index, options);
+    };
+    wrappedEpisodePlayer = true;
+    return true;
+  }
   async function play(anime) {
     const resolved = await resolve(anime);
     const first = resolved.episodes[0];
@@ -147,20 +169,9 @@
     currentMovieData = { title, origin_name: '', summary: anime?.description || '', _src: 'animapper', poster: anime?.coverImage?.large || '' };
     currentEpisodeList = resolved.episodes.map(ep => ({ name: ep.name, link: '' }));
     currentEpisodeList[0].link = source.url;
+    window.__ROFLIX_ANIMAPPER_STATE__ = { anime, resolved, title };
+    installEpisodePlayer();
     playMovieByLink(source.url, title, first.name);
-
-    // Keep all AniMapper episode IDs so the existing episode UI can request each stream lazily.
-    window.__ROFLIX_ANIMAPPER_STATE__ = {
-      anime, resolved, title,
-      async playEpisode(index) {
-        const ep = resolved.episodes[index];
-        if (!ep) return;
-        notify('info', 'AniMapper', `Đang tải Tập ${ep.name} Vietsub...`);
-        const next = await getSource(ep.episodeId);
-        currentEpisodeList[index] = { name: ep.name, link: next.url };
-        if (typeof playMovieByLink === 'function') playMovieByLink(next.url, title, ep.name);
-      }
-    };
     notify('success', 'Anime Vietsub', `Đã kết nối AniMapper • ${resolved.episodes.length} tập`);
   }
   async function wrappedWatch(anime, fallback) {
@@ -174,12 +185,14 @@
     }
   }
   function install() {
-    if (wrapped || !window.roflixAnime?.watch) return false;
-    const original = window.roflixAnime.watch;
-    window.roflixAnime.watch = anime => wrappedWatch(anime, original);
-    window.roflixAnime.animapper = { resolve, getSource, play };
-    wrapped = true;
-    return true;
+    if (!wrapped && window.roflixAnime?.watch) {
+      const original = window.roflixAnime.watch;
+      window.roflixAnime.watch = anime => wrappedWatch(anime, original);
+      window.roflixAnime.animapper = { resolve, getSource, play };
+      wrapped = true;
+    }
+    installEpisodePlayer();
+    return wrapped;
   }
   function boot() {
     if (install()) return;
