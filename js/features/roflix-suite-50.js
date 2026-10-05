@@ -1,5 +1,4 @@
 /* RoFlix public shell integration.
- *
  * Keep the three requested shortcuts inside the movie-source controls,
  * restore the original Cloud Center launcher, and keep a visible auth entry
  * in the main header. Do not create a floating shortcut toolbar.
@@ -31,6 +30,7 @@
         margin-left:8px;
       }
       #rf-source-shortcuts button,
+      #rf-source-shortcuts a,
       #rf-header-login {
         appearance:none;
         border:1px solid rgba(255,255,255,.10);
@@ -45,6 +45,7 @@
         transition:background .18s ease,border-color .18s ease,transform .18s ease;
       }
       #rf-source-shortcuts button:hover,
+      #rf-source-shortcuts a:hover,
       #rf-header-login:hover {
         background:rgba(245,158,11,.13);
         border-color:rgba(245,158,11,.34);
@@ -122,7 +123,7 @@
     wrap.innerHTML = `
       <button type="button" id="rf-shortcut-collection">📚 Bộ sưu tập</button>
       <button type="button" id="rf-shortcut-cloud">🔄 Đồng bộ thiết bị</button>
-      <a href="admin.html" id="rf-shortcut-admin" style="display:inline-flex;align-items:center">🛠️ Quản trị</a>
+      <a href="admin.html" id="rf-shortcut-admin">🛠️ Quản trị</a>
     `;
     const note = host.querySelector('#source-note');
     if (note) note.insertAdjacentElement('afterend', wrap);
