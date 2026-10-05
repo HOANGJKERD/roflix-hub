@@ -1,6 +1,9 @@
 /* RoFlix public shortcut bar.
  * Keep the public movie UI clean while restoring the three user-requested
  * shortcuts: Collection, Device Sync, and Admin.
+ *
+ * Admin 6 security state is also enforced here so force-logout / account
+ * restrictions can take effect without a page refresh.
  */
 (function () {
   'use strict';
@@ -28,7 +31,6 @@
         -webkit-backdrop-filter: blur(16px);
         box-shadow: 0 12px 36px rgba(0,0,0,.28);
       }
-      /* cloud-center.js owns its legacy launcher; this bar is the only public launcher. */
       #rf-cloud-open { display: none !important; }
       #rf-public-shortcuts button,
       #rf-public-shortcuts a {
@@ -84,8 +86,48 @@
     window.showToast?.('info', 'Đồng bộ thiết bị', 'Cloud Center chưa sẵn sàng.');
   }
 
+  function installSecurityRealtime() {
+    const sb = window.rfSupabase;
+    if (!sb || window.__ROFLIX_ADMIN6_SECURITY_RT__) return;
+    window.__ROFLIX_ADMIN6_SECURITY_RT__ = true;
+
+    const start = async () => {
+      try {
+        const { data } = await sb.auth.getUser();
+        const user = data?.user;
+        if (!user) return;
+        const { data: profile } = await sb.from('profiles')
+          .select('id,account_status,security_version,suspended_until')
+          .eq('id', user.id)
+          .maybeSingle();
+        const baseline = Number(profile?.security_version || 1);
+
+        const enforce = async (next) => {
+          const status = String(next?.account_status || 'active');
+          const version = Number(next?.security_version || baseline);
+          const expired = next?.suspended_until && new Date(next.suspended_until).getTime() <= Date.now();
+          if (status === 'banned' || (status === 'suspended' && !expired) || version > baseline) {
+            try { await sb.auth.signOut({ scope: 'local' }); } catch (_) {}
+            window.showToast?.('warning', 'Phiên đăng nhập đã bị thu hồi', 'Vui lòng đăng nhập lại để tiếp tục.');
+            setTimeout(() => { if (location.pathname.endsWith('admin.html')) location.href = 'index.html'; else location.reload(); }, 700);
+          }
+        };
+
+        sb.channel('roflix-security-state-' + user.id)
+          .on('postgres_changes', {
+            event: 'UPDATE', schema: 'public', table: 'profiles', filter: 'id=eq.' + user.id
+          }, payload => enforce(payload.new))
+          .subscribe();
+      } catch (_) {}
+    };
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+    else start();
+  }
+
   function render() {
     css();
+    installSecurityRealtime();
 
     const oldToolbar = document.getElementById('roflix-upgrade-toolbar');
     if (oldToolbar) {
