@@ -28,6 +28,8 @@
         -webkit-backdrop-filter: blur(16px);
         box-shadow: 0 12px 36px rgba(0,0,0,.28);
       }
+      /* cloud-center.js owns its legacy launcher; this bar is the only public launcher. */
+      #rf-cloud-open { display: none !important; }
       #rf-public-shortcuts button,
       #rf-public-shortcuts a {
         appearance: none;
