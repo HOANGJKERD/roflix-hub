@@ -27,6 +27,10 @@
   if(document.getElementById('roflix-movie-categorization-admin'))return;
   const s=document.createElement('script');s.id='roflix-movie-categorization-admin';s.src='js/admin/movie-categorization-admin.js?v=1';s.async=false;document.body.appendChild(s)
  }
+ function loadAdmin6(){
+  if(document.getElementById('roflix-admin6-control-plane'))return;
+  const s=document.createElement('script');s.id='roflix-admin6-control-plane';s.src='js/admin/admin-6-control-plane.js?v=1';s.async=false;document.body.appendChild(s)
+ }
  window.rfAdminLoadLiveComments=comments;window.rfAdminCheckSources=health;
- document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{comments();health();loadMovieControl();loadMovieCategorization()},700);const nav=$('admin-nav');if(nav&&!document.getElementById('rf-admin-v4-badge')){const b=document.createElement('span');b.id='rf-admin-v4-badge';b.className='badge';b.textContent='v4';document.querySelector('.topbar-left')?.appendChild(b)}});
+ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{comments();health();loadMovieControl();loadMovieCategorization();loadAdmin6()},700);const nav=$('admin-nav');if(nav&&!document.getElementById('rf-admin-v4-badge')){const b=document.createElement('span');b.id='rf-admin-v4-badge';b.className='badge';b.textContent='v4 + 6';document.querySelector('.topbar-left')?.appendChild(b)}});
 })();
