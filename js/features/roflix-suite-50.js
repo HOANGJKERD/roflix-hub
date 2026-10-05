@@ -17,6 +17,15 @@
     document.head.appendChild(s);
   }
 
+  function loadAnimeHub() {
+    if (document.getElementById('rf-anime-hub-script')) return;
+    const s = document.createElement('script');
+    s.id = 'rf-anime-hub-script';
+    s.src = 'js/features/anime-hub.js?v=1';
+    s.async = false;
+    document.head.appendChild(s);
+  }
+
   function css() {
     if (document.getElementById('rf-suite-placement-css')) return;
     const style = document.createElement('style');
@@ -158,6 +167,7 @@
   function render() {
     css();
     loadFeatureGates();
+    loadAnimeHub();
     installSecurityRealtime();
 
     const oldToolbar = document.getElementById('roflix-upgrade-toolbar');
