@@ -1,7 +1,7 @@
-/* RoFlix Anime Hub
- * Additive feature: keeps the existing RoFlix shell/layout intact.
- * Anime catalog is sourced only from the existing movie providers and
- * filtered to animation titles that are anime/donghua-style entries.
+/* RoFlix Anime Catalog 3.0
+ * Shell/layout stays untouched.
+ * Playback source: KKPhim + VSMOV only.
+ * Metadata enrichment: AniList + Jikan.
  */
 (function () {
   'use strict';
@@ -10,87 +10,76 @@
 
   const PAGE_SIZE = 24;
   const SOURCE_IDS = ['kkphim', 'vsmov'];
+  const ANILIST_URL = 'https://graphql.anilist.co';
+  const JIKAN_URL = 'https://api.jikan.moe/v4';
   const providerState = new Map();
+  const metadataCache = new Map();
   const catalog = [];
   const seen = new Set();
+  let jikanNextAt = 0;
 
-  function text(value) {
-    return String(value || '').trim();
-  }
+  const ANILIST_QUERY = `
+    query ($search:String) {
+      Page(page:1, perPage:6) {
+        media(search:$search, type:ANIME, isAdult:false, sort:SEARCH_MATCH) {
+          id
+          idMal
+          title { romaji english native userPreferred }
+          format
+          status
+          episodes
+          averageScore
+          genres
+          countryOfOrigin
+          seasonYear
+          description(asHtml:false)
+          coverImage { large extraLarge }
+          siteUrl
+        }
+      }
+    }
+  `;
 
-  function normalize(value) {
-    return text(value)
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, ' ')
-      .trim();
-  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const text = v => String(v == null ? '' : v).trim();
+  const normalize = v => text(v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const esc = v => typeof escapeHtml === 'function' ? escapeHtml(text(v)) : text(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   function listNames(value) {
-    if (!value) return [];
-    if (Array.isArray(value)) {
-      return value.map(item => {
-        if (typeof item === 'string') return item;
-        if (item && typeof item === 'object') return item.name || item.slug || item.title || '';
-        return '';
-      }).map(text).filter(Boolean);
-    }
-    return [text(value)].filter(Boolean);
+    if (Array.isArray(value)) return value.map(v => typeof v === 'string' ? v : (v?.name || v?.slug || v?.title || '')).map(text).filter(Boolean);
+    return text(value) ? [text(value)] : [];
   }
 
   function rawNames(movie, fields) {
-    const values = [];
-    for (const field of fields) values.push(...listNames(movie?.[field]));
-    return values;
+    return fields.flatMap(field => listNames(movie?.[field])).map(normalize);
   }
 
   function isAnimeItem(movie) {
-    const categories = rawNames(movie, ['category', 'categories']).map(normalize);
-    const countries = rawNames(movie, ['country', 'countries', 'region', 'regions']).map(normalize);
-    const keywords = rawNames(movie, ['keyword', 'keywords', 'tags']).map(normalize);
+    const cats = rawNames(movie, ['category', 'categories']);
+    const countries = rawNames(movie, ['country', 'countries', 'region', 'regions']);
+    const keywords = rawNames(movie, ['keyword', 'keywords', 'tags']);
     const type = normalize(movie?.type);
     const tmdbType = normalize(movie?.tmdb?.type);
-
-    const isAnimation =
-      categories.some(v => v === 'hoat hinh' || v.includes('hoat hinh')) ||
-      type === 'hoathinh' ||
-      tmdbType === 'animation';
-
-    if (!isAnimation) return false;
-
-    const explicitAnime = keywords.some(v => v === 'anime' || v.includes('anime'));
-    const asianAnimation = countries.some(v =>
-      v.includes('nhat ban') ||
-      v.includes('trung quoc') ||
-      v.includes('han quoc') ||
-      v.includes('dai loan')
-    );
-
-    return explicitAnime || asianAnimation;
+    const animation = cats.some(v => v.includes('hoat hinh') || v === 'anime') || type === 'hoathinh' || tmdbType === 'animation';
+    if (!animation) return false;
+    return keywords.some(v => v.includes('anime')) || countries.some(v => /nhat ban|trung quoc|han quoc|dai loan/.test(v));
   }
 
   function dedupeKey(movie) {
-    const imdb = text(movie?.imdb?.id);
-    const tmdb = text(movie?.tmdb?.id);
+    const imdb = text(movie?.imdb?.id), tmdb = text(movie?.tmdb?.id);
     if (imdb) return 'imdb:' + imdb;
     if (tmdb) return 'tmdb:' + tmdb;
-    const title = normalize(movie?.name || movie?.origin_name || movie?.slug);
-    const year = text(movie?.year);
-    return 'title:' + title + ':' + year;
+    return 'title:' + normalize(movie?.name || movie?.origin_name || movie?.slug) + ':' + text(movie?.year);
   }
 
   function addRawMovies(items, sid) {
     let added = 0;
     for (const item of items || []) {
-      if (!item || !item.slug || !isAnimeItem(item)) continue;
+      if (!item?.slug || !isAnimeItem(item)) continue;
       item._src = sid;
       const key = dedupeKey(item);
       if (seen.has(key)) continue;
-      seen.add(key);
-      catalog.push(item);
-      added++;
+      seen.add(key); catalog.push(item); added++;
     }
     return added;
   }
@@ -98,305 +87,238 @@
   async function fetchProviderPage(sid, page) {
     const key = sid + ':' + page;
     if (providerState.has(key)) return providerState.get(key);
-
     const promise = (async () => {
       try {
-        const url = srcListUrl(`/the-loai/hoat-hinh?page=${page}`, sid);
-        const data = await fetchJson(url);
+        const data = await fetchJson(srcListUrl(`/the-loai/hoat-hinh?page=${page}`, sid));
         const wrapped = unwrapList(data);
-        const items = Array.isArray(wrapped.items) ? wrapped.items : [];
         const pagination = wrapped.pag || {};
-        const totalPages = Number(
-          pagination.totalPages || data.last_page || data.total_pages || 1
-        ) || 1;
-        const totalItems = Number(
-          pagination.totalItems || data.total || 0
-        ) || 0;
-
         return {
-          sid,
-          page,
-          items,
-          totalPages,
-          totalItems,
+          sid, page, items: Array.isArray(wrapped.items) ? wrapped.items : [],
+          totalPages: Number(pagination.totalPages || data.last_page || data.total_pages || 1) || 1,
           ok: true
         };
       } catch (error) {
-        console.warn('[RoFlix Anime] provider failed:', sid, page, error);
-        return {
-          sid,
-          page,
-          items: [],
-          totalPages: page,
-          totalItems: 0,
-          ok: false
-        };
+        console.warn('[RoFlix Anime 3.0] provider failed', sid, page, error);
+        return { sid, page, items:[], totalPages:page, ok:false };
       }
     })();
-
     providerState.set(key, promise);
     return promise;
   }
 
   async function ensureCatalog(targetCount) {
-    let page = 1;
-    let stalledRounds = 0;
-
+    let page = 1, stalled = 0;
     while (catalog.length < targetCount && page <= 60) {
-      const results = await Promise.all(
-        SOURCE_IDS.map(sid => fetchProviderPage(sid, page))
-      );
-
-      let added = 0;
-      let anyProviderHasMore = false;
-
+      const results = await Promise.all(SOURCE_IDS.map(sid => fetchProviderPage(sid, page)));
+      let added = 0, anyMore = false;
       for (const result of results) {
         added += addRawMovies(result.items, result.sid);
-        if (result.page < result.totalPages) anyProviderHasMore = true;
+        if (result.page < result.totalPages) anyMore = true;
       }
-
-      if (added === 0) stalledRounds++;
-      else stalledRounds = 0;
-
-      if (!anyProviderHasMore) break;
-      if (stalledRounds >= 4) break;
-
+      stalled = added ? 0 : stalled + 1;
+      if (!anyMore || stalled >= 4) break;
       page++;
     }
+    return { hasMore: page <= 60 && SOURCE_IDS.some(sid => !providerState.has(sid + ':' + page)) };
+  }
 
-    return {
-      hasMore: page <= 60 && SOURCE_IDS.some(sid => {
-        const state = providerState.get(sid + ':' + page);
-        return !state;
-      })
-    };
+  function animeTitle(item) { return text(item?.name || item?.origin_name || item?.slug); }
+
+  function titleVariants(item) {
+    return [...new Set([item?.name, item?.origin_name, item?.slug].map(text).filter(Boolean))];
+  }
+
+  function scoreMatch(provider, ani) {
+    const p = normalize(provider?.name || provider?.origin_name || provider?.slug);
+    if (!p || !ani) return -1;
+    const titles = [ani.title?.userPreferred, ani.title?.english, ani.title?.romaji, ani.title?.native].map(normalize).filter(Boolean);
+    let score = 0;
+    for (const t of titles) {
+      if (p === t) score = Math.max(score, 100);
+      else if (p.includes(t) || t.includes(p)) score = Math.max(score, 82);
+      else {
+        const a = new Set(p.split(' ')), b = new Set(t.split(' '));
+        let common = 0; a.forEach(w => { if (w.length > 1 && b.has(w)) common++; });
+        score = Math.max(score, Math.min(72, common * 12));
+      }
+    }
+    const py = Number(provider?.year || 0), ay = Number(ani?.seasonYear || 0);
+    if (py && ay) score += py === ay ? 18 : Math.abs(py - ay) === 1 ? 7 : -15;
+    return score;
+  }
+
+  async function anilistSearch(provider) {
+    const cacheKey = 'al:' + normalize(animeTitle(provider));
+    if (metadataCache.has(cacheKey)) return metadataCache.get(cacheKey);
+    const queryTitle = titleVariants(provider)[0];
+    if (!queryTitle) return null;
+    try {
+      const r = await fetch(ANILIST_URL, {
+        method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({query:ANILIST_QUERY, variables:{search:queryTitle}})
+      });
+      if (!r.ok) throw new Error('AniList ' + r.status);
+      const json = await r.json();
+      const candidates = json?.data?.Page?.media || [];
+      const best = candidates.map(a => ({a, score:scoreMatch(provider,a)})).sort((x,y) => y.score-x.score)[0];
+      const value = best && best.score >= 65 ? best.a : null;
+      metadataCache.set(cacheKey, value);
+      return value;
+    } catch (e) {
+      console.warn('[RoFlix Anime 3.0] AniList metadata failed', e);
+      return null;
+    }
+  }
+
+  async function jikanGet(malId) {
+    if (!malId) return null;
+    const wait = Math.max(0, jikanNextAt - Date.now());
+    if (wait) await sleep(wait);
+    jikanNextAt = Date.now() + 360;
+    try {
+      const r = await fetch(`${JIKAN_URL}/anime/${encodeURIComponent(malId)}/full`, {headers:{'Accept':'application/json'}});
+      if (!r.ok) throw new Error('Jikan ' + r.status);
+      const json = await r.json();
+      return json?.data || null;
+    } catch (e) {
+      console.warn('[RoFlix Anime 3.0] Jikan metadata failed', e);
+      return null;
+    }
+  }
+
+  async function enrich(provider) {
+    const key = dedupeKey(provider);
+    if (metadataCache.has('meta:' + key)) return metadataCache.get('meta:' + key);
+    const ani = await anilistSearch(provider);
+    const mal = await jikanGet(ani?.idMal);
+    const value = {ani, mal};
+    metadataCache.set('meta:' + key, value);
+    return value;
   }
 
   function renderPagination(page, hasMore) {
     const host = document.getElementById('pagination-container');
     if (!host) return;
-
-    const buttons = [];
-    if (page > 1) {
-      buttons.push(
-        `<button onclick="window.roflixAnime.open(${page - 1})" class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-sm transition">‹</button>`
-      );
-    }
-
-    buttons.push(
-      `<button class="px-4 py-2 rounded-xl bg-amber-500 text-black font-bold text-sm transition">${page}</button>`
-    );
-
+    const b = [];
+    if (page > 1) b.push(`<button onclick="window.roflixAnime.open(${page-1})" class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-sm">‹</button>`);
+    b.push(`<button class="px-4 py-2 rounded-xl bg-amber-500 text-black font-bold text-sm">${page}</button>`);
     if (hasMore) {
-      buttons.push(
-        `<button onclick="window.roflixAnime.open(${page + 1})" class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-sm transition">${page + 1}</button>`
-      );
-      buttons.push(
-        `<button onclick="window.roflixAnime.open(${page + 1})" class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-sm transition">›</button>`
-      );
+      b.push(`<button onclick="window.roflixAnime.open(${page+1})" class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-sm">${page+1}</button>`);
+      b.push(`<button onclick="window.roflixAnime.open(${page+1})" class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-sm">›</button>`);
     }
-
-    host.innerHTML = `<div class="flex items-center justify-center gap-2 flex-wrap">${buttons.join('')}</div>`;
+    host.innerHTML = `<div class="flex items-center justify-center gap-2 flex-wrap">${b.join('')}</div>`;
   }
 
   function renderCards(movies) {
-    const container = document.getElementById('movie-grid-container');
-    if (!container) return;
-
+    const host = document.getElementById('movie-grid-container');
+    if (!host) return;
     if (!movies.length) {
-      container.innerHTML = `
-        <div class="col-span-full">
-          <div class="empty-state">
-            <div class="empty-icon"><i class="fa-solid fa-film"></i></div>
-            <h3>Chưa có Anime phù hợp</h3>
-            <p>RoFlix chưa nhận được dữ liệu Anime từ các nguồn phim hiện tại.</p>
-          </div>
-        </div>
-      `;
+      host.innerHTML = `<div class="col-span-full"><div class="empty-state"><div class="empty-icon"><i class="fa-solid fa-film"></i></div><h3>Chưa có Anime phù hợp</h3><p>Không tìm thấy Anime trong KKPhim/VSMOV.</p></div></div>`;
       return;
     }
-
-    const mapped = movies
-      .map(item => mapMovieData(item))
-      .filter(movie => isValidPosterUrl(movie.poster));
-
-    container.innerHTML = mapped.map(m => `
-      <div onclick="viewMovieDetail('${m.slug}', '${m._src || ''}')" class="movie-card-premium card-stagger">
+    const mapped = movies.map(item => mapMovieData(item)).filter(m => isValidPosterUrl(m.poster));
+    host.innerHTML = mapped.map((m, i) => `
+      <div class="movie-card-premium card-stagger" data-rf-anime-card="${i}" data-rf-slug="${esc(m.slug)}" data-rf-src="${esc(m._src || '')}" tabindex="0" role="button">
         <div class="card-poster">
-          <img src="${m.poster}" alt="${escapeHtml(m.title)}" loading="lazy" decoding="async"
-               onerror="this.src='https://placehold.co/300x400/1a1a1a/666?text=No+Image'">
+          <img src="${esc(m.poster)}" alt="${esc(m.title)}" loading="lazy" decoding="async" onerror="this.src='https://placehold.co/300x400/1a1a1a/666?text=Anime'">
           <div class="card-overlay">
-            <button class="watch-btn btn-ripple" onclick="event.stopPropagation(); playMovie('${m.slug}', '${m._src || ''}')">
-              <i class="fa-solid fa-play"></i> Xem Ngay
-            </button>
+            <button class="watch-btn btn-ripple" data-rf-watch="1"><i class="fa-solid fa-play"></i> Xem Ngay</button>
             <div class="card-actions">
-              <button onclick="event.stopPropagation(); toggleFavorite('${m.slug}')" title="Yêu thích">
-                <i class="fa-${isFavorite(m.slug) ? 'solid' : 'regular'} fa-heart"></i>
-              </button>
-              <button onclick="event.stopPropagation(); viewMovieDetail('${m.slug}', '${m._src || ''}')" title="Chi tiết">
-                <i class="fa-solid fa-circle-info"></i>
-              </button>
+              <button data-rf-fav="1" title="Yêu thích"><i class="fa-${isFavorite(m.slug) ? 'solid' : 'regular'} fa-heart"></i></button>
+              <button data-rf-info="1" title="Chi tiết"><i class="fa-solid fa-circle-info"></i></button>
             </div>
           </div>
           <div class="card-badges">
-            <span class="src-chip">${escapeHtml((m._src || '').toUpperCase())}</span>
-            <span class="badge" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff">ANIME</span>
-            ${parseFloat(m.rating) >= 8 ? '<span class="badge hot">🔥 Hot</span>' : ''}
-            ${m.episode_total > 1 ? `<span class="badge eps">${m.episode_total} Tập</span>` : '<span class="badge eps">HD</span>'}
-            ${m.status === 'Hoàn thành' ? '<span class="badge" style="background:#10b981;color:#fff">✅ Full</span>' : ''}
+            <span class="src-chip">${esc((m._src || '').toUpperCase())}</span>
+            <span class="badge" style="background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff">ANIME</span>
+            <span class="badge eps" data-rf-eps>${Number(m.episode_total) > 1 ? esc(m.episode_total + ' Tập') : 'HD'}</span>
           </div>
         </div>
         <div class="card-info">
-          <div class="card-title">${escapeHtml(m.title)}</div>
-          <div class="card-meta">
-            <span class="rating"><i class="fa-solid fa-star"></i> ${m.rating || 'N/A'}${m.imdbId ? ` · <a href="https://www.imdb.com/title/${m.imdbId}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-amber-400/80 hover:underline text-[10px]">IMDb</a>` : ''}</span>
-            <span>${m.year}</span>
-          </div>
+          <div class="card-title" data-rf-title>${esc(m.title)}</div>
+          <div class="card-meta"><span class="rating" data-rf-rating><i class="fa-solid fa-star"></i> ${esc(m.rating || 'N/A')}</span><span data-rf-year>${esc(m.year)}</span></div>
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
+
+    host.querySelectorAll('[data-rf-anime-card]').forEach((card, i) => {
+      const sourceItem = movies[i];
+      card.addEventListener('click', e => {
+        if (e.target.closest('button')) return;
+        viewMovieDetail(sourceItem.slug, sourceItem._src || '');
+      });
+      card.addEventListener('keydown', e => {
+        if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) { e.preventDefault(); viewMovieDetail(sourceItem.slug, sourceItem._src || ''); }
+      });
+      card.querySelector('[data-rf-watch]')?.addEventListener('click', e => { e.stopPropagation(); playMovie(sourceItem.slug, sourceItem._src || ''); });
+      card.querySelector('[data-rf-info]')?.addEventListener('click', e => { e.stopPropagation(); viewMovieDetail(sourceItem.slug, sourceItem._src || ''); });
+      card.querySelector('[data-rf-fav]')?.addEventListener('click', e => { e.stopPropagation(); toggleFavorite(sourceItem.slug); });
+      enrich(sourceItem).then(meta => {
+        if (!meta) return;
+        const title = meta.ani?.title?.userPreferred || meta.ani?.title?.english || meta.ani?.title?.romaji;
+        const score = meta.ani?.averageScore ? Number(meta.ani.averageScore) / 10 : Number(meta.mal?.score || 0);
+        const year = meta.ani?.seasonYear || meta.mal?.year;
+        if (title) card.querySelector('[data-rf-title]').textContent = title;
+        if (score) card.querySelector('[data-rf-rating]').innerHTML = `<i class="fa-solid fa-star"></i> ${score.toFixed(1)} <span class="text-[9px] opacity-60">AL</span>`;
+        if (year) card.querySelector('[data-rf-year]').textContent = String(year);
+      }).catch(() => {});
+    });
   }
 
   async function open(page = 1) {
     page = Math.max(1, Number(page) || 1);
-    const container = document.getElementById('movie-grid-container');
-    if (!container) return;
-
+    const host = document.getElementById('movie-grid-container');
+    if (!host) return;
     window.__ROFLIX_ANIME_MODE__ = true;
-    searchKeyword = '';
-    currentGenreSlug = '';
-    currentCountrySlug = '';
-    homePriorityMode = false;
-    currentListEndpoint = 'phim-moi-cap-nhat';
-    currentPage = page;
-
-    const titleEl = document.getElementById('list-title');
-    if (titleEl) titleEl.textContent = 'Anime';
-
-    const si = document.getElementById('search-input');
-    const sm = document.getElementById('search-input-mobile');
-    if (si) si.value = '';
-    if (sm) sm.value = '';
-
-    navigateTo('main-site');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    container.innerHTML = Array(12).fill(0).map(() => `
-      <div class="skeleton-card-premium">
-        <div class="skeleton-poster"></div>
-        <div class="skeleton-info">
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
-        </div>
-      </div>
-    `).join('');
-
-    const target = page * PAGE_SIZE + 1;
-    const result = await ensureCatalog(target);
+    searchKeyword = ''; currentGenreSlug = ''; currentCountrySlug = ''; homePriorityMode = false; currentListEndpoint = 'phim-moi-cap-nhat'; currentPage = page;
+    const title = document.getElementById('list-title'); if (title) title.textContent = 'Anime';
+    document.getElementById('search-input')?.setAttribute('value','');
+    const si = document.getElementById('search-input'); const sm = document.getElementById('search-input-mobile'); if (si) si.value=''; if (sm) sm.value='';
+    navigateTo('main-site'); window.scrollTo({top:0, behavior:'smooth'});
+    host.innerHTML = Array(12).fill(0).map(() => `<div class="skeleton-card-premium"><div class="skeleton-poster"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>`).join('');
+    const result = await ensureCatalog(page * PAGE_SIZE + 1);
     const start = (page - 1) * PAGE_SIZE;
     const movies = catalog.slice(start, start + PAGE_SIZE);
-
-    currentPage = page;
-    totalItems = catalog.length;
-    totalPages = result.hasMore ? page + 1 : Math.max(page, Math.ceil(catalog.length / PAGE_SIZE));
-
-    const countEl = document.getElementById('movie-count');
-    if (countEl) countEl.textContent = String(catalog.length);
-
-    renderCards(movies);
-    renderPagination(page, result.hasMore || start + PAGE_SIZE < catalog.length);
+    totalItems = catalog.length; totalPages = result.hasMore ? page + 1 : Math.max(page, Math.ceil(catalog.length / PAGE_SIZE));
+    const count = document.getElementById('movie-count'); if (count) count.textContent = String(catalog.length);
+    renderCards(movies); renderPagination(page, result.hasMore || start + PAGE_SIZE < catalog.length);
   }
 
   function addTopicCard() {
     const row = document.querySelector('.topics-row');
     if (!row || document.getElementById('rf-topic-anime')) return;
-
     const card = document.createElement('button');
-    card.type = 'button';
-    card.id = 'rf-topic-anime';
-    card.className = 'topic-card';
+    card.type = 'button'; card.id = 'rf-topic-anime'; card.className = 'topic-card';
     card.style.background = 'linear-gradient(135deg,#7c3aed 0%,#db2777 100%)';
     card.innerHTML = '<h3>ANIME</h3><span>Xem chủ đề ›</span>';
-    card.addEventListener('click', () => window.roflixAnime.open(1));
-    row.appendChild(card);
+    card.addEventListener('click', () => window.roflixAnime.open(1)); row.appendChild(card);
   }
 
   function addGenreLink() {
     const links = Array.from(document.querySelectorAll('a'));
-    const desktopAnimation = links.find(a =>
-      a.textContent.trim() === 'Hoạt Hình' &&
-      a.closest('.glass-premium') &&
-      !a.closest('#mobile-menu')
-    );
-
-    if (desktopAnimation && !document.getElementById('rf-genre-anime-desktop')) {
-      const link = document.createElement('a');
-      link.href = '#';
-      link.id = 'rf-genre-anime-desktop';
-      link.className = desktopAnimation.className;
-      link.innerHTML = 'ANIME';
-      link.addEventListener('click', event => {
-        event.preventDefault();
-        window.roflixAnime.open(1);
-      });
-      desktopAnimation.insertAdjacentElement('afterend', link);
+    const desktop = links.find(a => a.textContent.trim() === 'Hoạt Hình' && a.closest('.glass-premium') && !a.closest('#mobile-menu'));
+    if (desktop && !document.getElementById('rf-genre-anime-desktop')) {
+      const link = document.createElement('a'); link.href='#'; link.id='rf-genre-anime-desktop'; link.className=desktop.className; link.innerHTML='ANIME';
+      link.addEventListener('click', e => { e.preventDefault(); window.roflixAnime.open(1); }); desktop.insertAdjacentElement('afterend', link);
     }
-
-    const mobileAnimation = links.find(a =>
-      a.textContent.trim() === 'Hoạt Hình' &&
-      a.closest('#mobile-menu')
-    );
-
-    if (mobileAnimation && !document.getElementById('rf-genre-anime-mobile')) {
-      const link = document.createElement('a');
-      link.href = '#';
-      link.id = 'rf-genre-anime-mobile';
-      link.className = mobileAnimation.className;
-      link.innerHTML = 'ANIME';
-      link.addEventListener('click', event => {
-        event.preventDefault();
-        window.closeMobileMenu?.();
-        window.roflixAnime.open(1);
-      });
-      mobileAnimation.insertAdjacentElement('afterend', link);
+    const mobile = links.find(a => a.textContent.trim() === 'Hoạt Hình' && a.closest('#mobile-menu'));
+    if (mobile && !document.getElementById('rf-genre-anime-mobile')) {
+      const link = document.createElement('a'); link.href='#'; link.id='rf-genre-anime-mobile'; link.className=mobile.className; link.innerHTML='ANIME';
+      link.addEventListener('click', e => { e.preventDefault(); window.closeMobileMenu?.(); window.roflixAnime.open(1); }); mobile.insertAdjacentElement('afterend', link);
     }
   }
 
   function css() {
     if (document.getElementById('rf-anime-hub-css')) return;
-    const style = document.createElement('style');
-    style.id = 'rf-anime-hub-css';
-    style.textContent = `
-      #rf-topic-anime {
-        border:1px solid rgba(255,255,255,.12);
-        background:linear-gradient(135deg,#7c3aed,#db2777) !important;
-      }
-      #rf-topic-anime:hover {
-        box-shadow:0 12px 28px rgba(124,58,237,.28);
-      }
-      #rf-genre-anime-desktop,
-      #rf-genre-anime-mobile {
-        font-weight:900;
-      }
-    `;
+    const style = document.createElement('style'); style.id='rf-anime-hub-css';
+    style.textContent = `#rf-topic-anime{border:1px solid rgba(255,255,255,.12);background:linear-gradient(135deg,#7c3aed,#db2777)!important}#rf-topic-anime:hover{box-shadow:0 12px 28px rgba(124,58,237,.28)}#rf-genre-anime-desktop,#rf-genre-anime-mobile{font-weight:900}`;
     document.head.appendChild(style);
   }
 
   function boot() {
-    css();
-    addTopicCard();
-    addGenreLink();
-    setTimeout(addTopicCard, 300);
-    setTimeout(addGenreLink, 300);
-    setTimeout(addTopicCard, 1200);
-    setTimeout(addGenreLink, 1200);
+    css(); addTopicCard(); addGenreLink();
+    setTimeout(addTopicCard,300); setTimeout(addGenreLink,300); setTimeout(addTopicCard,1200); setTimeout(addGenreLink,1200);
   }
 
-  window.roflixAnime = { open };
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot, { once: true });
-  } else {
-    boot();
-  }
+  window.roflixAnime = {open};
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, {once:true}); else boot();
 })();
