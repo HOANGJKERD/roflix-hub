@@ -17,64 +17,42 @@
     document.head.appendChild(s);
   }
 
+  function loadAnimeHub() {
+    if (document.getElementById('rf-anime-hub-script')) return;
+    const s = document.createElement('script');
+    s.id = 'rf-anime-hub-script';
+    s.src = 'js/features/anime-hub.js?v=3';
+    s.async = false;
+    document.head.appendChild(s);
+  }
+
   function css() {
     if (document.getElementById('rf-suite-placement-css')) return;
     const style = document.createElement('style');
     style.id = 'rf-suite-placement-css';
     style.textContent = `
-      #rf-source-shortcuts {
-        display:flex;
-        flex-wrap:wrap;
-        align-items:center;
-        gap:7px;
-        margin-left:8px;
-      }
-      #rf-source-shortcuts button,
-      #rf-source-shortcuts a,
-      #rf-header-login {
-        appearance:none;
-        border:1px solid rgba(255,255,255,.10);
-        background:rgba(255,255,255,.045);
-        color:#e5e7eb;
-        border-radius:999px;
-        padding:8px 12px;
+      #rf-source-shortcuts { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-left:8px; }
+      #rf-source-shortcuts button, #rf-source-shortcuts a, #rf-header-login {
+        appearance:none; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.045);
+        color:#e5e7eb; border-radius:999px; padding:8px 12px;
         font:800 12px/1.1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-        text-decoration:none;
-        cursor:pointer;
-        white-space:nowrap;
+        text-decoration:none; cursor:pointer; white-space:nowrap;
         transition:background .18s ease,border-color .18s ease,transform .18s ease;
       }
-      #rf-source-shortcuts button:hover,
-      #rf-source-shortcuts a:hover,
-      #rf-header-login:hover {
-        background:rgba(245,158,11,.13);
-        border-color:rgba(245,158,11,.34);
-        transform:translateY(-1px);
+      #rf-source-shortcuts button:hover, #rf-source-shortcuts a:hover, #rf-header-login:hover {
+        background:rgba(245,158,11,.13); border-color:rgba(245,158,11,.34); transform:translateY(-1px);
       }
-      #rf-header-login {
-        background:linear-gradient(135deg,#f59e0b,#fbbf24);
-        color:#111827;
-        border-color:rgba(251,191,36,.45);
-      }
-      @media(max-width:900px){
-        #rf-source-shortcuts{width:100%;margin:5px 0 0 0}
-      }
+      #rf-header-login { background:linear-gradient(135deg,#f59e0b,#fbbf24); color:#111827; border-color:rgba(251,191,36,.45); }
+      @media(max-width:900px){ #rf-source-shortcuts{width:100%;margin:5px 0 0 0} }
     `;
     document.head.appendChild(style);
   }
 
   function openCloudCenter() {
     const modal = document.getElementById('rf-cloud-modal');
-    if (modal) {
-      modal.classList.add('show');
-      window.rfCloudCenterRender?.();
-      return;
-    }
+    if (modal) { modal.classList.add('show'); window.rfCloudCenterRender?.(); return; }
     const opener = document.getElementById('rf-cloud-open');
-    if (opener) {
-      opener.click();
-      return;
-    }
+    if (opener) { opener.click(); return; }
     window.showToast?.('info', 'Cloud Center', 'Cloud Center chưa sẵn sàng.');
   }
 
@@ -89,8 +67,7 @@
         if (!user) return;
         const { data: profile } = await sb.from('profiles')
           .select('id,account_status,security_version,suspended_until')
-          .eq('id', user.id)
-          .maybeSingle();
+          .eq('id', user.id).maybeSingle();
         const baseline = Number(profile?.security_version || 1);
         const enforce = async next => {
           const status = String(next?.account_status || 'active');
@@ -102,36 +79,25 @@
             setTimeout(() => location.reload(), 700);
           }
         };
-        sb.channel('roflix-security-state-' + user.id)
-          .on('postgres_changes', {
-            event:'UPDATE', schema:'public', table:'profiles', filter:'id=eq.' + user.id
-          }, payload => enforce(payload.new))
-          .subscribe();
+        sb.channel('roflix-security-state-' + user.id).on('postgres_changes', {
+          event:'UPDATE', schema:'public', table:'profiles', filter:'id=eq.' + user.id
+        }, payload => enforce(payload.new)).subscribe();
       } catch (_) {}
     };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once:true });
-    else start();
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once:true }); else start();
   }
 
   function addSourceShortcuts() {
     const host = document.getElementById('source-switch');
     if (!host || document.getElementById('rf-source-shortcuts')) return;
-
     const wrap = document.createElement('span');
     wrap.id = 'rf-source-shortcuts';
     wrap.setAttribute('aria-label', 'Tiện ích RoFlix');
-    wrap.innerHTML = `
-      <button type="button" id="rf-shortcut-collection">📚 Bộ sưu tập</button>
-      <button type="button" id="rf-shortcut-cloud">🔄 Đồng bộ thiết bị</button>
-      <a href="admin.html" id="rf-shortcut-admin">🛠️ Quản trị</a>
-    `;
+    wrap.innerHTML = `<button type="button" id="rf-shortcut-collection">📚 Bộ sưu tập</button><button type="button" id="rf-shortcut-cloud">🔄 Đồng bộ thiết bị</button><a href="admin.html" id="rf-shortcut-admin">🛠️ Quản trị</a>`;
     const note = host.querySelector('#source-note');
-    if (note) note.insertAdjacentElement('afterend', wrap);
-    else host.appendChild(wrap);
-
+    if (note) note.insertAdjacentElement('afterend', wrap); else host.appendChild(wrap);
     document.getElementById('rf-shortcut-collection')?.addEventListener('click', () => {
-      if (typeof window.showFavorites === 'function') window.showFavorites();
-      else window.showToast?.('info', 'Bộ sưu tập', 'Bộ sưu tập chưa sẵn sàng.');
+      if (typeof window.showFavorites === 'function') window.showFavorites(); else window.showToast?.('info', 'Bộ sưu tập', 'Bộ sưu tập chưa sẵn sàng.');
     });
     document.getElementById('rf-shortcut-cloud')?.addEventListener('click', openCloudCenter);
   }
@@ -140,44 +106,22 @@
     if (document.getElementById('rf-header-login')) return;
     const search = document.querySelector('input[placeholder*="Tìm kiếm phim"]');
     if (!search) return;
-
     const button = document.createElement('button');
-    button.type = 'button';
-    button.id = 'rf-header-login';
-    button.textContent = '🔐 Đăng nhập';
+    button.type = 'button'; button.id = 'rf-header-login'; button.textContent = '🔐 Đăng nhập';
     button.addEventListener('click', () => {
-      if (typeof window.openAuthModal === 'function') window.openAuthModal('login');
-      else window.showToast?.('info', 'Đăng nhập', 'Cửa sổ đăng nhập chưa sẵn sàng.');
+      if (typeof window.openAuthModal === 'function') window.openAuthModal('login'); else window.showToast?.('info', 'Đăng nhập', 'Cửa sổ đăng nhập chưa sẵn sàng.');
     });
-
     const searchWrap = search.closest('.relative') || search.parentElement;
-    if (searchWrap?.parentElement) searchWrap.parentElement.appendChild(button);
-    else search.parentElement?.appendChild(button);
+    if (searchWrap?.parentElement) searchWrap.parentElement.appendChild(button); else search.parentElement?.appendChild(button);
   }
 
   function render() {
-    css();
-    loadFeatureGates();
-    installSecurityRealtime();
-
+    css(); loadFeatureGates(); loadAnimeHub(); installSecurityRealtime();
     const oldToolbar = document.getElementById('roflix-upgrade-toolbar');
-    if (oldToolbar) {
-      oldToolbar.hidden = true;
-      oldToolbar.setAttribute('aria-hidden', 'true');
-      oldToolbar.style.display = 'none';
-    }
-
-    // Cloud Center owns its original fixed bottom-right launcher. Never hide it.
-    addSourceShortcuts();
-    addLoginButton();
+    if (oldToolbar) { oldToolbar.hidden = true; oldToolbar.setAttribute('aria-hidden', 'true'); oldToolbar.style.display = 'none'; }
+    addSourceShortcuts(); addLoginButton();
   }
 
-  function boot() {
-    render();
-    setTimeout(render, 300);
-    setTimeout(render, 1200);
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once:true });
-  else boot();
+  function boot() { render(); setTimeout(render, 300); setTimeout(render, 1200); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once:true }); else boot();
 })();
