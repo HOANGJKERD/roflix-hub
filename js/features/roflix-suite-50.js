@@ -18,10 +18,10 @@
   }
 
   function loadAnimeHub() {
-    if (document.getElementById('rf-anime-hub-script')) return;
+    if (document.getElementById('rf-anime-catalog-script')) return;
     const s = document.createElement('script');
-    s.id = 'rf-anime-hub-script';
-    s.src = 'js/features/anime-hub.js?v=1';
+    s.id = 'rf-anime-catalog-script';
+    s.src = 'js/features/anime-catalog.js?v=1';
     s.async = false;
     document.head.appendChild(s);
   }
