@@ -108,16 +108,19 @@
         // tự chuyển sang nguồn còn lại (VSMOV <-> KKPhim) để trang không bị "trắng" khi 1 nguồn sập.
         // path: đường dẫn KHÔNG kèm domain, ví dụ '/quoc-gia/au-my?page=1'
         async function fetchListWithFallback(path) {
-            const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : [currentSourceId, currentSourceId === 'kkphim' ? 'vsmov' : 'kkphim'];
-            const settled = await Promise.allSettled(
-                ids.map(sid => fetchJson(srcListUrl(path, sid)).then(data => ({ data, sid })))
-            );
-            const ok = settled.filter(s => s.status === 'fulfilled').map(s => s.value);
-            if (!ok.length) throw new Error('all sources failed for ' + path);
-            const groups = ok.map(r => unwrapList(r.data).items.map(m => { m._src = r.sid; return m; }));
-            const items = mergeMovieLists(groups);
-            const pag = unwrapList(ok[0].data).pag || {};
-            return { data: { items, pagination: pag }, sid: ok[0].sid };
+            const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['kkphim', 'vsmov'];
+            let lastErr = null;
+            for (const sid of ids) {
+                try {
+                    const data = await fetchJson(srcListUrl(path, sid));
+                    const items = unwrapList(data).items.map(m => { m._src = sid; return m; });
+                    if (items.length || sid === ids[ids.length - 1]) {
+                        return { data: { items, pagination: unwrapList(data).pag || {} }, sid };
+                    }
+                } catch (e) { lastErr = e; }
+            }
+            if (lastErr) throw lastErr;
+            throw new Error('all sources failed for ' + path);
         }
 
         function mapListResultItems(result, limit) {
@@ -135,23 +138,16 @@
                     && currentListEndpoint === 'phim-moi-cap-nhat') {
                     return await fetchHomePriorityMovies(page);
                 }
-                const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : [currentSourceId];
-                const settled = await Promise.allSettled(ids.map(sid => fetchMoviesFromSource(sid, page)));
-                const lists = [];
-                let maxPages = 1;
-                let sumItems = 0;
-                settled.forEach(s => {
-                    if (s.status !== 'fulfilled') return;
-                    lists.push(s.value);
-                    maxPages = Math.max(maxPages, totalPages || 1);
-                    sumItems += totalItems || s.value.length;
-                });
-                if (!lists.length) throw new Error('all sources failed');
-                const merged = mergeMovieLists(lists);
-                totalPages = maxPages;
-                totalItems = sumItems || merged.length;
-                currentPage = page;
-                return merged;
+                const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['kkphim', 'vsmov'];
+                let lastErr = null;
+                for (const sid of ids) {
+                    try {
+                        const movies = await fetchMoviesFromSource(sid, page);
+                        if (movies.length || sid === ids[ids.length - 1]) return movies;
+                    } catch (e) { lastErr = e; }
+                }
+                if (lastErr) throw lastErr;
+                return [];
             } catch (error) {
                 console.error('Lỗi tải phim:', error);
                 showToast('error', 'Lỗi kết nối', 'Không thể tải danh sách phim. Vui lòng thử lại!');
@@ -160,41 +156,20 @@
         }
 
         async function fetchHomePriorityMovies(page = 1) {
-            const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : [currentSourceId];
-            const jobs = [];
-            ids.forEach(sid => {
-                jobs.push(fetch(srcListUrl(`/quoc-gia/au-my?page=${page}`, sid)).then(r => ({ r, sid, kind: 'au' })));
-                jobs.push(fetch(srcListUrl(`/quoc-gia/han-quoc?page=${page}`, sid)).then(r => ({ r, sid, kind: 'kr' })));
-            });
-            const settled = await Promise.allSettled(jobs);
-            const auGroups = [];
-            const krGroups = [];
-            let maxPages = 1;
-            let sumItems = 0;
-            for (const s of settled) {
-                if (s.status !== 'fulfilled') continue;
-                const { r, sid, kind } = s.value;
-                const data = r.ok ? await r.json() : { items: [], pagination: {} };
-                const wrap = unwrapList(data);
-                const list = wrap.items.map(m => { m._src = sid; return m; }).filter(m => pickPoster(m, sid));
-                maxPages = Math.max(maxPages, (wrap.pag && wrap.pag.totalPages) || 1);
-                sumItems += (wrap.pag && wrap.pag.totalItems) || list.length;
-                if (kind === 'au') auGroups.push(list); else krGroups.push(list);
+            const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['kkphim', 'vsmov'];
+            let lastErr = null;
+            for (const sid of ids) {
+                try {
+                    const [auRes, krRes] = await Promise.all([
+                        fetch(srcListUrl(`/quoc-gia/au-my?page=${page}`, sid)),
+                        fetch(srcListUrl(`/quoc-gia/han-quoc?page=${page}`, sid))
+                    ]);
+                    const merged = await mergeHomePriority(auRes, krRes, page, sid);
+                    if (merged.length) return merged;
+                } catch (e) { lastErr = e; }
             }
-            const au = mergeMovieLists(auGroups);
-            const kr = mergeMovieLists(krGroups);
-            const merged = [];
-            let i = 0, j = 0;
-            while (i < au.length || j < kr.length) {
-                if (i < au.length) merged.push(au[i++]);
-                if (i < au.length) merged.push(au[i++]);
-                if (j < kr.length) merged.push(kr[j++]);
-            }
-            totalPages = maxPages;
-            totalItems = sumItems;
-            currentPage = page;
-            if (!merged.length) throw new Error('home priority fetch failed');
-            return merged;
+            if (lastErr) throw lastErr;
+            throw new Error('home priority fetch failed');
         }
 
         async function mergeHomePriority(auRes, krRes, page, sid) {

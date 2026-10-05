@@ -75,27 +75,23 @@
                 '/quoc-gia/au-my?page=1',
                 '/quoc-gia/han-quoc?page=1'
             ];
-            const jobs = [];
-            for (const sid of ['vsmov', 'kkphim']) {
+            const bySlug = new Map();
+            async function ingest(sid) {
                 for (const path of paths) {
-                    jobs.push((async () => {
+                    try {
                         const data = await fetchJson(srcListUrl(path, sid));
-                        const { items } = unwrapList(data);
-                        return items.map(item => { item._src = sid; return mapMovieData(item); });
-                    })());
+                        unwrapList(data).items.forEach(item => {
+                            item._src = sid;
+                            const m = mapMovieData(item);
+                            if (!m.slug || !isValidPosterUrl(m.poster) || bySlug.has(m.slug)) return;
+                            bySlug.set(m.slug, m);
+                        });
+                    } catch (_) {}
                 }
             }
-            const results = await Promise.allSettled(jobs);
-            const bySourceAndSlug = new Map();
-            for (const result of results) {
-                if (result.status !== 'fulfilled') continue;
-                for (const movie of result.value) {
-                    if (!movie.slug || !isValidPosterUrl(movie.poster)) continue;
-                    const key = `${movie._src || 'unknown'}:${movie.slug}`;
-                    if (!bySourceAndSlug.has(key)) bySourceAndSlug.set(key, movie);
-                }
-            }
-            return [...bySourceAndSlug.values()];
+            await ingest('kkphim');
+            if (bySlug.size < 24) await ingest('vsmov');
+            return [...bySlug.values()];
         }
 
         function whyText(m, signals) {

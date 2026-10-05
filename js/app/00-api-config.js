@@ -1,7 +1,5 @@
 // ============================================================
-// CẤU HÌNH API — KKPhim + VSMOV (mặc định gộp tự động)
-// Tài liệu KKPhim: https://kkphim.com/api-document  (base: https://phimapi.com)
-// Bản quyền dữ liệu: VSMOV và KKPhim
+// CẤU HÌNH API — KKPhim (chính) · VSMOV (dự phòng cuối)
 // ============================================================
 const SOURCES = {
     kkphim: {
@@ -20,13 +18,12 @@ const SOURCES = {
     }
 };
 
-let sourceMode = localStorage.getItem('roflix-source-mode') || 'auto';
-if (sourceMode !== 'vsmov' && sourceMode !== 'kkphim' && sourceMode !== 'auto') sourceMode = 'auto';
-let currentSourceId = (localStorage.getItem('roflix-source-v2') === 'vsmov') ? 'vsmov' : 'kkphim';
+let sourceMode = localStorage.getItem('roflix-source-mode') || 'kkphim';
+if (sourceMode !== 'vsmov' && sourceMode !== 'kkphim') sourceMode = 'kkphim';
+let currentSourceId = sourceMode === 'vsmov' ? 'vsmov' : 'kkphim';
 
 function activeSourceIds() {
     if (sourceMode === 'vsmov') return ['vsmov'];
-    if (sourceMode === 'kkphim') return ['kkphim'];
     return ['kkphim', 'vsmov'];
 }
 
@@ -52,30 +49,27 @@ const API_BASE = srcListUrl('');
 
 function updateSourceUi() {
     document.querySelectorAll('#source-switch .source-pill').forEach(el => {
-        el.classList.toggle('active', el.dataset.source === sourceMode);
+        el.classList.toggle('active', el.dataset.source === currentSourceId);
     });
     const note = document.getElementById('source-note');
     if (note) {
-        note.textContent = sourceMode === 'auto'
-            ? 'Đang gộp KKPhim + VSMOV, không cần chuyển tay'
-            : (sourceMode === 'kkphim' ? 'Chỉ KKPhim' : 'Chỉ VSMOV');
+        note.textContent = currentSourceId === 'vsmov'
+            ? 'Đang dùng VSMOV (dự phòng)'
+            : 'Ưu tiên KKPhim · VSMOV chỉ khi KKPhim lỗi/trống';
     }
 }
 
 function switchSource(id) {
-    if (id !== 'auto' && !SOURCES[id]) return;
+    if (!SOURCES[id]) return;
     sourceMode = id;
-    if (id === 'vsmov' || id === 'kkphim') currentSourceId = id;
+    currentSourceId = id;
     try { localStorage.setItem('roflix-source-mode', id); } catch (_) {}
-    if (id === 'vsmov' || id === 'kkphim') {
-        try { localStorage.setItem('roflix-source-v2', id); } catch (_) {}
-    }
+    try { localStorage.setItem('roflix-source-v2', id); } catch (_) {}
     updateSourceUi();
     if (typeof showToastPro === 'function') {
-        const msg = id === 'auto'
-            ? 'Đang lấy phim từ cả KKPhim và VSMOV'
-            : ('Chỉ dùng ' + getSource(id).name);
-        showToastPro('info', 'Nguồn phim', msg);
+        showToastPro('info', 'Nguồn phim', id === 'kkphim'
+            ? 'KKPhim là nguồn chính. VSMOV chỉ dùng khi KKPhim lỗi.'
+            : 'Đang xem riêng VSMOV.');
     }
     if (typeof renderMoviesFromAPI === 'function') renderMoviesFromAPI(1);
     if (typeof initHeroSlider === 'function') initHeroSlider();

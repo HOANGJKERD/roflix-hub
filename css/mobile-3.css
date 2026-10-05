@@ -1,0 +1,59 @@
+/* UI/UX Mobile 3.0 */
+#rf-login-gate {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(5, 7, 12, .78);
+  backdrop-filter: blur(16px);
+}
+#rf-login-gate.open { display: flex; }
+.rf-login-gate-card {
+  width: min(420px, 100%);
+  border-radius: 24px;
+  padding: 28px 22px;
+  background: linear-gradient(180deg, #161b2a, #0d111a);
+  border: 1px solid rgba(245,158,11,.28);
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 24px 80px rgba(0,0,0,.45);
+}
+.rf-login-gate-mark {
+  width: 56px; height: 56px; margin: 0 auto 14px;
+  border-radius: 18px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #111; font-size: 22px;
+}
+.rf-login-gate-card h2 { font-size: 22px; font-weight: 900; margin: 0 0 8px; }
+.rf-login-gate-card p { color: #94a3b8; font-size: 13px; line-height: 1.6; margin: 0 0 18px; }
+.rf-login-gate-actions { display: flex; gap: 10px; }
+.rf-login-gate-btn {
+  flex: 1; border: 0; border-radius: 14px; padding: 12px 10px;
+  font-weight: 900; cursor: pointer;
+  background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #111;
+}
+.rf-login-gate-btn.ghost {
+  background: transparent; color: #fbbf24; border: 1px solid rgba(245,158,11,.4);
+}
+.rf-suite-bar {
+  display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px;
+}
+.rf-suite-chip {
+  font-size: 10px; font-weight: 800; letter-spacing: .02em;
+  padding: 6px 10px; border-radius: 999px;
+  background: rgba(255,255,255,.05); color: #e5e7eb;
+  border: 1px solid rgba(255,255,255,.08);
+}
+@media (max-width: 768px) {
+  .header-ios { padding-left: 8px; padding-right: 8px; }
+  .movie-card-premium { border-radius: 14px; }
+  .rf-suite-bar { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .rf-suite-chip { white-space: nowrap; }
+  #auth-modal .grid { grid-template-columns: 1fr !important; }
+  .source-switch, .country-filter { gap: 6px; }
+  button, .watch-btn, .nav-link-ios { min-height: 40px; }
+}

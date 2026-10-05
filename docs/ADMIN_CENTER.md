@@ -1,42 +1,28 @@
-# RoFlix Admin Center
+# RoFlix Admin 5.0
 
-## Mục tiêu
+## Mục Quản lý phim
+Trang `admin.html` → **Quản lý phim**.
 
-Tách hoàn toàn khu quản trị khỏi giao diện xem phim.
+- Ẩn phim nguồn (KKPhim/VSMOV) khỏi RoFlix
+- Sửa tên, tóm tắt, diễn viên, poster, nguồn ưu tiên
+- Khóa phim: bắt buộc đăng nhập mới xem
+- Tự khóa danh mục 18+
+- Thêm phim MP4 vào bucket `roflix-media`
 
-## Các lớp
+## SQL cần chạy
+Trong Supabase SQL Editor, chạy lần lượt:
 
-### Client
-- `admin.html`: layout
-- `css/admin/admin.css`: giao diện
-- `js/admin/admin.js`: dashboard, users, analytics, audit
+1. `supabase/setup.sql`
+2. `supabase/admin_analytics.sql`
+3. `supabase/v2_release_comments_realtime.sql`
+4. `supabase/mega_upgrade.sql`
+5. `supabase/movie_control_50.sql`  ← bắt buộc cho khóa phim / MP4
 
-### Database
-- `roflix_site_events`: event truy cập
-- `roflix_active_sessions`: heartbeat / session hoạt động
-- `roflix_admin_audit_logs`: audit
-- `roflix_admin_stats()`: aggregate dashboard
-- `roflix_admin_users()`: directory tài khoản + email
-- `roflix_admin_set_role()`: đổi quyền
-- `roflix_admin_set_status()`: khóa/mở tài khoản
+Sau đó đặt role admin:
 
-## Quyền
+```sql
+update public.profiles set role = 'admin' where id = '<USER_UUID>';
+```
 
-`role = admin` mới được vào Admin Center và gọi RPC quản trị.
-
-`role = user` không được đọc analytics hoặc audit.
-
-## Định nghĩa số liệu
-
-- **Tài khoản**: số dòng trong `public.profiles`.
-- **Truy cập hôm nay**: số `session_id` khác nhau trong event hôm nay.
-- **Người xem hôm nay**: số `user_id` khác nhau trong event hôm nay.
-- **Lượt xem phim**: event `movie_view`.
-- **Đang hoạt động**: session có heartbeat trong 5 phút.
-- **Top phim**: event `movie_view` trong 30 ngày.
-
-## Giới hạn
-
-Analytics client-side không thể đảm bảo 100% nếu trình duyệt chặn request, người dùng mất mạng, ad blocker hoặc đóng tab trước khi heartbeat/event được gửi.
-
-Số phim là số API nguồn báo về, vì RoFlix không lưu toàn bộ catalog phim vào Supabase.
+## Suite
+Cloud Sync 4.0 · Release Schedule 3.0 · Comment Realtime 3.0 · Watch Party 3.0 · Gacha 4.0 · Admin Dashboard 5.0 · UI/UX Mobile 3.0

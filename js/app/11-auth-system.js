@@ -100,13 +100,8 @@
         }
 
         async function mockGoogleAuth() {
-            const sb = window.rfSupabase;
-            if (!sb) {
-                showToast('error', 'Lỗi', 'Supabase chưa sẵn sàng.');
-                return;
-            }
-            const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } });
-            if (error) showToast('error', 'Google Login', error.message);
+            showToast('info', 'Google đã tắt', 'Hãy đăng nhập hoặc tạo tài khoản bằng email và mật khẩu.');
+            openAuthModal('login');
         }
 
         async function handleLogout() {
