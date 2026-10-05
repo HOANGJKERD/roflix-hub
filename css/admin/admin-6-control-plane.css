@@ -1,0 +1,16 @@
+/* RoFlix Admin 6.0 Control Plane */
+.rf-admin6-page{display:none}.rf-admin6-page.active{display:block}
+.rf-admin6-hero{display:grid;grid-template-columns:1.3fr .7fr;gap:16px;margin-bottom:16px}
+.rf-admin6-health{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.rf-admin6-health .pill{display:inline-flex;align-items:center;gap:6px}
+.rf-admin6-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.rf-admin6-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.rf-admin6-stat{min-height:118px;display:flex;flex-direction:column;justify-content:space-between}.rf-admin6-stat .value{font-size:30px;font-weight:950;letter-spacing:-.03em}.rf-admin6-stat .label{font-size:12px;color:#94a3b8;font-weight:800}.rf-admin6-stat .sub{font-size:11px;color:#64748b}
+.rf-admin6-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.rf-admin6-toolbar .input{min-width:180px;flex:1}
+.rf-admin6-table{width:100%;border-collapse:collapse}.rf-admin6-table th,.rf-admin6-table td{padding:10px 9px;border-bottom:1px solid #252a39;text-align:left;vertical-align:top;font-size:12px}.rf-admin6-table th{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em}.rf-admin6-table tr:hover{background:rgba(255,255,255,.02)}
+.rf-admin6-actions{display:flex;gap:6px;flex-wrap:wrap}.rf-admin6-actions .btn{font-size:11px;padding:7px 9px}
+.rf-admin6-danger{border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.06)}
+.rf-admin6-flag{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #252a39}.rf-admin6-flag:last-child{border-bottom:0}.rf-admin6-flag small{display:block;color:#64748b;margin-top:3px}
+.rf-admin6-feed{max-height:430px;overflow:auto}.rf-admin6-event{padding:10px 0;border-bottom:1px solid #252a39}.rf-admin6-event:last-child{border-bottom:0}.rf-admin6-event-top{display:flex;justify-content:space-between;gap:10px}.rf-admin6-event code{font-size:10px;color:#94a3b8;word-break:break-all}
+.rf-admin6-session{padding:10px;border:1px solid #252a39;border-radius:12px;background:rgba(255,255,255,.02);margin-top:8px}.rf-admin6-session-top{display:flex;justify-content:space-between;gap:8px}.rf-admin6-muted{color:#64748b}.rf-admin6-ok{color:#4ade80}.rf-admin6-warn{color:#fbbf24}.rf-admin6-bad{color:#f87171}
+.rf-admin6-modal{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100050;display:none;align-items:center;justify-content:center;padding:20px}.rf-admin6-modal.open{display:flex}.rf-admin6-modal-card{width:min(900px,96vw);max-height:88vh;overflow:auto;background:#111521;border:1px solid #2b3346;border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:18px}.rf-admin6-modal-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.rf-admin6-modal-head h3{margin:0}.rf-admin6-close{border:0;background:transparent;color:#94a3b8;font-size:28px;cursor:pointer}
+@media(max-width:1000px){.rf-admin6-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rf-admin6-hero{grid-template-columns:1fr}.rf-admin6-grid.two{grid-template-columns:1fr}}
+@media(max-width:620px){.rf-admin6-grid{grid-template-columns:1fr}.rf-admin6-toolbar .input{min-width:100%}.rf-admin6-table{min-width:760px}.rf-admin6-table-wrap{overflow:auto}}
