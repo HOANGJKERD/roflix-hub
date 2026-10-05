@@ -1,0 +1,12 @@
+revoke execute on function public.roflix_admin_set_account_control(uuid,text,integer,text) from anon, authenticated;
+revoke execute on function public.roflix_admin_revoke_sessions(uuid,text,text) from anon, authenticated;
+revoke execute on function public.roflix_admin_set_feature_flag(text,boolean,jsonb) from anon, authenticated;
+revoke execute on function public.roflix_admin_live_ops() from anon, authenticated;
+revoke execute on function public.roflix_admin_security_feed(integer) from anon, authenticated;
+revoke execute on function public.roflix_admin_user_sessions(uuid) from anon, authenticated;
+grant execute on function public.roflix_admin_set_account_control(uuid,text,integer,text) to authenticated;
+grant execute on function public.roflix_admin_revoke_sessions(uuid,text,text) to authenticated;
+grant execute on function public.roflix_admin_set_feature_flag(text,boolean,jsonb) to authenticated;
+grant execute on function public.roflix_admin_live_ops() to authenticated;
+grant execute on function public.roflix_admin_security_feed(integer) to authenticated;
+grant execute on function public.roflix_admin_user_sessions(uuid) to authenticated;
