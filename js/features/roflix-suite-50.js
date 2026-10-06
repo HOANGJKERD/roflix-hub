@@ -27,13 +27,11 @@
   }
 
   function loadAuthSystemFresh() {
-    // index.html historically loads 11-auth-system.js without a cache-busting
-    // query string. Reload the current auth module with a versioned URL so a
-    // stale browser/CDN copy cannot keep the old signup error behavior alive.
+    // Keep the auth module cache-busted after each auth behavior change.
     if (document.getElementById('rf-auth-system-fresh')) return;
     const s = document.createElement('script');
     s.id = 'rf-auth-system-fresh';
-    s.src = 'js/app/11-auth-system.js?v=20261006-auth2';
+    s.src = 'js/app/11-auth-system.js?v=20261006-auth3';
     s.async = false;
     document.head.appendChild(s);
   }
