@@ -64,13 +64,19 @@
     await Promise.all([loadGemUsers(),loadGemHistory(),game()]);
   };
   async function comments(){
-    const {data,error}=await sb.from('movie_comments').select('id,movie_slug,movie_title,display_name,body,status,created_at').order('created_at',{ascending:false}).limit(250);
+    if(typeof window.rfAdminLoadLiveComments==='function' && window.rfAdminLoadLiveComments !== comments){
+      return window.rfAdminLoadLiveComments();
+    }
+    const {data,error}=await sb.from('roflix_movie_comments').select('id,movie_slug,movie_title,username,display_name,body,status,created_at').order('created_at',{ascending:false}).limit(250);
     if(error){$('live-comments-body').innerHTML='<tr><td colspan="6" class="danger-text">'+esc(error.message)+'</td></tr>';return;}
-    const rows=data||[];$('live-comments-total').textContent=fmt(rows.length);$('live-comments-movies').textContent=fmt(new Set(rows.map(x=>x.movie_slug)).size);$('live-comments-visible').textContent=fmt(rows.filter(x=>x.status==='visible').length);
-    $('live-comments-body').innerHTML=rows.length?rows.map(c=>`<tr><td><b>${esc(c.movie_title||c.movie_slug)}</b><br><small class="muted">${esc(c.movie_slug)}</small></td><td>${esc(c.display_name)}</td><td style="max-width:430px;white-space:pre-wrap">${esc(c.body)}</td><td><span class="pill ${c.status==='visible'?'pill-active':'pill-banned'}">${esc(c.status)}</span></td><td>${date(c.created_at)}</td><td><button class="btn" onclick="rfAdminCommentToggle('${c.id}','${c.status==='visible'?'hidden':'visible'}')">${c.status==='visible'?'Ẩn':'Hiện'}</button> <button class="btn btn-danger" onclick="rfAdminCommentDelete('${c.id}')">Xóa</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Chưa có bình luận.</td></tr>';
+    const rows=data||[];
+    const totalEl=$('live-comments-total'); if(totalEl) totalEl.textContent=fmt(rows.length);
+    const moviesEl=$('live-comments-movies'); if(moviesEl) moviesEl.textContent=fmt(new Set(rows.map(x=>x.movie_slug)).size);
+    const visibleEl=$('live-comments-visible'); if(visibleEl) visibleEl.textContent=fmt(rows.filter(x=>x.status!=='hidden').length);
+    $('live-comments-body').innerHTML=rows.length?rows.map(c=>`<tr><td><b>${esc(c.movie_title||c.movie_slug)}</b><br><small class="muted">${esc(c.movie_slug)}</small></td><td>${esc(c.username||c.display_name||'Khán Giả')}</td><td style="max-width:430px;white-space:pre-wrap">${esc(c.body)}</td><td><span class="pill ${c.status!=='hidden'?'pill-active':'pill-banned'}">${esc(c.status||'visible')}</span></td><td>${date(c.created_at)}</td><td><button class="btn" onclick="rfAdminCommentToggle('${c.id}','${c.status==='visible'?'hidden':'visible'}')">${c.status==='visible'?'Ẩn':'Hiện'}</button> <button class="btn btn-danger" onclick="rfAdminCommentDelete('${c.id}')">Xóa</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Chưa có bình luận.</td></tr>';
   }
-  window.rfAdminCommentToggle=async(id,status)=>{const {error}=await sb.from('movie_comments').update({status}).eq('id',id);if(error)alert(error.message);else comments();};
-  window.rfAdminCommentDelete=async(id)=>{if(!confirm('Xóa bình luận này?'))return;const {error}=await sb.from('movie_comments').delete().eq('id',id);if(error)alert(error.message);else comments();};
+  window.rfAdminCommentToggle=async(id,status)=>{const {error}=await sb.rpc('roflix_admin_movie_comment_status',{p_id:String(id),p_status:status});if(error)alert(error.message);else comments();};
+  window.rfAdminCommentDelete=async(id)=>{if(!confirm('Xóa bình luận này?'))return;const {error}=await sb.rpc('roflix_admin_movie_comment_delete',{p_id:String(id)});if(error)alert(error.message);else comments();};
   async function sources(){
     const arr=[['KKPhim · chính','https://phimapi.com/v1/api/danh-sach/phim-moi-cap-nhat?page=1'],['VSMOV · phụ','https://vsmov.com/api/danh-sach/phim-moi-cap-nhat?page=1']];
     $('content-source-health').innerHTML=arr.map(x=>`<div id="src-${x[0].startsWith('KK')?'kk':'vs'}" style="padding:12px 0;border-bottom:1px solid #252a39"><b>${x[0]}</b><span class="pill" style="float:right">checking</span></div>`).join('');
@@ -82,6 +88,6 @@
   document.addEventListener('DOMContentLoaded',()=>{
     $('gem-user-search-btn')?.addEventListener('click',loadGemUsers);
     $('gem-user-search')?.addEventListener('keydown',e=>{if(e.key==='Enter')loadGemUsers();});
-    channel=sb.channel('roflix-admin-v3-live').on('postgres_changes',{event:'*',schema:'public',table:'movie_comments'},()=>{if(document.getElementById('live-comments')?.classList.contains('active'))comments();}).on('postgres_changes',{event:'*',schema:'public',table:'roflix_game_stats'},()=>{if(document.getElementById('game-center')?.classList.contains('active'))game();}).on('postgres_changes',{event:'*',schema:'public',table:'roflix_gacha_inventory'},()=>{if(document.getElementById('game-center')?.classList.contains('active'))game();}).subscribe();
+    channel=sb.channel('roflix-admin-v3-live').on('postgres_changes',{event:'*',schema:'public',table:'roflix_movie_comments'},()=>{if(document.getElementById('live-comments')?.classList.contains('active'))comments();}).on('postgres_changes',{event:'*',schema:'public',table:'roflix_game_stats'},()=>{if(document.getElementById('game-center')?.classList.contains('active'))game();}).on('postgres_changes',{event:'*',schema:'public',table:'roflix_gacha_inventory'},()=>{if(document.getElementById('game-center')?.classList.contains('active'))game();}).subscribe();
   });
 })();

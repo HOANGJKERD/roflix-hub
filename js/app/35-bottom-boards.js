@@ -120,9 +120,8 @@
             all = all.slice(0, 4);
 
             if (!all.length) {
-                all = [
-                    { user: 'RoFlix Fan', text: 'Phim hay quá!', movie: 'Chào mừng đến RoFlix', slug: '' },
-                ];
+                el.innerHTML = '<div class="text-center text-gray-500 py-8">Chưa có bình luận nào.</div>';
+                return;
             }
 
             el.innerHTML = all.map(c => {

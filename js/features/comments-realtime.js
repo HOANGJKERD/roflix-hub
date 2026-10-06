@@ -9,9 +9,9 @@
 
   async function fetchComments(slug, limit=100){
     if(!slug) return [];
-    const {data,error}=await sb.from('roflix_movie_comments').select('id,movie_slug,movie_title,user_id,username,body,created_at,parent_id').eq('movie_slug',slug).order('created_at',{ascending:false}).limit(limit);
+    const {data,error}=await sb.from('roflix_movie_comments').select('id,movie_slug,movie_title,user_id,username,display_name,body,created_at,parent_id,status').eq('movie_slug',slug).order('created_at',{ascending:false}).limit(limit);
     if(error) { console.debug('[RoFlix comments] read:',error.message); return null; }
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data) ? data.filter(c => c.status !== 'hidden') : [];
   }
 
   function formatTime(value){
@@ -22,10 +22,14 @@
     const box=document.getElementById('comments-container');
     if(!box) return;
     const rows=Array.isArray(comments)?comments:[];
-    box.innerHTML=rows.length ? rows.map(c=>`<div class="border-b border-gray-800 pb-4 last:border-0"><div class="flex justify-between text-xs text-amber-500 font-bold mb-1"><span><i class="fa-regular fa-user mr-1"></i>${esc(c.username||'Khán Giả')}</span><span class="font-normal text-[11px] text-gray-500">${esc(formatTime(c.created_at))}</span></div><p class="text-sm mt-1 text-gray-300">${esc(c.body||'')}</p></div>`).join('') : '<div class="text-center text-gray-500 py-8">Chưa có bình luận. Hãy là người đầu tiên!</div>';
+    box.innerHTML=rows.length ? rows.map(c=>`<div class="border-b border-gray-800 pb-4 last:border-0"><div class="flex justify-between text-xs text-amber-500 font-bold mb-1"><span><i class="fa-regular fa-user mr-1"></i>${esc(c.username||c.display_name||'Khán Giả')}</span><span class="font-normal text-[11px] text-gray-500">${esc(formatTime(c.created_at))}</span></div><p class="text-sm mt-1 text-gray-300">${esc(c.body||'')}</p></div>`).join('') : '<div class="text-center text-gray-500 py-8">Chưa có bình luận. Hãy là người đầu tiên!</div>';
   }
 
   async function renderMovieComments(slug){
+    if(typeof window.rfRenderCommentThread2==='function'){
+      await window.rfRenderCommentThread2(slug);
+      return [];
+    }
     const rows=await fetchComments(slug);
     if(rows===null){
       renderMovie(slug,[]);
@@ -55,7 +59,7 @@
     if(!u){ if(typeof showToastPro==='function') showToastPro('info','Đăng nhập để bình luận','Hãy đăng nhập để bình luận được lưu trên mọi thiết bị.'); else showToast('info','Đăng nhập','Hãy đăng nhập để bình luận.'); return; }
     const username=(userEl?.value.trim() || u.user_metadata?.display_name || u.email?.split('@')[0] || 'Khán Giả').slice(0,80);
     const movieTitle=(typeof window.currentMovieTitle!=='undefined'&&window.currentMovieTitle) || slug;
-    const {error}=await sb.from('roflix_movie_comments').insert({movie_slug:slug,movie_title:movieTitle,user_id:u.id,username,body:text.slice(0,3000)});
+    const {error}=await sb.rpc('roflix_movie_comment_create',{p_movie_slug:slug,p_movie_title:movieTitle,p_body:text.slice(0,3000),p_parent_id:null});
     if(error){ if(typeof showToast==='function') showToast('error','Lỗi','Không lưu được bình luận: '+error.message); return; }
     if(inputEl) inputEl.value='';
     await renderMovieComments(slug); await renderBottom();

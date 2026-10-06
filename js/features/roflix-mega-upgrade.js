@@ -116,17 +116,27 @@
   /* ---------- Realtime movie comments ---------- */
   async function renderCloudComments(slug,title,targetId='comments-container'){
     const box=$(targetId);if(!box||!slug||!sb)return;
-    const {data,error}=await sb.from('movie_comments').select('id,movie_slug,movie_title,display_name,body,created_at,user_id').eq('movie_slug',slug).eq('status','visible').order('created_at',{ascending:false}).limit(50);
+    if(targetId==='comments-container' && typeof window.rfRenderCommentThread2==='function'){
+      window.rfRenderCommentThread2(slug);
+      return;
+    }
+    const {data,error}=await sb.from('roflix_movie_comments').select('id,movie_slug,movie_title,username,display_name,body,created_at,user_id,status').eq('movie_slug',slug).order('created_at',{ascending:false}).limit(50);
     if(error){box.innerHTML='<div class="rf-empty-state">Không tải được bình luận realtime.</div>';return;}
-    box.innerHTML=data?.length?data.map(c=>`<article class="rf-live-comment"><div class="rf-live-avatar">${esc((c.display_name||'R').slice(0,1).toUpperCase())}</div><div><div class="rf-live-comment-head"><b>${esc(c.display_name||'RoFlix user')}</b><time>${new Date(c.created_at).toLocaleString('vi-VN')}</time></div><p>${esc(c.body)}</p></div></article>`).join(''):'<div class="rf-empty-state">Chưa có bình luận. Hãy mở màn bằng một câu hay ho. 🍿</div>';
+    const rows=(data||[]).filter(c=>c.status!=='hidden');
+    box.innerHTML=rows.length?rows.map(c=>{const name=c.username||c.display_name||'RoFlix user';return `<article class="rf-live-comment"><div class="rf-live-avatar">${esc(name.slice(0,1).toUpperCase())}</div><div><div class="rf-live-comment-head"><b>${esc(name)}</b><time>${new Date(c.created_at).toLocaleString('vi-VN')}</time></div><p>${esc(c.body)}</p></div></article>`;}).join(''):'<div class="rf-empty-state">Chưa có bình luận. Hãy mở màn bằng một câu hay ho. 🍿</div>';
   }
   async function subscribeMovieComments(slug,title){
     if(!sb||!slug)return;
+    if(window.__RF_COMMENTS_REALTIME__){
+      if(typeof window.rfMovieCommentsRender==='function') window.rfMovieCommentsRender(slug);
+      if(typeof window.rfRenderCommentThread2==='function') window.rfRenderCommentThread2(slug);
+      return;
+    }
     if(commentChannel){try{await sb.removeChannel(commentChannel)}catch(_){}commentChannel=null;}
     currentCommentSlug=slug;
     await renderCloudComments(slug,title,'comments-container');
     await renderCloudComments(slug,title,'rf-player-comments-list');
-    commentChannel=sb.channel('roflix-comments:'+slug).on('postgres_changes',{event:'*',schema:'public',table:'movie_comments',filter:'movie_slug=eq.'+slug},async()=>{
+    commentChannel=sb.channel('roflix-comments:'+slug).on('postgres_changes',{event:'*',schema:'public',table:'roflix_movie_comments',filter:'movie_slug=eq.'+slug},async()=>{
       if(currentCommentSlug!==slug)return;
       await renderCloudComments(slug,title,'comments-container');
       await renderCloudComments(slug,title,'rf-player-comments-list');
@@ -136,15 +146,19 @@
     const input=$(inputId);if(!input)return;
     const body=input.value.trim();if(!body)return;
     const u=await user();if(!u){toast('warning','Bình luận','Đăng nhập để bình luận realtime.');return;}
-    const display=u.user_metadata?.display_name||u.email?.split('@')[0]||'RoFlix user';
-    const {error}=await sb.from('movie_comments').insert({movie_slug:slug,movie_title:window.currentMovieTitle||slug,user_id:u.id,display_name:display.slice(0,40),body:body.slice(0,2000),status:'visible'});
+    const {error}=await sb.rpc('roflix_movie_comment_create',{p_movie_slug:slug,p_movie_title:window.currentMovieTitle||slug,p_body:body.slice(0,3000),p_parent_id:null});
     if(error){toast('error','Bình luận',error.message);return;}
     input.value='';
-    const st=read('roflix-stats',{totalComments:0});st.totalComments=(st.totalComments||0)+1;write('roflix-stats',st);queueGameSync();
     toast('success','Bình luận','Đã đăng realtime 💬');
+    await subscribeMovieComments(slug);
   }
   window.rfSubmitMovieComment=()=>submitRealtimeComment(window.currentSlug||'', 'rf-player-comment-input');
-  window.submitComment=(slug)=>submitRealtimeComment(slug||window.currentSlug||'', 'comment-input');
+  if(typeof window.submitComment!=='function' || !window.__RF_COMMENTS_REALTIME__){
+    const prevSubmit=window.submitComment;
+    window.submitComment=(slug)=>submitRealtimeComment(slug||window.currentSlug||'', 'comment-input');
+    window.submitComment.__rfMegaComments=true;
+    window.submitComment.__rfPrev=prevSubmit;
+  }
 
   /* ---------- Gacha 3.0 ---------- */
   const RF_GACHA_POOL=[
@@ -277,7 +291,7 @@
     hookGame();hookDetail();hookPlay();injectWatchlistTab();
     setTimeout(()=>{hookDetail();hookPlay();loadMegaHome();renderRealLeaderboard();renderCollection();},700);
     setTimeout(()=>{syncGameStats();renderWatchlistTab();},1800);
-    const auth=sb?.auth;if(auth)auth.onAuthStateChange(()=>{setTimeout(()=>{syncGameStats();renderRealLeaderboard();renderWatchlistTab();},700)});
+    const auth=sb?.auth;if(auth)auth.onAuthStateChange((event)=>{if(event==='SIGNED_IN'||event==='SIGNED_OUT')setTimeout(()=>{syncGameStats();renderRealLeaderboard();renderWatchlistTab();},700)});
     const observer=new MutationObserver(()=>{hookDetail();hookPlay();injectWatchlistTab();});observer.observe(document.body,{subtree:true,childList:true});
   }
   document.addEventListener('DOMContentLoaded',boot);

@@ -46,9 +46,11 @@
             const username = userEl.value.trim() || 'Khán Giả';
             const text = inputEl.value.trim();
             if (!text) { showToast('error', 'Lỗi', 'Vui lòng nhập bình luận!'); return; }
+            if (window.rfSupabase) {
+                showToast('info', 'Đăng nhập', 'Bình luận được lưu trên tài khoản, không cộng Gem cục bộ.');
+            }
             saveComment(slug, username, text);
             renderComments(slug);
             inputEl.value = '';
-            showToast('success', 'Đã đăng', 'Bình luận thành công! +5 RoGem');
-            addGem(5, true);
+            showToast('success', 'Đã đăng', 'Bình luận thành công');
         }

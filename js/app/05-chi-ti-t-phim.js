@@ -148,5 +148,7 @@
             
             navigateTo('detail-page');
             setTimeout(() => updateRatingDisplay(slug), 100);
-            renderComments(slug);
+            if (typeof window.rfRenderCommentThread2 === 'function') window.rfRenderCommentThread2(slug);
+            else if (typeof window.rfMovieCommentsRender === 'function') window.rfMovieCommentsRender(slug);
+            else renderComments(slug);
         }
