@@ -67,20 +67,33 @@ function mergeMovieLists(groups) {
 const _apiCache = new Map();
 const API_CACHE_TTL = 120000; // 2 phút
 const API_CACHE_MAX = 60; // tránh phình bộ nhớ khi lướt nhiều trang
+const API_REQUEST_TIMEOUT = 15000; // không để UI treo vô hạn khi provider mất kết nối
 async function fetchJson(url) {
     const hit = _apiCache.get(url);
     if (hit && (Date.now() - hit.time) < API_CACHE_TTL) {
         return hit.data;
     }
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (_apiCache.size >= API_CACHE_MAX) {
-        const oldestKey = _apiCache.keys().next().value;
-        _apiCache.delete(oldestKey);
+
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT) : null;
+    try {
+        const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const contentType = String(res.headers.get('content-type') || '').toLowerCase();
+        if (contentType && !contentType.includes('json')) throw new Error('API không trả JSON');
+        const data = await res.json();
+        if (_apiCache.size >= API_CACHE_MAX) {
+            const oldestKey = _apiCache.keys().next().value;
+            _apiCache.delete(oldestKey);
+        }
+        _apiCache.set(url, { data, time: Date.now() });
+        return data;
+    } catch (error) {
+        if (error?.name === 'AbortError') throw new Error('API timeout sau ' + (API_REQUEST_TIMEOUT / 1000) + ' giây');
+        throw error;
+    } finally {
+        if (timer) clearTimeout(timer);
     }
-    _apiCache.set(url, { data, time: Date.now() });
-    return data;
 }
 
 function buildListPath(page) {
@@ -99,8 +112,6 @@ async function fetchMoviesFromSource(sid, page) {
         .map(m => { m._src = sid; return m; })
         .filter(m => !!pickPoster(m, sid));
 
-    // Keep pagination local to this source result. Do not mutate the global
-    // pagination state from inside a provider adapter.
     movies.pagination = {
         currentPage: pag.currentPage || page,
         totalPages: pag.totalPages || data.last_page || data.total_pages || 1,
@@ -110,9 +121,6 @@ async function fetchMoviesFromSource(sid, page) {
     return movies;
 }
 
-// Gọi 1 endpoint danh sách với tự động dự phòng: nếu nguồn đang chọn lỗi,
-// tự chuyển sang nguồn còn lại (VSMOV <-> KKPhim) để trang không bị "trắng" khi 1 nguồn sập.
-// path: đường dẫn KHÔNG kèm domain, ví dụ '/quoc-gia/au-my?page=1'
 async function fetchListWithFallback(path) {
     const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['kkphim', 'vsmov'];
     let lastErr = null;
@@ -149,9 +157,6 @@ async function fetchMovies(page = 1) {
         for (const sid of ids) {
             try {
                 const movies = await fetchMoviesFromSource(sid, page);
-                // The UI owns the final pagination state. A provider may only
-                // return its own metadata, so a failed/slow provider cannot
-                // overwrite pagination belonging to another result.
                 const pagination = movies.pagination || {};
                 currentPage = pagination.currentPage || page;
                 totalPages = pagination.totalPages || 1;
