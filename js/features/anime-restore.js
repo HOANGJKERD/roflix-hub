@@ -1,7 +1,6 @@
 /* RoFlix Anime restore layer.
- * Restores the public Anime topic card and Anime genre entry without
- * changing the movie API or playback pipeline.
- * Anime playback/filtering uses the existing Hoạt Hình provider route.
+ * Restores the public Anime topic card and Anime genre entry.
+ * When Anime Catalog 3.0 is loaded, both entries open the catalog.
  */
 (function () {
   'use strict';
@@ -9,6 +8,10 @@
   window.__ROFLIX_ANIME_RESTORE__ = true;
 
   function openAnime() {
+    if (window.roflixAnime && typeof window.roflixAnime.open === 'function') {
+      window.roflixAnime.open(1);
+      return;
+    }
     if (typeof window.filterByGenre === 'function') {
       window.filterByGenre('hoat-hinh', 'Anime');
       return;
