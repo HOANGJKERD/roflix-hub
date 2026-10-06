@@ -91,21 +91,3 @@ let searchTimeout = null;
 let currentEpisodeList = [];
 let currentMovieTitle = '';
 let currentMovieData = null;
-
-// Anime Catalog 3.1 is an additive enhancement layer. It is loaded dynamically
-// so the main RoFlix shell and existing feature files remain unchanged.
-(function loadAnimeCatalog31() {
-    if (window.__RF_ANIME31_LOADER__) return;
-    window.__RF_ANIME31_LOADER__ = true;
-    const src = 'js/features/anime-catalog-31.js?v=31';
-    const load = () => {
-        if (document.querySelector('script[data-roflix-anime-31]')) return;
-        const s = document.createElement('script');
-        s.src = src;
-        s.async = true;
-        s.dataset.roflixAnime31 = '1';
-        document.head.appendChild(s);
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load, { once: true });
-    else load();
-})();
