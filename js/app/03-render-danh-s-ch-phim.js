@@ -1,7 +1,9 @@
 // ============================================================
         // RENDER DANH SÁCH PHIM
         // ============================================================
+        let listFetchGen = 0;
         async function renderMoviesFromAPI(page = 1) {
+            const gen = ++listFetchGen;
             const container = document.getElementById('movie-grid-container');
             if (!container) return;
             
@@ -16,6 +18,7 @@
             `).join('');
             
             const movies = await fetchMovies(page);
+            if (gen !== listFetchGen) return;
             currentPage = page;
             
             if (!movies || movies.length === 0) {
@@ -40,6 +43,9 @@
                 `;
                 const ce = document.getElementById('movie-count');
                 if (ce) ce.textContent = '0';
+                totalPages = 1;
+                totalItems = 0;
+                if (typeof updatePagination === 'function') updatePagination();
                 return;
             }
             

@@ -131,15 +131,21 @@ async function fetchMoviesFromSource(sid, page) {
         .map(m => { m._src = sid; return m; })
         .filter(m => !!pickPoster(m, sid));
 
-    // Keep pagination local to this source result. Do not mutate the global
-    // pagination state from inside a provider adapter.
-    movies.pagination = {
-        currentPage: pag.currentPage || page,
-        totalPages: pag.totalPages || data.last_page || data.total_pages || 1,
-        totalItems: pag.totalItems || data.total || movies.length
+    return {
+        source: sid,
+        movies,
+        pagination: {
+            currentPage: pag.currentPage || page,
+            totalPages: pag.totalPages || data.last_page || data.total_pages || 1,
+            totalItems: pag.totalItems || data.total || movies.length
+        }
     };
-    movies.source = sid;
-    return movies;
+}
+
+function applyListPagination(pagination, requestedPage, movieCount) {
+    currentPage = requestedPage;
+    totalPages = Math.max(1, Number(pagination && pagination.totalPages) || 1);
+    totalItems = Number(pagination && pagination.totalItems) || movieCount || 0;
 }
 
 // Gọi 1 endpoint danh sách với tự động dự phòng: nếu nguồn đang chọn lỗi,
@@ -178,20 +184,23 @@ async function fetchMovies(page = 1) {
         }
         const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['kkphim', 'vsmov'];
         let lastErr = null;
+        let lastEmpty = null;
         for (const sid of ids) {
             try {
-                const movies = await fetchMoviesFromSource(sid, page);
-                // The UI owns the final pagination state. A provider may only
-                // return its own metadata, so a failed/slow provider cannot
-                // overwrite pagination belonging to another result.
-                const pagination = movies.pagination || {};
-                currentPage = pagination.currentPage || page;
-                totalPages = pagination.totalPages || 1;
-                totalItems = pagination.totalItems || movies.length;
-                if (movies.length || sid === ids[ids.length - 1]) return movies;
+                const result = await fetchMoviesFromSource(sid, page);
+                if (result.movies.length || sid === ids[ids.length - 1]) {
+                    applyListPagination(result.pagination, page, result.movies.length);
+                    return result.movies;
+                }
+                lastEmpty = result;
             } catch (e) { lastErr = e; }
         }
+        if (lastEmpty) {
+            applyListPagination(lastEmpty.pagination, page, lastEmpty.movies.length);
+            return lastEmpty.movies;
+        }
         if (lastErr) throw lastErr;
+        applyListPagination({ currentPage: page, totalPages: 1, totalItems: 0 }, page, 0);
         return [];
     } catch (error) {
         console.error('Lỗi tải phim:', error);
@@ -225,11 +234,16 @@ async function fetchHomePriorityMovies(page = 1) {
 
             const auPages = (auWrap.pag && auWrap.pag.totalPages) || 1;
             const krPages = (krWrap.pag && krWrap.pag.totalPages) || 1;
-            totalPages = Math.max(auPages, krPages);
-            totalItems = ((auWrap.pag && auWrap.pag.totalItems) || 0)
-                + ((krWrap.pag && krWrap.pag.totalItems) || 0);
-            currentPage = page;
-            if (merged.length) return merged;
+            const pagination = {
+                currentPage: page,
+                totalPages: Math.max(auPages, krPages),
+                totalItems: ((auWrap.pag && auWrap.pag.totalItems) || 0)
+                    + ((krWrap.pag && krWrap.pag.totalItems) || 0)
+            };
+            if (merged.length || sid === ids[ids.length - 1]) {
+                applyListPagination(pagination, page, merged.length);
+                return merged;
+            }
         } catch (e) { lastErr = e; }
     }
     if (lastErr) throw lastErr;
