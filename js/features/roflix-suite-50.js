@@ -17,6 +17,15 @@
     document.head.appendChild(s);
   }
 
+  function loadMovieCuration() {
+    if (document.getElementById('rf-movie-curation-script')) return;
+    const s = document.createElement('script');
+    s.id = 'rf-movie-curation-script';
+    s.src = 'js/features/movie-curation-client.js?v=20261006-1';
+    s.async = false;
+    document.head.appendChild(s);
+  }
+
   function css() {
     if (document.getElementById('rf-suite-placement-css')) return;
     const style = document.createElement('style');
@@ -158,6 +167,7 @@
   function render() {
     css();
     loadFeatureGates();
+    loadMovieCuration();
     installSecurityRealtime();
 
     const oldToolbar = document.getElementById('roflix-upgrade-toolbar');
