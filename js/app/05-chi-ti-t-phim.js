@@ -18,27 +18,16 @@
             
             let episodesHTML = '';
             let epList = [];
-            const episodeByName = new Map();
             if (movie.episodes && movie.episodes.length > 0) {
                 movie.episodes.forEach(epGroup => {
                     if (epGroup.server_data && epGroup.server_data.length > 0) {
                         epGroup.server_data.forEach(ep => {
-                            const embed = String(ep.link_embed || '').trim();
-                            const hls = String(ep.link_m3u8 || '').trim();
-                            const link = embed || hls;
+                            const link = ep.link_embed || ep.link_m3u8 || '';
                             if (!link) return;
-                            const name = String(ep.name || ep.slug || 'Full').trim();
-                            const key = name.toLowerCase().replace(/\s+/g, ' ');
-                            const candidate = { name, link, isHls: !embed && /^https?:\/\/.+\.m3u8(?:$|\?)/i.test(hls) };
-                            const existingIndex = episodeByName.get(key);
-                            if (existingIndex == null) {
-                                episodeByName.set(key, epList.length);
-                                epList.push(candidate);
-                            } else if (epList[existingIndex]?.isHls && !candidate.isHls) {
-                                // Prefer an embeddable player URL when several API servers
-                                // expose the same episode, instead of showing duplicate episodes.
-                                epList[existingIndex] = candidate;
-                            }
+                            epList.push({
+                                name: String(ep.name || ep.slug || 'Full'),
+                                link: link
+                            });
                         });
                     }
                 });
