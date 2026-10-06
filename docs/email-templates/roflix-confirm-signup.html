@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Xác minh tài khoản RoFlix</title>
+</head>
+<body style="margin:0;padding:0;background:#07080d;font-family:Arial,Helvetica,sans-serif;color:#f8fafc;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#07080d;padding:36px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#10121b;border:1px solid #262a39;border-radius:24px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.45);">
+        <tr>
+          <td style="padding:34px 34px 28px;background:linear-gradient(135deg,#151827,#10121b);border-bottom:1px solid #292d3d;">
+            <div style="font-size:28px;font-weight:900;letter-spacing:-1px;color:#fff;">Ro<span style="color:#fbbf24;">Flix</span></div>
+            <div style="margin-top:8px;font-size:11px;font-weight:800;letter-spacing:2px;color:#8b93a7;text-transform:uppercase;">Entertainment · Movies · Community</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:42px 34px 36px;">
+            <div style="display:inline-block;padding:7px 11px;border:1px solid #4a3920;background:#211a0d;color:#fbbf24;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.7px;">ACCOUNT VERIFICATION</div>
+            <h1 style="margin:20px 0 12px;font-size:30px;line-height:1.2;color:#fff;">Chào mừng bạn đến với RoFlix 🎬</h1>
+            <p style="margin:0 0 18px;color:#aeb5c4;font-size:15px;line-height:1.75;">Tài khoản của bạn đã được tạo. Chỉ còn một bước nhỏ để hoàn tất đăng ký: xác minh địa chỉ email của bạn.</p>
+            <p style="margin:0 0 26px;color:#d8dce5;font-size:14px;line-height:1.7;">Bấm nút bên dưới để kích hoạt tài khoản và bắt đầu sử dụng RoFlix.</p>
+            <table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="border-radius:13px;background:linear-gradient(135deg,#f59e0b,#fbbf24);">
+              <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 24px;color:#111827;text-decoration:none;font-size:14px;font-weight:900;border-radius:13px;">XÁC MINH TÀI KHOẢN&nbsp; →</a>
+            </td></tr></table>
+            <div style="height:1px;background:#292d3d;margin:30px 0 22px;"></div>
+            <p style="margin:0 0 8px;color:#8f97aa;font-size:12px;line-height:1.6;">Nếu nút phía trên không hoạt động, hãy sao chép liên kết xác minh trong email này và mở bằng trình duyệt.</p>
+            <p style="margin:0;color:#646d80;font-size:11px;line-height:1.6;">Liên kết xác minh được cung cấp bởi Supabase Auth và có thể hết hạn theo cấu hình bảo mật của hệ thống.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:22px 34px;background:#0b0d14;border-top:1px solid #202431;">
+            <p style="margin:0;color:#697285;font-size:11px;line-height:1.7;">Bạn nhận được email này vì địa chỉ <strong style="color:#9aa3b5;">{{ .Email }}</strong> vừa được dùng để đăng ký RoFlix.</p>
+            <p style="margin:8px 0 0;color:#4f586a;font-size:10px;">© 2026 RoFlix Enterprise · Học tập & giải trí</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
