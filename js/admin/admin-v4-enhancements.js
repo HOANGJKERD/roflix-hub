@@ -9,6 +9,43 @@
  function loadMovieCategorization(){if(!document.getElementById('roflix-movie-categorization-css')){const l=document.createElement('link');l.id='roflix-movie-categorization-css';l.rel='stylesheet';l.href='css/admin/movie-categorization.css?v=1';document.head.appendChild(l)}if(document.getElementById('roflix-movie-categorization-admin'))return;const s=document.createElement('script');s.id='roflix-movie-categorization-admin';s.src='js/admin/movie-categorization-admin.js?v=1';s.async=false;document.body.appendChild(s)}
  function loadAdmin6(){if(document.getElementById('roflix-admin6-control-plane'))return;const s=document.createElement('script');s.id='roflix-admin6-control-plane';s.src='js/admin/admin-6-control-plane.js?v=1';s.async=false;document.body.appendChild(s)}
  function loadAdmin61MovieOps(){if(document.getElementById('roflix-admin61-movie-ops'))return;const s=document.createElement('script');s.id='roflix-admin61-movie-ops';s.src='js/admin/admin-6-movie-ops.js?v=1';s.async=false;document.body.appendChild(s)}
+ async function verifyUser(id,name,button){
+  if(!id)return;
+  if(!confirm(`Xác minh tài khoản "${name}"?\n\nTài khoản sẽ chuyển sang ACTIVE và có thể đăng nhập.`))return;
+  button.disabled=true;button.textContent='⏳ Đang xác minh...';
+  const r=await sb.rpc('roflix_admin_set_status',{p_user_id:id,p_status:'active'});
+  if(r.error){button.disabled=false;button.textContent='✅ Verify';alert('Không thể xác minh: '+r.error.message);return;}
+  window.showToast?.('success','Đã xác minh',`${name} đã được kích hoạt.`);
+  const refresh=window.rfAdminRefreshUsers;
+  if(typeof refresh==='function')await refresh();else location.reload();
+ }
+ function addPendingFilter(){
+  const select=$('user-status-filter');if(!select)return;
+  if(!select.querySelector('option[value="pending"]')){
+   const option=document.createElement('option');option.value='pending';option.textContent='🟡 Chờ xác minh';select.insertBefore(option,select.children[1]||null);
+  }
+ }
+ function decoratePendingUsers(){
+  const body=$('users-body');if(!body)return;
+  body.querySelectorAll('tr').forEach(row=>{
+   if(row.dataset.rfVerifyDecorated==='1')return;
+   const status=row.querySelector('.pill')?.textContent?.trim().toLowerCase();
+   if(status!=='pending')return;
+   const manage=row.querySelector('button[onclick*="rfOpenUser"]');if(!manage)return;
+   const match=manage.getAttribute('onclick')?.match(/rfOpenUser\('([^']+)'\)/);const id=match?.[1];if(!id)return;
+   const name=row.querySelector('td b')?.textContent?.trim()||'tài khoản này';
+   const wrap=manage.parentElement;if(!wrap)return;
+   const btn=document.createElement('button');btn.type='button';btn.className='btn btn-primary';btn.textContent='✅ Verify';btn.title='Admin xác minh tài khoản';
+   btn.addEventListener('click',()=>verifyUser(id,name,btn));wrap.style.display='flex';wrap.style.gap='6px';wrap.style.flexWrap='wrap';wrap.appendChild(btn);row.dataset.rfVerifyDecorated='1';
+  });
+ }
+ function installVerification(){
+  addPendingFilter();decoratePendingUsers();
+  const body=$('users-body');if(body&&!body.dataset.rfVerifyObserver){const observer=new MutationObserver(()=>{addPendingFilter();decoratePendingUsers()});observer.observe(body,{childList:true,subtree:true});body.dataset.rfVerifyObserver='1';}
+  const select=$('user-status-filter');select?.addEventListener('change',()=>setTimeout(decoratePendingUsers,0),{passive:true});
+ }
+ window.rfAdminInstallVerification=installVerification;
+ window.rfAdminRefreshUsers=async()=>{const btn=$('refresh-btn');if(btn){const old=btn.innerHTML;btn.innerHTML='↻ <span>Đang làm mới...</span>';btn.disabled=true;setTimeout(()=>{btn.innerHTML=old;btn.disabled=false},900)}if(typeof window.rfAdminReloadUsers==='function')await window.rfAdminReloadUsers();else location.reload()};
  window.rfAdminLoadLiveComments=comments;window.rfAdminCheckSources=health;
- document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{comments();health();loadMovieControl();loadMovieCategorization();loadAdmin6();loadAdmin61MovieOps()},700);const nav=$('admin-nav');if(nav&&!document.getElementById('rf-admin-v4-badge')){const b=document.createElement('span');b.id='rf-admin-v4-badge';b.className='badge';b.textContent='v4 + 6.1';document.querySelector('.topbar-left')?.appendChild(b)}});
+ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{comments();health();loadMovieControl();loadMovieCategorization();loadAdmin6();loadAdmin61MovieOps();installVerification()},700);const nav=$('admin-nav');if(nav&&!document.getElementById('rf-admin-v4-badge')){const b=document.createElement('span');b.id='rf-admin-v4-badge';b.className='badge';b.textContent='v4 + 6.1';document.querySelector('.topbar-left')?.appendChild(b)}});
 })();
