@@ -1,16 +1,11 @@
-/* RoFlix Admin Manual Verification 1.0
- * Adds a real database-backed pending -> active approval flow without email verification.
- * Uses the existing admin RPC roflix_admin_set_status.
+/* RoFlix Admin Manual Verification 1.1
+ * Admin approval confirms the Auth account server-side and activates the profile.
  */
 (function () {
   'use strict';
 
   const sb = window.rfSupabase;
   if (!sb) return;
-
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[c]));
 
   function addPendingFilter() {
     const select = document.getElementById('user-status-filter');
@@ -22,13 +17,9 @@
   }
 
   async function verifyUser(id, name) {
-    if (!confirm(`Xác minh tài khoản "${name}"?\n\nTài khoản sẽ chuyển sang ACTIVE và có thể đăng nhập.`)) return;
+    if (!confirm(`Xác minh tài khoản "${name}"?\n\nAdmin sẽ xác nhận tài khoản và chuyển trạng thái sang ACTIVE. User không cần bấm link email.`)) return;
 
-    const { error } = await sb.rpc('roflix_admin_set_status', {
-      p_user_id: id,
-      p_status: 'active'
-    });
-
+    const { error } = await sb.rpc('roflix_admin_verify_user', { p_user_id: id });
     if (error) {
       alert('Không thể xác minh: ' + error.message);
       return;
@@ -38,11 +29,8 @@
       window.showToast('success', 'Đã xác minh', `${name} đã được kích hoạt.`);
     }
 
-    if (typeof window.loadUsers === 'function') {
-      await window.loadUsers();
-    } else {
-      location.reload();
-    }
+    if (typeof window.loadUsers === 'function') await window.loadUsers();
+    else location.reload();
   }
 
   function decorateRows() {
@@ -56,7 +44,6 @@
 
       const manageButton = row.querySelector('button');
       if (!manageButton) return;
-
       const onclick = manageButton.getAttribute('onclick') || '';
       const match = onclick.match(/rfOpenUser\('([^']+)'\)/);
       const id = match?.[1];
@@ -95,7 +82,6 @@
     addPendingFilter();
     injectStyles();
     decorateRows();
-
     const body = document.getElementById('users-body');
     if (body) {
       const observer = new MutationObserver(() => {
@@ -106,9 +92,6 @@
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init, { once: true });
-  } else {
-    init();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+  else init();
 })();
