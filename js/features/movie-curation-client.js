@@ -23,7 +23,16 @@
   }
   function normalizeTitle(value){return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}
   function normalizeSource(raw){return raw&&raw!=='custom'?raw:'kkphim'}
-  function existingSlugs(){const set=new Set();document.querySelectorAll('#movie-grid-container .movie-card-premium').forEach(card=>{const x=(card.getAttribute('onclick')||'').match(/viewMovieDetail\(['\"]([^'\"]+)/);if(x?.[1])set.add(x[1])});return set}
+  function existingSlugs(){
+    const set=new Set();
+    document.querySelectorAll('#movie-grid-container .movie-card-premium').forEach(card=>{
+      const curatedId=card.getAttribute('data-rf-curated-id');
+      if(curatedId){set.add('id:'+curatedId);return}
+      const x=(card.getAttribute('onclick')||'').match(/viewMovieDetail\(['\"]([^'\"]+)/);
+      if(x?.[1])set.add('slug:'+x[1]);
+    });
+    return set;
+  }
   async function resolveTitle(row){
     const title=String(row?.movie_title||'').trim();
     if(!title)return null;
@@ -41,7 +50,7 @@
           if(!Array.isArray(items)||!items.length)continue;
           const exact=items.find(m=>normalizeTitle(m?.name||m?.title||'')===key||normalizeTitle(m?.origin_name||'')===key);
           const hit=exact||items[0];
-          if(hit?.slug){return {...hit,_src:sid}}
+          if(hit?.slug)return {...hit,_src:sid};
           if(!fallback&&hit)fallback={...hit,_src:sid};
         }catch(e){console.debug('[RoFlix Curation resolve]',sid,e?.message||e)}
       }
@@ -68,15 +77,14 @@
   };
   function card(row){
     const poster=row.poster_url||'https://placehold.co/300x450/111827/f59e0b?text=RoFlix';
-    const slug=String(row.movie_slug||'').replace(/'/g,"\\'");
     const genres=(row.genre_keys||[]).join(', ');
     const payload=JSON.stringify({id:row.id||'',source_id:row.source_id||'',movie_slug:row.movie_slug||'',movie_title:row.movie_title||'',poster_url:row.poster_url||''}).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026').replace(/'/g,'\\u0027');
-    return '<div onclick=\'window.rfOpenCuratedMovie('+payload+')\' class="movie-card-premium card-stagger rf-curated-card" data-rf-curated="1"><div class="card-poster"><img src="'+esc(poster)+'" alt="'+esc(row.movie_title)+'" loading="lazy" decoding="async" onerror="this.src=\'https://placehold.co/300x400/1a1a1a/666?text=No+Image\'"><div class="card-overlay"><button class="watch-btn btn-ripple" onclick=\'event.stopPropagation();window.rfPlayCuratedMovie('+payload+')\'><i class="fa-solid fa-play"></i> Xem Ngay</button></div><div class="card-badges"><span class="badge eps">'+esc(row.quality||'HD')+'</span></div></div><div class="card-info"><div class="card-title">'+esc(row.movie_title)+'</div><div class="card-meta"><span>'+esc(genres)+'</span><span>'+esc(row.year||'')+'</span></div></div></div>';
+    return '<div data-rf-curated-id="'+esc(row.id||row.movie_slug||'')+'" onclick=\'window.rfOpenCuratedMovie('+payload+')\' class="movie-card-premium card-stagger rf-curated-card"><div class="card-poster"><img src="'+esc(poster)+'" alt="'+esc(row.movie_title)+'" loading="lazy" decoding="async" onerror="this.src=\'https://placehold.co/300x400/1a1a1a/666?text=No+Image\'"><div class="card-overlay"><button class="watch-btn btn-ripple" onclick=\'event.stopPropagation();window.rfPlayCuratedMovie('+payload+')\'><i class="fa-solid fa-play"></i> Xem Ngay</button></div><div class="card-badges"><span class="badge eps">'+esc(row.quality||'HD')+'</span></div></div><div class="card-info"><div class="card-title">'+esc(row.movie_title)+'</div><div class="card-meta"><span>'+esc(genres)+'</span><span>'+esc(row.year||'')+'</span></div></div></div>';
   }
   function appendMatches(listKey,genreArg){
     const box=document.getElementById('movie-grid-container');if(!box)return;
     const existing=existingSlugs();const gKey=normalizeGenreKey(genreArg);
-    const matches=rows.filter(r=>r.source_id!=='custom'&&((listKey&&Array.isArray(r.list_keys)&&r.list_keys.includes(listKey))||(genreArg&&Array.isArray(r.genre_keys)&&r.genre_keys.includes(gKey)))&&!existing.has(r.movie_slug));
+    const matches=rows.filter(r=>r.source_id!=='custom'&&((listKey&&Array.isArray(r.list_keys)&&r.list_keys.includes(listKey))||(genreArg&&Array.isArray(r.genre_keys)&&r.genre_keys.includes(gKey)))&&(!r.id||!existing.has('id:'+r.id))&&!existing.has('slug:'+r.movie_slug));
     if(!matches.length)return;
     box.insertAdjacentHTML('beforeend',matches.slice(0,24).map(card).join(''));
   }
