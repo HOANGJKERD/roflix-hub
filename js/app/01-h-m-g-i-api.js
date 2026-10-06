@@ -67,33 +67,20 @@ function mergeMovieLists(groups) {
 const _apiCache = new Map();
 const API_CACHE_TTL = 120000; // 2 phút
 const API_CACHE_MAX = 60; // tránh phình bộ nhớ khi lướt nhiều trang
-const API_REQUEST_TIMEOUT = 15000; // không để UI treo vô hạn khi provider mất kết nối
 async function fetchJson(url) {
     const hit = _apiCache.get(url);
     if (hit && (Date.now() - hit.time) < API_CACHE_TTL) {
         return hit.data;
     }
-
-    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timer = controller ? setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT) : null;
-    try {
-        const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const contentType = String(res.headers.get('content-type') || '').toLowerCase();
-        if (contentType && !contentType.includes('json')) throw new Error('API không trả JSON');
-        const data = await res.json();
-        if (_apiCache.size >= API_CACHE_MAX) {
-            const oldestKey = _apiCache.keys().next().value;
-            _apiCache.delete(oldestKey);
-        }
-        _apiCache.set(url, { data, time: Date.now() });
-        return data;
-    } catch (error) {
-        if (error?.name === 'AbortError') throw new Error('API timeout sau ' + (API_REQUEST_TIMEOUT / 1000) + ' giây');
-        throw error;
-    } finally {
-        if (timer) clearTimeout(timer);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (_apiCache.size >= API_CACHE_MAX) {
+        const oldestKey = _apiCache.keys().next().value;
+        _apiCache.delete(oldestKey);
     }
+    _apiCache.set(url, { data, time: Date.now() });
+    return data;
 }
 
 function buildListPath(page) {
