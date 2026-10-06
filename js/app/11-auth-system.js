@@ -27,8 +27,6 @@ function switchAuthMode(mode) {
 }
 
 function roflixAuthRedirectUrl() {
-    // Keep the confirmation link on the same deployed RoFlix page.
-    // The exact URL must also be allowed in Supabase Auth > URL Configuration.
     try {
         const url = new URL(window.location.href);
         url.hash = '';
@@ -37,6 +35,19 @@ function roflixAuthRedirectUrl() {
     } catch (_) {
         return window.location.origin + '/';
     }
+}
+
+function roflixAuthErrorMessage(error, fallback) {
+    const message = String(error?.message || '').trim();
+    const code = String(error?.code || '').trim().toLowerCase();
+    if (error?.status === 429 || code === 'over_email_send_rate_limit' || /rate limit|too many requests|after \d+ seconds/i.test(message)) {
+        const seconds = message.match(/after\s+(\d+)\s+seconds?/i)?.[1];
+        return `Supabase đang giới hạn gửi email. ${seconds ? `Vui lòng chờ khoảng ${seconds} giây rồi thử lại.` : 'Vui lòng chờ một lúc rồi thử lại.'}`;
+    }
+    if (/one-time token not found|email link is invalid or has expired/i.test(message)) {
+        return 'Link xác minh đã hết hạn hoặc đã được dùng. Hãy yêu cầu gửi lại email xác minh mới.';
+    }
+    return message || fallback;
 }
 
 async function resendRoFlixVerification(email) {
@@ -48,7 +59,7 @@ async function resendRoFlixVerification(email) {
         options: { emailRedirectTo: roflixAuthRedirectUrl() }
     });
     if (error) {
-        showToast('error', 'Không gửi được email', error.message);
+        showToast('error', 'Không gửi được email', roflixAuthErrorMessage(error, 'Không thể gửi lại email xác minh.'));
         return false;
     }
     showToast('success', 'Đã gửi lại email', 'Hãy kiểm tra hộp thư và cả mục Spam/Thư rác.');
@@ -97,13 +108,11 @@ async function handleRegister(e) {
         if (duplicate) {
             showToast('warning', 'Email đã được đăng ký', 'Nếu tài khoản đang chờ xác minh, hãy kiểm tra email hoặc dùng chức năng gửi lại email xác minh.');
         } else {
-            showToast('error', 'Đăng ký thất bại', message || 'Không thể tạo tài khoản.');
+            showToast('error', 'Đăng ký thất bại', roflixAuthErrorMessage(error, 'Không thể tạo tài khoản.'));
         }
         return;
     }
 
-    // Không lưu email/mật khẩu vào localStorage. Auth thuộc về Supabase.
-    // Trigger trên auth.users sẽ tạo public.profiles với role=user.
     const profile = getProfile();
     profile.name = name;
     saveProfile(profile);
@@ -122,8 +131,6 @@ async function handleRegister(e) {
         return;
     }
 
-    // Email confirmation is enabled: user creation succeeded even though
-    // Supabase intentionally returns no active session yet.
     showToast('success', 'Tạo tài khoản thành công!', '📧 RoFlix đã gửi email xác minh. Hãy mở email và bấm “Xác minh tài khoản” trước khi đăng nhập.');
 }
 
@@ -143,7 +150,7 @@ async function handleLogin(e) {
         if (/email not confirmed/i.test(message)) {
             showToast('warning', 'Email chưa được xác minh', 'Hãy mở email RoFlix để xác minh tài khoản, hoặc gửi lại email xác minh.');
         } else {
-            showToast('error', 'Đăng nhập thất bại', message);
+            showToast('error', 'Đăng nhập thất bại', roflixAuthErrorMessage(error, message || 'Không thể đăng nhập.'));
         }
         return;
     }
