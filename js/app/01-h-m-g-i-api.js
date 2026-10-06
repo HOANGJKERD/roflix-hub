@@ -99,6 +99,8 @@ async function fetchMoviesFromSource(sid, page) {
         .map(m => { m._src = sid; return m; })
         .filter(m => !!pickPoster(m, sid));
 
+    // Keep pagination local to this source result. Do not mutate the global
+    // pagination state from inside a provider adapter.
     movies.pagination = {
         currentPage: pag.currentPage || page,
         totalPages: pag.totalPages || data.last_page || data.total_pages || 1,
@@ -108,6 +110,9 @@ async function fetchMoviesFromSource(sid, page) {
     return movies;
 }
 
+// Gọi 1 endpoint danh sách với tự động dự phòng: nếu nguồn đang chọn lỗi,
+// tự chuyển sang nguồn còn lại (VSMOV <-> KKPhim) để trang không bị "trắng" khi 1 nguồn sập.
+// path: đường dẫn KHÔNG kèm domain, ví dụ '/quoc-gia/au-my?page=1'
 async function fetchListWithFallback(path) {
     const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['kkphim', 'vsmov'];
     let lastErr = null;
@@ -144,6 +149,9 @@ async function fetchMovies(page = 1) {
         for (const sid of ids) {
             try {
                 const movies = await fetchMoviesFromSource(sid, page);
+                // The UI owns the final pagination state. A provider may only
+                // return its own metadata, so a failed/slow provider cannot
+                // overwrite pagination belonging to another result.
                 const pagination = movies.pagination || {};
                 currentPage = pagination.currentPage || page;
                 totalPages = pagination.totalPages || 1;
