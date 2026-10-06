@@ -1,10 +1,9 @@
 -- ============================================================
--- RoFlix Admin Verification 1.0
+-- RoFlix Admin Verification 1.1
 -- Manual verification: Admin approves a new account.
 -- Run AFTER supabase/setup.sql + supabase/admin_analytics.sql.
 -- ============================================================
 
--- New accounts wait for Admin approval. Existing accounts keep status.
 alter table public.profiles
   alter column account_status set default 'pending';
 
@@ -15,7 +14,6 @@ alter table public.profiles
   add constraint profiles_account_status_check
   check (account_status in ('pending','active','suspended','banned'));
 
--- New auth users are created as pending by the existing profile trigger.
 create or replace function public.roflix_create_profile()
 returns trigger
 language plpgsql security definer
@@ -34,13 +32,52 @@ begin
 end;
 $$;
 
--- Recreate the trigger so the new function is definitely used.
 drop trigger if exists roflix_auth_user_created on auth.users;
 create trigger roflix_auth_user_created
 after insert on auth.users
 for each row execute procedure public.roflix_create_profile();
 
--- Admin status RPC now accepts pending and records the action.
+-- Admin verification does TWO server-side actions:
+-- 1) confirms the Auth account, so the user does not need to click an email link;
+-- 2) changes the RoFlix profile from pending -> active.
+create or replace function public.roflix_admin_verify_user(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  v_exists boolean;
+begin
+  if not public.roflix_is_admin() then
+    raise exception 'Admin access required';
+  end if;
+  if p_user_id = auth.uid() then
+    raise exception 'You are already verified as an administrator';
+  end if;
+
+  select exists(select 1 from auth.users where id = p_user_id) into v_exists;
+  if not v_exists then
+    raise exception 'User not found';
+  end if;
+
+  update auth.users
+  set email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmed_at = coalesce(confirmed_at, now())
+  where id = p_user_id;
+
+  update public.profiles
+  set account_status = 'active'
+  where id = p_user_id;
+
+  insert into public.roflix_admin_audit_logs(admin_id, action, target_user_id, details)
+  values(auth.uid(), 'verify_user', p_user_id, jsonb_build_object('account_status','active','email_confirmed',true));
+end;
+$$;
+
+revoke all on function public.roflix_admin_verify_user(uuid) from public;
+grant execute on function public.roflix_admin_verify_user(uuid) to authenticated;
+
 create or replace function public.roflix_admin_set_status(p_user_id uuid, p_status text)
 returns void
 language plpgsql
@@ -48,20 +85,11 @@ security definer
 set search_path = public
 as $$
 begin
-  if not public.roflix_is_admin() then
-    raise exception 'Admin access required';
-  end if;
-  if p_status not in ('pending','active','suspended','banned') then
-    raise exception 'Invalid account status';
-  end if;
-  if p_user_id = auth.uid() and p_status <> 'active' then
-    raise exception 'You cannot disable your own account';
-  end if;
+  if not public.roflix_is_admin() then raise exception 'Admin access required'; end if;
+  if p_status not in ('pending','active','suspended','banned') then raise exception 'Invalid account status'; end if;
+  if p_user_id = auth.uid() and p_status <> 'active' then raise exception 'You cannot disable your own account'; end if;
 
-  update public.profiles
-  set account_status = p_status
-  where id = p_user_id;
-
+  update public.profiles set account_status = p_status where id = p_user_id;
   insert into public.roflix_admin_audit_logs(admin_id, action, target_user_id, details)
   values(auth.uid(), 'set_status', p_user_id, jsonb_build_object('status', p_status));
 end;
@@ -70,7 +98,6 @@ $$;
 revoke all on function public.roflix_admin_set_status(uuid,text) from public;
 grant execute on function public.roflix_admin_set_status(uuid,text) to authenticated;
 
--- Admin stats include pending accounts.
 create or replace function public.roflix_admin_stats()
 returns jsonb
 language plpgsql
@@ -81,9 +108,7 @@ declare
   result jsonb;
   today_start timestamptz := date_trunc('day', now());
 begin
-  if not public.roflix_is_admin() then
-    raise exception 'Admin access required';
-  end if;
+  if not public.roflix_is_admin() then raise exception 'Admin access required'; end if;
 
   select jsonb_build_object(
     'users_total', (select count(*) from public.profiles),
@@ -103,7 +128,6 @@ begin
     'daily_visitors', coalesce((select jsonb_agg(x order by x.day) from (select date_trunc('day', created_at)::date as day, count(distinct session_id) as visitors, count(*) as events from public.roflix_site_events where created_at >= current_date - interval '13 days' group by 1 order by 1) x), '[]'::jsonb),
     'recent_events', coalesce((select jsonb_agg(x order by x.created_at desc) from (select event_type, session_id, user_id, page, movie_title, created_at from public.roflix_site_events order by created_at desc limit 30) x), '[]'::jsonb)
   ) into result;
-
   return result;
 end;
 $$;
