@@ -63,24 +63,56 @@ function mergeMovieLists(groups) {
     return out;
 }
 
-// Cache nhẹ trong bộ nhớ để tránh gọi lại API khi quay lại trang/thể loại vừa xem
+// Cache nhẹ trong bộ nhớ để tránh gọi lại API khi quay lại trang/thể loại vừa xem.
+// Có thêm timeout + dedupe request để 1 API chậm không treo UI và không tạo nhiều
+// request trùng nhau khi người dùng bấm nhanh/chuyển trang liên tục.
 const _apiCache = new Map();
+const _apiInflight = new Map();
 const API_CACHE_TTL = 120000; // 2 phút
 const API_CACHE_MAX = 60; // tránh phình bộ nhớ khi lướt nhiều trang
+const API_REQUEST_TIMEOUT = 8000; // tối đa 8 giây cho một request
+
 async function fetchJson(url) {
     const hit = _apiCache.get(url);
     if (hit && (Date.now() - hit.time) < API_CACHE_TTL) {
         return hit.data;
     }
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (_apiCache.size >= API_CACHE_MAX) {
-        const oldestKey = _apiCache.keys().next().value;
-        _apiCache.delete(oldestKey);
-    }
-    _apiCache.set(url, { data, time: Date.now() });
-    return data;
+
+    const inflight = _apiInflight.get(url);
+    if (inflight) return inflight;
+
+    const request = (async () => {
+        let timer = null;
+        let controller = null;
+        try {
+            if (typeof AbortController !== 'undefined') controller = new AbortController();
+            timer = setTimeout(() => {
+                try { if (controller) controller.abort(); } catch (_) {}
+            }, API_REQUEST_TIMEOUT);
+
+            const options = controller ? { signal: controller.signal } : undefined;
+            const res = await fetch(url, options);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (_apiCache.size >= API_CACHE_MAX) {
+                const oldestKey = _apiCache.keys().next().value;
+                _apiCache.delete(oldestKey);
+            }
+            _apiCache.set(url, { data, time: Date.now() });
+            return data;
+        } catch (error) {
+            if (error && error.name === 'AbortError') {
+                throw new Error('API timeout after ' + (API_REQUEST_TIMEOUT / 1000) + 's');
+            }
+            throw error;
+        } finally {
+            if (timer) clearTimeout(timer);
+            _apiInflight.delete(url);
+        }
+    })();
+
+    _apiInflight.set(url, request);
+    return request;
 }
 
 function buildListPath(page) {
@@ -173,42 +205,35 @@ async function fetchHomePriorityMovies(page = 1) {
     let lastErr = null;
     for (const sid of ids) {
         try {
-            const [auRes, krRes] = await Promise.all([
-                fetch(srcListUrl(`/quoc-gia/au-my?page=${page}`, sid)),
-                fetch(srcListUrl(`/quoc-gia/han-quoc?page=${page}`, sid))
+            const [auData, krData] = await Promise.all([
+                fetchJson(srcListUrl(`/quoc-gia/au-my?page=${page}`, sid)),
+                fetchJson(srcListUrl(`/quoc-gia/han-quoc?page=${page}`, sid))
             ]);
-            const merged = await mergeHomePriority(auRes, krRes, page, sid);
+            const auWrap = unwrapList(auData);
+            const krWrap = unwrapList(krData);
+
+            const au = auWrap.items.map(m => { m._src = sid; return m; }).filter(m => pickPoster(m, sid));
+            const kr = krWrap.items.map(m => { m._src = sid; return m; }).filter(m => pickPoster(m, sid));
+
+            const merged = [];
+            let i = 0, j = 0;
+            while (i < au.length || j < kr.length) {
+                if (i < au.length) merged.push(au[i++]);
+                if (i < au.length) merged.push(au[i++]);
+                if (j < kr.length) merged.push(kr[j++]);
+            }
+
+            const auPages = (auWrap.pag && auWrap.pag.totalPages) || 1;
+            const krPages = (krWrap.pag && krWrap.pag.totalPages) || 1;
+            totalPages = Math.max(auPages, krPages);
+            totalItems = ((auWrap.pag && auWrap.pag.totalItems) || 0)
+                + ((krWrap.pag && krWrap.pag.totalItems) || 0);
+            currentPage = page;
             if (merged.length) return merged;
         } catch (e) { lastErr = e; }
     }
     if (lastErr) throw lastErr;
     throw new Error('home priority fetch failed');
-}
-
-async function mergeHomePriority(auRes, krRes, page, sid) {
-    const auData = auRes.ok ? await auRes.json() : { items: [], pagination: {} };
-    const krData = krRes.ok ? await krRes.json() : { items: [], pagination: {} };
-    const auWrap = unwrapList(auData);
-    const krWrap = unwrapList(krData);
-
-    const au = auWrap.items.map(m => { m._src = sid; return m; }).filter(m => pickPoster(m, sid));
-    const kr = krWrap.items.map(m => { m._src = sid; return m; }).filter(m => pickPoster(m, sid));
-
-    const merged = [];
-    let i = 0, j = 0;
-    while (i < au.length || j < kr.length) {
-        if (i < au.length) merged.push(au[i++]);
-        if (i < au.length) merged.push(au[i++]);
-        if (j < kr.length) merged.push(kr[j++]);
-    }
-
-    const auPages = (auWrap.pag && auWrap.pag.totalPages) || 1;
-    const krPages = (krWrap.pag && krWrap.pag.totalPages) || 1;
-    totalPages = Math.max(auPages, krPages);
-    totalItems = ((auWrap.pag && auWrap.pag.totalItems) || 0)
-        + ((krWrap.pag && krWrap.pag.totalItems) || 0);
-    currentPage = page;
-    return merged;
 }
 
 async function fetchMovieDetail(slug, preferredSrc) {
