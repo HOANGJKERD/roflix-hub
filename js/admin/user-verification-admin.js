@@ -1,4 +1,4 @@
-/* RoFlix Admin Manual Verification 1.1
+/* RoFlix Admin Manual Verification 1.2
  * Admin approval confirms the Auth account server-side and activates the profile.
  */
 (function () {
@@ -29,8 +29,7 @@
       window.showToast('success', 'Đã xác minh', `${name} đã được kích hoạt.`);
     }
 
-    if (typeof window.loadUsers === 'function') await window.loadUsers();
-    else location.reload();
+    location.reload();
   }
 
   function decorateRows() {
@@ -39,7 +38,10 @@
 
     body.querySelectorAll('tr').forEach(row => {
       if (row.dataset.rfVerifyDecorated === '1') return;
-      const status = row.querySelector('.pill')?.textContent?.trim().toLowerCase();
+
+      // admin.js renders: account, created, role, status, activity, actions.
+      const statusCell = row.children?.[3];
+      const status = statusCell?.querySelector('.pill')?.textContent?.trim().toLowerCase();
       if (status !== 'pending') return;
 
       const manageButton = row.querySelector('button');
