@@ -142,7 +142,7 @@
     setTimeout(installWrappers,1200);
     hydrateUserData();
     sb.auth.onAuthStateChange((event)=>{
-      if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') setTimeout(()=>{installWrappers();hydrateUserData();},100);
+      if(event === 'SIGNED_IN' || event === 'SIGNED_OUT') setTimeout(()=>{installWrappers();hydrateUserData();},100);
       if(event === 'SIGNED_OUT'){
         try { localStorage.removeItem(favKey); } catch (_) {}
       }

@@ -8,5 +8,5 @@
   if(Array.isArray(s.gacha))localStorage.setItem('roflix-cards',JSON.stringify(s.gacha.map(c=>({...c,baseId:c.card_key,id:c.card_key,obtainedAt:c.obtained_at}))));
   window.updateProfileUI?.();window.renderProfile?.();window.renderCollection?.();
  }catch(err){console.debug('[RoFlix Cloud Hydrate]',err)}}
- window.addEventListener('roflix:cloud-sync',hydrate);setTimeout(()=>window.rfCloudSync2?.(),900);
+ window.addEventListener('roflix:cloud-sync',hydrate);
 })();

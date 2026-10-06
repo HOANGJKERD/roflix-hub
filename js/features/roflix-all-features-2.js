@@ -45,7 +45,7 @@
   window.rfCloudSync2=syncCloud2;
 
   function wrapCloud(name,after){
-    const fn=window[name]; if(typeof fn!=='function'||fn.__rfCloud2)return;
+    const fn=window[name]; if(typeof fn!=='function'||fn.__rfCloud2||fn.__rfCloudWrapped)return;
     const w=function(){const r=fn.apply(this,arguments);Promise.resolve(r).then(()=>after()).catch(()=>{});return r};
     w.__rfCloud2=true;window[name]=w;
   }
@@ -73,7 +73,7 @@
   window.rfRenderSchedule2=renderSchedule2;
 
   /* ---------- 3. COMMENTS 2.0 ---------- */
-  async function renderComments2(slug){if(!sb||!slug)return;const {data,error}=await sb.from('roflix_movie_comments').select('id,movie_slug,movie_title,user_id,username,body,created_at').eq('movie_slug',slug).order('created_at',{ascending:false}).limit(100);if(error)return;const hidden=await sb.from('roflix_movie_comment_moderation').select('comment_id').eq('status','hidden');const hiddenSet=new Set((hidden.data||[]).map(x=>x.comment_id));const rows=(data||[]).filter(x=>!hiddenSet.has(x.id));const box=$('comments-container');if(!box)return;box.innerHTML=rows.length?rows.map(c=>`<div class="rf-comment2"><div class="rf-comment2-top"><b>${esc(c.username||'Khán Giả')}</b><time>${new Date(c.created_at).toLocaleString('vi-VN')}</time></div><p>${esc(c.body)}</p></div>`).join(''):'<div class="text-center text-gray-500 py-8">Chưa có bình luận. Hãy là người đầu tiên!</div>'}
+  async function renderComments2(slug){if(typeof window.rfRenderCommentThread2==='function'){window.rfRenderCommentThread2(slug);return;}if(!sb||!slug)return;const {data,error}=await sb.from('roflix_movie_comments').select('id,movie_slug,movie_title,user_id,username,display_name,body,created_at,status').eq('movie_slug',slug).order('created_at',{ascending:false}).limit(100);if(error)return;const hidden=await sb.from('roflix_movie_comment_moderation').select('comment_id').eq('status','hidden');const hiddenSet=new Set((hidden.data||[]).map(x=>x.comment_id));const rows=(data||[]).filter(x=>x.status!=='hidden'&&!hiddenSet.has(x.id));const box=$('comments-container');if(!box)return;box.innerHTML=rows.length?rows.map(c=>`<div class="rf-comment2"><div class="rf-comment2-top"><b>${esc(c.username||c.display_name||'Khán Giả')}</b><time>${new Date(c.created_at).toLocaleString('vi-VN')}</time></div><p>${esc(c.body)}</p></div>`).join(''):'<div class="text-center text-gray-500 py-8">Chưa có bình luận. Hãy là người đầu tiên!</div>'}
   window.rfRenderComments2=renderComments2;
 
   /* ---------- 4. WATCH PARTY 2.0 persistence ---------- */
@@ -83,8 +83,8 @@
   /* ---------- 5. GACHA 3.0 ---------- */
   window.rfServerGachaPull=async function(count){if(!sb){window.showToast?.('error','Lỗi','Supabase chưa sẵn sàng');return null}try{const r=await sb.rpc('roflix_gacha_roll',{p_count:Number(count)});if(r.error)throw r.error;const d=r.data||{};localStorage.setItem('roflix-gacha-pity',String(d.pity??0));if(Array.isArray(d.results))write('roflix-gacha-last-results',d.results);window.showGachaPull?.(d.results?.length===1?d.results[0]:d.results);window.updateProfileUI?.();window.rfCloudSync2?.();return d}catch(e){window.showToast?.('error','Gacha',e.message||'Không quay được Gacha');return null}};
   function patchGacha(){
-    if(typeof window.performGacha==='function'&&!window.performGacha.__rfServerGacha){const old=window.performGacha;const w=()=>window.rfServerGachaPull(1);w.__rfServerGacha=true;w.__rfOld=old;window.performGacha=w}
-    if(typeof window.performGacha10==='function'&&!window.performGacha10.__rfServerGacha){const old=window.performGacha10;const w=()=>window.rfServerGachaPull(10);w.__rfServerGacha=true;w.__rfOld=old;window.performGacha10=w}
+    if(typeof window.performGacha==='function'&&!window.performGacha.__rfServerGacha&&!window.performGacha._cloudWrapped){const old=window.performGacha;const w=()=>window.rfServerGachaPull(1);w.__rfServerGacha=true;w.__rfOld=old;window.performGacha=w}
+    if(typeof window.performGacha10==='function'&&!window.performGacha10.__rfServerGacha&&!window.performGacha10._cloudWrapped){const old=window.performGacha10;const w=()=>window.rfServerGachaPull(10);w.__rfServerGacha=true;w.__rfOld=old;window.performGacha10=w}
   }
 
   /* ---------- 6. Admin safety helpers ---------- */
@@ -103,7 +103,7 @@
     if(sb){
       const u=await user();
       if(u){await syncCloud2();await syncWatchlist();}
-      sb.auth.onAuthStateChange((ev)=>{if(['SIGNED_IN','TOKEN_REFRESHED','USER_UPDATED'].includes(ev))setTimeout(()=>{installCloudWrappers();syncCloud2();syncWatchlist()},250)});
+      sb.auth.onAuthStateChange((ev)=>{if(['SIGNED_IN','SIGNED_OUT'].includes(ev))setTimeout(()=>{installCloudWrappers();syncCloud2();syncWatchlist()},250)});
       sb.channel('roflix-all-features-2').on('postgres_changes',{event:'*',schema:'public',table:'roflix_release_schedule'},()=>renderSchedule2()).on('postgres_changes',{event:'*',schema:'public',table:'roflix_movie_comments'},()=>{renderSchedule2();if(window.currentSlug)renderComments2(window.currentSlug)}).subscribe();
     }
     patchGacha();
