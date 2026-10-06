@@ -44,6 +44,15 @@
     document.head.appendChild(s);
   }
 
+  function loadDanMyCatalog() {
+    if (document.getElementById('rf-danmy-hub-script')) return;
+    const s = document.createElement('script');
+    s.id = 'rf-danmy-hub-script';
+    s.src = 'js/features/danmy-hub.js?v=20261006-1';
+    s.async = false;
+    document.head.appendChild(s);
+  }
+
   function css() {
     if (document.getElementById('rf-suite-placement-css')) return;
     const style = document.createElement('style');
@@ -188,6 +197,7 @@
     loadMovieCuration();
     loadAnimeRestore();
     loadAnimeCatalog();
+    loadDanMyCatalog();
     installSecurityRealtime();
 
     const oldToolbar = document.getElementById('roflix-upgrade-toolbar');
