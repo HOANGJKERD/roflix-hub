@@ -26,6 +26,15 @@
     document.head.appendChild(s);
   }
 
+  function loadAnimeRestore() {
+    if (document.getElementById('rf-anime-restore-script')) return;
+    const s = document.createElement('script');
+    s.id = 'rf-anime-restore-script';
+    s.src = 'js/features/anime-restore.js?v=20261006-1';
+    s.async = false;
+    document.head.appendChild(s);
+  }
+
   function css() {
     if (document.getElementById('rf-suite-placement-css')) return;
     const style = document.createElement('style');
@@ -168,6 +177,7 @@
     css();
     loadFeatureGates();
     loadMovieCuration();
+    loadAnimeRestore();
     installSecurityRealtime();
 
     const oldToolbar = document.getElementById('roflix-upgrade-toolbar');
