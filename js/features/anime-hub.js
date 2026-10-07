@@ -230,14 +230,14 @@
     const walk = value => {
       if (!value || candidates.length > 20) return;
       if (typeof value === 'string') {
-        if (/^https?:\\/\\//i.test(value)) candidates.push(value);
+        if (value.startsWith('http://') || value.startsWith('https://')) candidates.push(value);
         return;
       }
       if (Array.isArray(value)) return value.forEach(walk);
       if (typeof value === 'object') Object.values(value).forEach(walk);
     };
     walk(data);
-    return candidates.find(u => /\\.(html?|php)(?:[?#]|$)/i.test(u)) || candidates.find(u => !/\\.(m3u8|mp4)(?:[?#]|$)/i.test(u)) || '';
+    return candidates.find(u => !/\\.(m3u8|mp4)(?:[?#]|$)/i.test(u)) || candidates[0] || '';
   }
 
   async function playAnimeViaAniMapper(item) {
