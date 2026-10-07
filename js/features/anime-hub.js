@@ -176,7 +176,7 @@
       return;
     }
     host.innerHTML = items.map((item, i) => `
-      <div class="movie-card-premium card-stagger" data-rf-anime-card="${i}" tabindex="0" role="button">
+      <div class="movie-card-premium card-stagger" data-rf-anime-card="${i}" data-rf-title="${esc(item.name)}" tabindex="0" role="button">
         <div class="card-poster">
           <img src="${esc(item.poster)}" alt="${esc(item.name)}" loading="lazy" decoding="async" onerror="this.src='https://placehold.co/300x400/1a1a1a/666?text=Anime'">
           <div class="card-overlay">
@@ -228,6 +228,83 @@
     }
   }
 
+  function normalizeSearchTitle(v) {
+    return text(v).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLowerCase()
+      .replace(/\\b(season|ss|part|phim|movie|anime|tv|series|special|ova|ona)\\b/g,' ')
+      .replace(/[^a-z0-9]+/g,' ').replace(/\\s+/g,' ').trim();
+  }
+
+  async function searchResults(q) {
+    const query = text(q);
+    if (!query) return [];
+    const data = await aniListRequest({page:1, perPage:12, search:query, genre:null, year:null});
+    return (data.media || []).map(normalizeAni);
+  }
+
+  function appendSearchResults(items) {
+    const host = document.getElementById('movie-grid-container');
+    if (!host || !items?.length) return 0;
+
+    const existing = new Set();
+    host.querySelectorAll('[data-rf-title]').forEach(el => {
+      const key = normalizeSearchTitle(el.getAttribute('data-rf-title'));
+      if (key) existing.add(key);
+    });
+
+    const unique = [];
+    const seenAni = new Set();
+    for (const item of items) {
+      if (!item?.id || seenAni.has(item.id)) continue;
+      seenAni.add(item.id);
+      const names = [item.name, item.origin_name].map(normalizeSearchTitle).filter(Boolean);
+      if (names.some(n => existing.has(n))) continue;
+      unique.push(item);
+      names.forEach(n => existing.add(n));
+    }
+    if (!unique.length) return 0;
+
+    const section = document.createElement('div');
+    section.className = 'col-span-full mt-8 mb-2';
+    section.innerHTML = '<div class="flex items-center gap-3"><span class="text-xl font-black text-white">Anime từ AniList</span><span class="px-2 py-1 rounded-full bg-violet-600/20 text-violet-300 text-xs font-bold">ANIList</span><span class="text-xs text-white/40">Không trùng các kết quả phía trên</span></div>';
+    host.appendChild(section);
+
+    const grid = document.createElement('div');
+    grid.className = 'col-span-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4';
+    grid.innerHTML = unique.map((item, i) => `
+      <div class="movie-card-premium card-stagger" data-rf-anime-search-card="${i}" data-rf-title="${esc(item.name)}" tabindex="0" role="button">
+        <div class="card-poster">
+          <img src="${esc(item.poster)}" alt="${esc(item.name)}" loading="lazy" decoding="async" onerror="this.src='https://placehold.co/300x400/1a1a1a/666?text=Anime'">
+          <div class="card-overlay">
+            <button class="watch-btn btn-ripple" data-rf-watch><i class="fa-solid fa-play"></i> Xem Ngay</button>
+            <div class="card-actions"><button data-rf-info title="Chi tiết"><i class="fa-solid fa-circle-info"></i></button></div>
+          </div>
+          <div class="card-badges"><span class="src-chip">ANILIST</span><span class="badge" style="background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff">ANIME</span><span class="badge eps">${item.episode_total ? esc(item.episode_total + ' Tập') : 'ON AIR'}</span></div>
+        </div>
+        <div class="card-info"><div class="card-title">${esc(item.name)}</div><div class="card-meta"><span class="rating"><i class="fa-solid fa-star"></i> ${esc(item.rating || 'N/A')}</span><span>${esc(item.year || '')}</span></div></div>
+      </div>`;
+    ).join('');
+
+    host.appendChild(grid);
+    grid.querySelectorAll('[data-rf-anime-search-card]').forEach((card, i) => {
+      const item = unique[i];
+      card.addEventListener('click', e => { if (!e.target.closest('button')) showDetail(item); });
+      card.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) { e.preventDefault(); showDetail(item); }});
+      card.querySelector('[data-rf-watch]')?.addEventListener('click', e => { e.stopPropagation(); window.roflixAnimePlayer?.play(item); });
+      card.querySelector('[data-rf-info]')?.addEventListener('click', e => { e.stopPropagation(); showDetail(item); });
+    });
+    return unique.length;
+  }
+
+  async function searchAndAppend(q) {
+    try {
+      const items = await searchResults(q);
+      return appendSearchResults(items);
+    } catch (e) {
+      console.warn('[RoFlix Anime] AniList search bridge failed', e);
+      return 0;
+    }
+  }
+
   function search(q) { return open(1, {search:q}); }
   function genre(g) { return open(1, {genre:g}); }
   function year(y) { return open(1, {year:y}); }
@@ -268,6 +345,6 @@
     setTimeout(addTopicCard,300); setTimeout(addGenreLink,300); setTimeout(addTopicCard,1200); setTimeout(addGenreLink,1200);
   }
 
-  window.roflixAnime = {open, search, genre, year};
+  window.roflixAnime = {open, search, genre, year, searchResults, searchAndAppend};
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, {once:true}); else boot();
 })();
