@@ -2,6 +2,7 @@
         // PHÁT PHIM
         // ============================================================
         async function playMovie(slug, preferredSrc) {
+    window.__ROFLIX_ANIME_MODE__ = false;
             try {
                 await viewMovieDetail(slug, preferredSrc);
                 let tries = 0;
