@@ -95,6 +95,10 @@ async function resolveEpisode(providerMediaId,provider,e,i){
   throw last||Error('Không tìm thấy nguồn phát');
 }
 function cleanup(){if(hlsInstance){try{hlsInstance.destroy();}catch(_){}hlsInstance=null;}if(embedFrame){embedFrame.remove();embedFrame=null;}const p=document.getElementById('movie-player');if(p)p.style.display='';}
+function fullscreen(){
+  const target=embedFrame||document.getElementById('movie-player');
+  try{if(target?.requestFullscreen)return target.requestFullscreen();if(target?.webkitRequestFullscreen)return target.webkitRequestFullscreen();}catch(_){}
+}
 async function mount(url,title){
   const p=document.getElementById('movie-player');if(!p)throw Error('Không tìm thấy movie-player');cleanup();
   if(/\.m3u8(?:[?#]|$)/i.test(url)&&p instanceof HTMLMediaElement){
@@ -144,5 +148,5 @@ async function play(item){
     if(item?._src&&item._src!=='anilist'&&typeof playMovie==='function')return playMovie(item.slug,item._src);
   }
 }
-window.roflixAnimePlayer={play,prepareEpisodeList:prepare,resolveEpisode,mount,stop:cleanup,findMedia};
+window.roflixAnimePlayer={play,prepareEpisodeList:prepare,resolveEpisode,mount,stop:cleanup,findMedia,fullscreen};
 })();
