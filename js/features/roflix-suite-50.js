@@ -39,7 +39,7 @@
     if (document.getElementById('rf-anime-player-script')) return;
     const s = document.createElement('script');
     s.id = 'rf-anime-player-script';
-    s.src = 'js/features/anime-player.js?v=20261007-3';
+    s.src = 'js/features/anime-player.js?v=20261007-4';
     s.async = false;
     document.head.appendChild(s);
   }
@@ -49,7 +49,7 @@
     if (document.getElementById('rf-anime-catalog-script')) return;
     const s = document.createElement('script');
     s.id = 'rf-anime-catalog-script';
-    s.src = 'js/features/anime-hub.js?v=20261007-5';
+    s.src = 'js/features/anime-hub.js?v=20261007-6';
     s.async = false;
     document.head.appendChild(s);
   }
