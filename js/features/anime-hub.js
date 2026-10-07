@@ -244,6 +244,7 @@
   function appendSearchResults(items) {
     const host = document.getElementById('movie-grid-container');
     if (!host || !items?.length) return 0;
+    host.querySelectorAll('.empty-state').forEach(el => el.closest('.col-span-full')?.remove());
 
     const existing = new Set();
     host.querySelectorAll('[data-rf-title]').forEach(el => {
