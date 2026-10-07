@@ -60,6 +60,14 @@
             const directorsHTML = movie.directors && movie.directors.length > 0
                 ? `<div class="flex flex-wrap gap-1"><span class="text-gray-500">Đạo diễn:</span> ${movie.directors.map(d => `<span class="text-xs bg-gray-800 px-2 py-1 rounded-full">${d}</span>`).join(' ')}</div>`
                 : '';
+
+            // Nút phát: mặc định KKPhim/VSMOV; VidSrc chỉ hiện khi có IMDb/TMDB
+            const watchBtn = epList.length
+                ? `<button onclick="playMovie('${slug}', '${movie._src || ''}')" class="rf-detail-watch-btn"><i class="fa-solid fa-play"></i> Xem phim</button>`
+                : '';
+            const vidsrcBtn = (movie.imdbId || movie.tmdbId)
+                ? `<button onclick="playOnVidSrcFromDetail()" class="mt-2 w-full px-4 py-2.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white transition"><i class="fa-solid fa-play"></i> Xem qua VidSrc</button>`
+                : '';
             
             document.getElementById('detail-content-container').innerHTML = `
                 <div class="glass-premium p-5 md:p-8 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -68,7 +76,8 @@
                             <img src="${movie.poster}" class="w-full h-full object-cover" alt="${escapeHtml(movie.title)}" 
                                  onerror="this.src='https://placehold.co/300x400/1a1a1a/666?text=No+Image'">
                         </div>
-                        ${epList.length ? `<button onclick="playMovie('${slug}', '${movie._src || ''}')" class="rf-detail-watch-btn"><i class="fa-solid fa-play"></i> Xem phim</button>` : ''}
+                        ${watchBtn}
+                        ${vidsrcBtn}
                     </div>
                     <div class="md:col-span-3 flex flex-col justify-between space-y-5">
                         <div>
@@ -152,3 +161,21 @@
             else if (typeof window.rfMovieCommentsRender === 'function') window.rfMovieCommentsRender(slug);
             else renderComments(slug);
         }
+
+// Nút VidSrc trên trang chi tiết (optional — giống tester)
+function playOnVidSrcFromDetail() {
+    if (typeof playOnVidSrc === 'function') {
+        playOnVidSrc();
+        return;
+    }
+    if (window.RoflixVidSrc && currentMovieData && window.RoflixVidSrc.hasIds(currentMovieData)) {
+        if (typeof navigateTo === 'function') navigateTo('play-page');
+        const titleEl = document.getElementById('playing-title');
+        if (titleEl) titleEl.textContent = (currentMovieTitle || currentMovieData.title || '') + ' (VidSrc)';
+        window.RoflixVidSrc.loadIntoPlayer(currentMovieData);
+        return;
+    }
+    if (typeof showToast === 'function') {
+        showToast('error', 'VidSrc', 'Không có IMDb/TMDB hoặc helper chưa sẵn sàng.');
+    }
+}
