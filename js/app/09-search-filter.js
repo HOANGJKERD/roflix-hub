@@ -135,6 +135,28 @@
         }
 
         async function filterByGenre(slug, title) {
+            const rawGenre = String(slug || '').trim().toLowerCase();
+            const rawTitle = String(title || '').trim().toLowerCase();
+            const normalizedGenre = rawGenre.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/đ/g,'d').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+            const normalizedTitle = rawTitle.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/đ/g,'d').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+            if (normalizedGenre === 'anime' || normalizedTitle === 'anime') {
+                searchKeyword = '';
+                currentGenreSlug = '';
+                currentCountrySlug = '';
+                homePriorityMode = false;
+                currentListEndpoint = 'phim-moi-cap-nhat';
+                const titleEl = document.getElementById('list-title');
+                if (titleEl) titleEl.textContent = 'Anime mới • AniList';
+                navigateTo('main-site');
+                if (window.roflixAnime?.open) {
+                    await window.roflixAnime.open(1);
+                } else {
+                    showToast?.('info', 'Anime', 'Đang tải AniList, vui lòng thử lại sau một giây.');
+                    setTimeout(() => window.roflixAnime?.open?.(1), 250);
+                }
+                scrollToMovieList();
+                return;
+            }
             searchKeyword = '';
             currentGenreSlug = resolveGenreSlug(slug, title);
             currentCountrySlug = '';
