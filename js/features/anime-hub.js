@@ -229,10 +229,10 @@
   }
 
   function normalizeSearchTitle(v) {
-    return text(v).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLowerCase()
-      .replace(/\\b(season|ss|part|phim|movie|anime|tv|series|special|ova|ona)\\b/g,' ')
-      .replace(/\\b(19|20)\\d{2}\\b/g,' ')
-      .replace(/[^a-z0-9]+/g,' ').replace(/\\s+/g,' ').trim();
+    return text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase()
+      .replace(/\b(season|ss|part|phim|movie|anime|tv|series|special|ova|ona)\b/g,' ')
+      .replace(/\b(19|20)\\d{2}\b/g,' ')
+      .replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
   }
 
   function titleTokens(v) {
