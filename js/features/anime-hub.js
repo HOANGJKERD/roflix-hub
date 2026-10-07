@@ -386,10 +386,15 @@
     const existing = [];
     host.querySelectorAll('[data-rf-title]').forEach(el => {
       const key = text(el.getAttribute('data-rf-title'));
-      if (key) existing.push({
-        title: key,
-        year: Number(el.getAttribute('data-rf-year')) || 0
-      });
+      if (key) {
+        const attrYear = Number(el.getAttribute('data-rf-year')) || 0;
+        const metaText = text(el.querySelector('.card-meta')?.textContent || '');
+        const metaYear = Number((metaText.match(/\b(?:19|20)\d{2}\b/) || [0])[0]) || 0;
+        existing.push({
+          title: key,
+          year: attrYear || metaYear
+        });
+      }
     });
 
     const unique = [];
@@ -400,7 +405,11 @@
       const names = [item.name, item.origin_name].filter(Boolean);
       let duplicate = false;
       for (const existingItem of existing) {
-        if (names.some(name => sameSearchTitle(name, existingItem.title, item.year, existingItem.year))) {
+        // Chỉ dedupe khi cả hai phía đều có năm phát hành.
+        // Điều này giữ được S2/S3 ngay cả khi trình duyệt đang giữ cache
+        // của card phim cũ chưa có data-rf-year.
+        if (item.year && existingItem.year &&
+            names.some(name => sameSearchTitle(name, existingItem.title, item.year, existingItem.year))) {
           duplicate = true;
           break;
         }
