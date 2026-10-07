@@ -49,7 +49,7 @@
     if (document.getElementById('rf-anime-catalog-script')) return;
     const s = document.createElement('script');
     s.id = 'rf-anime-catalog-script';
-    s.src = 'js/features/anime-hub.js?v=20261007-7';
+    s.src = 'js/features/anime-hub.js?v=20261007-8';
     s.async = false;
     document.head.appendChild(s);
   }
