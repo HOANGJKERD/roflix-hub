@@ -61,7 +61,7 @@
             }
             
             container.innerHTML = mappedMovies.map((m, index) => `
-                <div onclick="viewMovieDetail('${m.slug}', '${m._src || ''}')" class="movie-card-premium card-stagger">
+                <div onclick="viewMovieDetail('${m.slug}', '${m._src || ''}')" class="movie-card-premium card-stagger" data-rf-title="${escapeHtml(m.title)}">
                     <div class="card-poster">
                         <img src="${m.poster}" alt="${escapeHtml(m.title)}" loading="lazy" decoding="async"
                              onerror="this.src='https://placehold.co/300x400/1a1a1a/666?text=No+Image'">
