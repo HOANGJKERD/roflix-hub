@@ -73,7 +73,7 @@ function episodeId(e){return val(e,['episodeId','episode_id','id','numberId','ep
 function episodeName(e,i){return val(e,['number','episodeNumber','episode','title','name'])||String(i+1);}
 async function resolveEpisode(providerMediaId,provider,e,i){
   const pk=providerKey(provider)||text(provider),raw=episodeId(e);if(!raw)throw Error('Tập không có episodeId');
-  const ed=raw.includes('$')?raw:providerMediaId+'$'+raw;
+  // AniMapper returns provider-specific episodeId formats. Use it verbatim.\n  // AnimeVietSub happens to return {mediaId}${episodeId}, while Niniyo can differ.\n  const ed=raw;
   const key=pk+':'+ed;if(sourceCache.has(key))return sourceCache.get(key);
   const servers=['HDX'];
   let last=null;
