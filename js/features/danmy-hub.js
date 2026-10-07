@@ -41,7 +41,7 @@
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/g, 'd')
     .toLowerCase()
-    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, ' ')
+    .replace(/[^a-z0-9\u0e00-\u0e7f\u4e00-\u9fff]+/g, ' ')
     .trim();
 
   const esc = v => typeof escapeHtml === 'function'
