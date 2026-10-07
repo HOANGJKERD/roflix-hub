@@ -169,6 +169,7 @@
     wrap.innerHTML = `
       <button type="button" id="rf-shortcut-collection">📚 Bộ sưu tập</button>
       <button type="button" id="rf-shortcut-cloud">🔄 Đồng bộ thiết bị</button>
+      <button type="button" id="rf-shortcut-anime">🎌 Anime · AniList / AniMapper</button>
       <a href="admin.html" id="rf-shortcut-admin">🛠️ Quản trị</a>
     `;
     const note = host.querySelector('#source-note');
@@ -180,6 +181,13 @@
       else window.showToast?.('info', 'Bộ sưu tập', 'Bộ sưu tập chưa sẵn sàng.');
     });
     document.getElementById('rf-shortcut-cloud')?.addEventListener('click', openCloudCenter);
+    document.getElementById('rf-shortcut-anime')?.addEventListener('click', () => {
+      loadAnimePlayer();
+      loadAnimeCatalog();
+      const open = () => window.roflixAnime?.open?.(1);
+      if (window.roflixAnime?.open) open();
+      else setTimeout(open, 150);
+    });
   }
 
   function addLoginButton() {
@@ -226,6 +234,11 @@
     render();
     setTimeout(render, 300);
     setTimeout(render, 1200);
+    setTimeout(render, 2500);
+    const observer = new MutationObserver(() => {
+      render();
+    });
+    observer.observe(document.body, { childList:true, subtree:true });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once:true });
