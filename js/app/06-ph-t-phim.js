@@ -55,9 +55,9 @@
             if (titleEl) titleEl.textContent = `${title} - ${ep.name}`;
             renderPlayEpisodeGrid(index);
             navigateTo('play-page');
-            if (window.roflixAnimePlayer?.mount) {
+            if (ep.__rfAniMapper && window.roflixAnimePlayer?.mount) {
                 try { await window.roflixAnimePlayer.mount(ep.link, `${title} - ${ep.name}`); }
-                catch (error) { console.warn('[RoFlix Anime] custom mount failed, using native player', error); if (player) player.src = ep.link; }
+                catch (error) { console.warn('[RoFlix Anime] custom mount failed', error); showToast('error', 'Lỗi phát Anime', 'Nguồn phát không mở được.'); return; }
             } else if (player) player.src = ep.link;
             try { if (window.rfAnalytics) window.rfAnalytics.movie('movie_play', currentSlug || '', title); } catch (_) {}
             try { if (window.rfAnalytics) window.rfAnalytics.track('movie_view', { movieSlug: currentSlug || '', movieTitle: title, metadata: { episode: ep.name || '', index } }); } catch (_) {}
