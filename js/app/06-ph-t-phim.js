@@ -44,7 +44,7 @@
             const ep = currentEpisodeList[index];
             if (!ep) { showToast('error', 'Lỗi', 'Không có tập này!'); return; }
             if (!ep.link && ep.__rfAniMapper && window.roflixAnimePlayer?.resolveEpisode) {
-                try { ep.link = (await window.roflixAnimePlayer.resolveEpisode(ep.__rfAniMapper.mediaId, ep.__rfAniMapper.episode, ep.__rfAniMapper.index)).url; }
+                try { ep.link = (await window.roflixAnimePlayer.resolveEpisode(ep.__rfAniMapper.mediaId, ep.__rfAniMapper.provider, ep.__rfAniMapper.episode, ep.__rfAniMapper.index)).url; }
                 catch (error) { console.warn('[RoFlix Anime] episode source failed', error); }
             }
             if (!ep.link) { showToast('error', 'Lỗi', 'Không có link phát cho tập này!'); return; }
@@ -88,6 +88,10 @@
         }
 
         function openFullscreen() {
+            if (window.roflixAnimePlayer?.fullscreen && window.__ROFLIX_ANIME_MODE__) {
+                window.roflixAnimePlayer.fullscreen();
+                return;
+            }
             const player = document.getElementById('movie-player');
             if (player.requestFullscreen) {
                 player.requestFullscreen();
