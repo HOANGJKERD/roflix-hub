@@ -8,9 +8,12 @@
   if (window.__ROFLIX_ANIME_HUB__) return;
   window.__ROFLIX_ANIME_HUB__ = true;
 
-  const PAGE_SIZE = 24;
+  const PAGE_SIZE = 50;
+  const JIKAN_PAGE_SIZE = 25;
   const ANILIST_URL = 'https://graphql.anilist.co';
+  const JIKAN_URL = 'https://api.jikan.moe/v4/anime';
   const catalogCache = new Map();
+  const jikanCache = new Map();
   let requestSeq = 0;
 
   const text = v => String(v == null ? '' : v).trim();
@@ -56,6 +59,58 @@
       }
     }
   `;
+
+  async function jikanRequest(variables) {
+    const key = JSON.stringify(variables);
+    if (jikanCache.has(key)) return jikanCache.get(key);
+    const qs = new URLSearchParams();
+    qs.set('page', String(variables.page || 1));
+    qs.set('limit', String(Math.min(JIKAN_PAGE_SIZE, 25)));
+    if (variables.search) qs.set('q', variables.search);
+    const p = fetch(JIKAN_URL + '?' + qs.toString(), {
+      headers: {'Accept':'application/json'}
+    }).then(async r => {
+      if (!r.ok) throw new Error('Jikan HTTP ' + r.status);
+      return r.json();
+    }).catch(e => {
+      jikanCache.delete(key);
+      throw e;
+    });
+    jikanCache.set(key, p);
+    return p;
+  }
+
+  function normalizeJikan(item) {
+    const title = text(item?.title || item?.title_english || item?.title_japanese || 'Unknown Anime');
+    const alt = text(item?.title_english || item?.title_japanese || item?.title || '');
+    const poster = text(item?.images?.webp?.large_image_url || item?.images?.jpg?.large_image_url || item?.images?.webp?.image_url || item?.images?.jpg?.image_url || '');
+    const airedYear = item?.year || (item?.aired?.from ? Number(String(item.aired.from).slice(0,4)) : '');
+    return {
+      id: 'jikan-' + String(item?.mal_id || ''),
+      idMal: Number(item?.mal_id || 0) || null,
+      slug: 'jikan-' + String(item?.mal_id || ''),
+      name: title,
+      origin_name: alt,
+      poster_url: poster,
+      thumb_url: poster,
+      poster,
+      year: Number(airedYear || 0) || '',
+      rating: item?.score ? Number(item.score).toFixed(1) : '',
+      episode_total: Number(item?.episodes || 0) || '',
+      type: 'anime',
+      description: text(item?.synopsis),
+      genres: Array.isArray(item?.genres) ? item.genres.map(g => g?.name).filter(Boolean) : [],
+      format: text(item?.type),
+      status: text(item?.status),
+      country: '',
+      duration: 0,
+      banner: '',
+      siteUrl: text(item?.url),
+      nextEpisode: null,
+      _jikan: item,
+      _src: 'jikan'
+    };
+  }
 
   async function aniListRequest(variables) {
     const key = JSON.stringify(variables);
@@ -213,9 +268,21 @@
     window.scrollTo({top:0, behavior:'smooth'});
     host.innerHTML = Array(12).fill(0).map(() => `<div class="skeleton-card-premium"><div class="skeleton-poster"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>`).join('');
     try {
-      const data = await aniListRequest({page, perPage:PAGE_SIZE, search:search || null, genre:genre || null, year});
+      let data;
+      let items;
+      try {
+        data = await aniListRequest({page, perPage:PAGE_SIZE, search:search || null, genre:genre || null, year});
+        items = (data.media || []).map(normalizeAni);
+      } catch (aniErr) {
+        console.warn('[RoFlix Anime Hub] AniList failed, using Jikan fallback', aniErr);
+        const jk = await jikanRequest({page, search});
+        items = (jk.data || []).map(normalizeJikan);
+        data = { pageInfo: {
+          currentPage: Number(jk?.pagination?.current_page || page),
+          hasNextPage: Boolean(jk?.pagination?.has_next_page)
+        }};
+      }
       if (seq !== requestSeq) return;
-      const items = (data.media || []).map(normalizeAni);
       currentPage = page;
       totalPages = Number(data.pageInfo?.lastPage || 1);
       totalItems = Number(data.pageInfo?.total || items.length);
@@ -231,7 +298,7 @@
   function normalizeSearchTitle(v) {
     return text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase()
       .replace(/\b(season|ss|part|phim|movie|anime|tv|series|special|ova|ona)\b/g,' ')
-      .replace(/\b(19|20)\\d{2}\b/g,' ')
+      .replace(/\b(19|20)\d{2}\b/g,' ')
       .replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
   }
 
@@ -254,8 +321,27 @@
   async function searchResults(q) {
     const query = text(q);
     if (!query) return [];
-    const data = await aniListRequest({page:1, perPage:12, search:query, genre:null, year:null});
-    return (data.media || []).map(normalizeAni);
+    const [ani, jikan] = await Promise.allSettled([
+      aniListRequest({page:1, perPage:50, search:query, genre:null, year:null}),
+      jikanRequest({page:1, search:query})
+    ]);
+    const merged = [];
+    const seen = new Set();
+    if (ani.status === 'fulfilled') {
+      for (const item of (ani.value.media || []).map(normalizeAni)) {
+        const key = item.idMal ? 'mal:' + item.idMal : 'ani:' + item.id;
+        if (!seen.has(key)) { seen.add(key); merged.push(item); }
+      }
+    }
+    if (jikan.status === 'fulfilled') {
+      for (const item of (jikan.value.data || []).map(normalizeJikan)) {
+        const key = item.idMal ? 'mal:' + item.idMal : 'title:' + normalizeSearchTitle(item.name);
+        if (seen.has(key)) continue;
+        const dup = merged.some(existing => sameSearchTitle(existing.name, item.name) || sameSearchTitle(existing.origin_name, item.name));
+        if (!dup) { seen.add(key); merged.push(item); }
+      }
+    }
+    return merged;
   }
 
   function appendSearchResults(items) {
