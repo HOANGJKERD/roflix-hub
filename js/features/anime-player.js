@@ -55,9 +55,6 @@ async function findMedia(title){
   let metadata=null;
   try{metadata=await api('/metadata?id='+encodeURIComponent(id));}catch(_){}
   let providers=normalizeProviders(metadata);
-  const fallbackProviders=PROVIDER_PRIORITY.map(provider=>({provider,id,name:provider}));
-  const known=new Set(providers.map(providerKey).filter(Boolean));
-  for(const p of fallbackProviders)if(!known.has(providerKey(p)))providers.push(p);
   providers=providers.sort((a,b)=>providerScore(b)-providerScore(a));
   const result={id,metadata,providers};
   mediaCache.set(key,result);return result;
