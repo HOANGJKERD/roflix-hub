@@ -332,7 +332,12 @@
     return new Set(normalizeSearchTitle(v).split(' ').filter(w => w.length > 1));
   }
 
-  function sameSearchTitle(a, b) {
+  function sameSearchTitle(a, b, yearA, yearB) {
+    const ya = Number(yearA) || 0;
+    const yb = Number(yearB) || 0;
+    // Không gộp các season khác nhau chỉ vì tên franchise gần giống nhau.
+    // Ví dụ Kaguya S1 (2019), S2 (2020), S3 (2022) phải xuất hiện riêng.
+    if (ya && yb && ya !== yb) return false;
     const x = normalizeSearchTitle(a), y = normalizeSearchTitle(b);
     if (!x || !y) return false;
     if (x === y || x.includes(y) || y.includes(x)) return true;
@@ -363,7 +368,10 @@
       for (const item of (jikan.value.data || []).map(normalizeJikan)) {
         const key = item.idMal ? 'mal:' + item.idMal : 'title:' + normalizeSearchTitle(item.name);
         if (seen.has(key)) continue;
-        const dup = merged.some(existing => sameSearchTitle(existing.name, item.name) || sameSearchTitle(existing.origin_name, item.name));
+        const dup = merged.some(existing =>
+        sameSearchTitle(existing.name, item.name, existing.year, item.year) ||
+        sameSearchTitle(existing.origin_name, item.name, existing.year, item.year)
+      );
         if (!dup) { seen.add(key); merged.push(item); }
       }
     }
@@ -375,10 +383,13 @@
     if (!host || !items?.length) return 0;
     host.querySelectorAll('.empty-state').forEach(el => el.closest('.col-span-full')?.remove());
 
-    const existing = new Set();
+    const existing = [];
     host.querySelectorAll('[data-rf-title]').forEach(el => {
       const key = text(el.getAttribute('data-rf-title'));
-      if (key) existing.add(key);
+      if (key) existing.push({
+        title: key,
+        year: Number(el.getAttribute('data-rf-year')) || 0
+      });
     });
 
     const unique = [];
@@ -388,15 +399,15 @@
       seenAni.add(item.id);
       const names = [item.name, item.origin_name].filter(Boolean);
       let duplicate = false;
-      for (const existingTitle of existing) {
-        if (names.some(name => sameSearchTitle(name, existingTitle))) {
+      for (const existingItem of existing) {
+        if (names.some(name => sameSearchTitle(name, existingItem.title, item.year, existingItem.year))) {
           duplicate = true;
           break;
         }
       }
       if (duplicate) continue;
       unique.push(item);
-      names.forEach(name => existing.add(name));
+      names.forEach(name => existing.push({title:name, year:Number(item.year)||0}));
     }
     if (!unique.length) return 0;
 
