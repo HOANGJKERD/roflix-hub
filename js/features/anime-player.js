@@ -1,21 +1,131 @@
-/* RoFlix Anime Player 1.0: AniMapper -> AnimeVietSub. */
+/* RoFlix Anime Player 2.0
+ * AniMapper registry -> multiple providers -> playable source.
+ * Uses provider/source URLs returned by the public API. No proxy/bypass layer.
+ */
 (function(){'use strict';
 if(window.__ROFLIX_ANIME_PLAYER__)return;window.__ROFLIX_ANIME_PLAYER__=true;
-const API='https://api.animapper.net/api/v1',PROVIDER='ANIMEVIETSUB',sourceCache=new Map(),mediaCache=new Map();let hlsInstance=null,embedFrame=null;
-const text=v=>String(v==null?'':v).trim(),norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const API='https://api.animapper.net/api/v1';
+const PROVIDER_PRIORITY=['ANIMEVIETSUB','NINIYO'];
+const sourceCache=new Map(),mediaCache=new Map(),episodeCache=new Map();
+let hlsInstance=null,embedFrame=null;
+
+const text=v=>String(v==null?'':v).trim();
+const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 async function api(p){const r=await fetch(API+p,{headers:{Accept:'application/json'}});if(!r.ok)throw Error('AniMapper '+r.status);return r.json();}
-function arr(d,keys){if(Array.isArray(d))return d;for(const k of keys)if(Array.isArray(d?.[k]))return d[k];if(Array.isArray(d?.data))return d.data;if(Array.isArray(d?.result))return d.result;return[];}
+function arr(d,keys){
+  if(Array.isArray(d))return d;
+  for(const k of keys)if(Array.isArray(d?.[k]))return d[k];
+  if(Array.isArray(d?.result?.episodes))return d.result.episodes;
+  if(Array.isArray(d?.data?.episodes))return d.data.episodes;
+  if(Array.isArray(d?.result))return d.result;
+  if(Array.isArray(d?.data))return d.data;
+  return[];
+}
 function val(o,keys){if(!o||typeof o!=='object')return'';for(const k of keys){const v=text(o[k]);if(v)return v;}return'';}
-function match(q,i){q=norm(q);const ts=[i?.title?.userPreferred,i?.title?.english,i?.title?.romaji,i?.title?.native,i?.name,i?.origin_name,i?.title].map(norm).filter(Boolean);let best=0;for(const t of ts){if(q===t)best=Math.max(best,100);else if(q&&(q.includes(t)||t.includes(q)))best=Math.max(best,86);else{const a=new Set(q.split(' ')),b=new Set(t.split(' '));let n=0;a.forEach(w=>{if(w.length>1&&b.has(w))n++;});best=Math.max(best,Math.min(78,n*13));}}return best;}
-function src(d){const u=[val(d,['url','embed','embedUrl','embed_url','link','src']),val(d?.data,['url','embed','embedUrl','embed_url','link','src']),val(d?.result,['url','embed','embedUrl','embed_url','link','src'])].find(Boolean);return u&&/^https?:\/\//i.test(u)?u:'';}
-function eid(e){return val(e,['episodeId','episode_id','id','numberId','episodeData']);}
-function eno(e,i){return val(e,['number','episodeNumber','episode','title'])||String(i+1);}
-async function findId(title){const k=norm(title);if(mediaCache.has(k))return mediaCache.get(k);const d=await api('/search?title='+encodeURIComponent(title)+'&mediaType=ANIME&limit=10');const rs=arr(d,['results','data','items','media']);const best=rs.map(i=>({i,s:match(title,i)})).sort((a,b)=>b.s-a.s)[0];if(!best||best.s<60)throw Error('Không khớp anime trên AniMapper');let id=val(best.i,['id','mediaId','aniId','anilistId','malId']);try{const m=await api('/metadata?id='+encodeURIComponent(id)),ps=arr(m,['providers','streamingProviders']),p=ps.find(x=>/ANIMEVIETSUB/i.test(val(x,['name','id','provider','slug'])));if(p)id=val(p,['mediaId','id'])||id;}catch(_){}mediaCache.set(k,id);return id;}
-async function load(title){const id=await findId(title),d=await api('/stream/episodes?id='+encodeURIComponent(id)+'&provider='+PROVIDER),es=arr(d,['episodes','results','items','data']);if(!es.length)throw Error('AnimeVietSub chưa có tập');return{id,es};}
-async function resolveEpisode(id,e,i){const raw=eid(e);if(!raw)throw Error('Tập không có episodeId');const ed=raw.includes('$')?raw:id+'$'+raw,k=PROVIDER+':'+ed;if(sourceCache.has(k))return sourceCache.get(k);const d=await api('/stream/source?episodeData='+encodeURIComponent(ed)+'&provider='+PROVIDER+'&server=HDX'),u=src(d);if(!u)throw Error('AniMapper không trả về URL phát');const r={url:u,type:text(d?.type||d?.data?.type||d?.result?.type).toUpperCase()||'EMBED',server:text(d?.server||d?.data?.server||d?.result?.server)||'HDX',episodeData:ed,index:i};sourceCache.set(k,r);return r;}
+function match(q,i){
+  q=norm(q);const ts=[i?.title?.userPreferred,i?.title?.english,i?.title?.romaji,i?.title?.native,i?.name,i?.origin_name,i?.title].map(norm).filter(Boolean);let best=0;
+  for(const t of ts){if(q===t)best=Math.max(best,100);else if(q&&(q.includes(t)||t.includes(q)))best=Math.max(best,86);else{const a=new Set(q.split(' ')),b=new Set(t.split(' '));let n=0;a.forEach(w=>{if(w.length>1&&b.has(w))n++;});best=Math.max(best,Math.min(78,n*13));}}
+  return best;
+}
+function sourceUrl(d){
+  const fields=['url','embed','embedUrl','embed_url','link','src'];
+  for(const obj of [d,d?.data,d?.result]){const u=val(obj,fields);if(/^https?:\/\//i.test(u))return u;}
+  return '';
+}
+function providerKey(p){
+  return text(p?.provider||p?.id||p?.slug||p?.name).toUpperCase().replace(/[^A-Z0-9]+/g,'');
+}
+function normalizeProviders(m){
+  const raw=m?.providers||m?.streamingProviders||m?.result?.providers||m?.result?.streamingProviders||m?.data?.providers||m?.data?.streamingProviders||{};
+  if(Array.isArray(raw))return raw;
+  return Object.entries(raw||{}).map(([key,value])=>typeof value==='object'?{...value,provider:value.provider||key,id:value.id||key,name:value.name||key}:{provider:key,id:key,name:key});
+}
+function providerScore(p){
+  const k=providerKey(p);
+  const i=PROVIDER_PRIORITY.indexOf(k);
+  return i<0?50:100-i*10;
+}
+async function findMedia(title){
+  const key=norm(title);if(mediaCache.has(key))return mediaCache.get(key);
+  const d=await api('/search?title='+encodeURIComponent(title)+'&mediaType=ANIME&limit=10');
+  const rs=arr(d,['results','items','media']);
+  const best=rs.map(i=>({i,s:match(title,i)})).sort((a,b)=>b.s-a.s)[0];
+  if(!best||best.s<60)throw Error('Không khớp anime trên AniMapper');
+  let id=val(best.i,['id','mediaId','aniId','anilistId','malId']);
+  let metadata=null;
+  try{metadata=await api('/metadata?id='+encodeURIComponent(id));}catch(_){}
+  const providers=normalizeProviders(metadata).sort((a,b)=>providerScore(b)-providerScore(a));
+  const result={id,metadata,providers};
+  mediaCache.set(key,result);return result;
+}
+function providerId(p){return val(p,['mediaId','id','providerId','slug'])||providerKey(p);}
+async function loadEpisodes(mediaId,provider){
+  const pk=providerKey(provider)||text(provider);
+  const key=mediaId+':'+pk;if(episodeCache.has(key))return episodeCache.get(key);
+  const id=providerId(provider)||mediaId;
+  const d=await api('/stream/episodes?id='+encodeURIComponent(id)+'&provider='+encodeURIComponent(pk));
+  const es=arr(d,['episodes','results','items']);
+  if(!es.length)throw Error('Provider '+pk+' không có tập');
+  const value={provider:pk,mediaId:id,episodes:es};episodeCache.set(key,value);return value;
+}
+function episodeId(e){return val(e,['episodeId','episode_id','id','numberId','episodeData']);}
+function episodeName(e,i){return val(e,['number','episodeNumber','episode','title','name'])||String(i+1);}
+async function resolveEpisode(providerMediaId,provider,e,i){
+  const pk=providerKey(provider)||text(provider),raw=episodeId(e);if(!raw)throw Error('Tập không có episodeId');
+  const ed=raw.includes('$')?raw:providerMediaId+'$'+raw;
+  const key=pk+':'+ed;if(sourceCache.has(key))return sourceCache.get(key);
+  const servers=['HDX'];
+  let last=null;
+  for(const server of servers){
+    try{
+      const d=await api('/stream/source?episodeData='+encodeURIComponent(ed)+'&provider='+encodeURIComponent(pk)+'&server='+encodeURIComponent(server));
+      const u=sourceUrl(d);
+      if(u){const r={url:u,type:text(d?.type||d?.data?.type||d?.result?.type).toUpperCase()||'EMBED',server:text(d?.server||d?.data?.server||d?.result?.server)||server,provider:pk,episodeData:ed,index:i};sourceCache.set(key,r);return r;}
+    }catch(e){last=e;}
+  }
+  try{
+    const d=await api('/stream/source?episodeData='+encodeURIComponent(ed)+'&provider='+encodeURIComponent(pk));
+    const u=sourceUrl(d);
+    if(u){const r={url:u,type:text(d?.type||d?.data?.type||d?.result?.type).toUpperCase()||'EMBED',server:text(d?.server||d?.data?.server||d?.result?.server)||'DEFAULT',provider:pk,episodeData:ed,index:i};sourceCache.set(key,r);return r;}
+  }catch(e){last=e;}
+  throw last||Error('Không tìm thấy nguồn phát');
+}
 function cleanup(){if(hlsInstance){try{hlsInstance.destroy();}catch(_){}hlsInstance=null;}if(embedFrame){embedFrame.remove();embedFrame=null;}const p=document.getElementById('movie-player');if(p)p.style.display='';}
-async function mount(url,title){const p=document.getElementById('movie-player');if(!p)throw Error('Không tìm thấy movie-player');cleanup();if(/\.m3u8(?:[?#]|$)/i.test(url)&&p instanceof HTMLMediaElement){if(p.canPlayType('application/vnd.apple.mpegurl')){p.src=url;return;}if(!window.Hls){const s=document.createElement('script');s.id='rf-hls-js';s.src='https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';await new Promise(res=>{s.onload=res;s.onerror=res;document.head.appendChild(s);});}if(!window.Hls||!window.Hls.isSupported())throw Error('HLS không được hỗ trợ');hlsInstance=new window.Hls({enableWorker:true,lowLatencyMode:false});hlsInstance.loadSource(url);hlsInstance.attachMedia(p);return;}if(p.tagName==='IFRAME'){p.src=url;p.allow='autoplay; fullscreen; picture-in-picture';p.allowFullscreen=true;return;}const parent=p.parentElement;if(!parent)throw Error('Không có vùng player');embedFrame=document.createElement('iframe');embedFrame.src=url;embedFrame.title=title||'RoFlix Anime Player';embedFrame.allow='autoplay; fullscreen; picture-in-picture';embedFrame.allowFullscreen=true;embedFrame.referrerPolicy='strict-origin-when-cross-origin';embedFrame.style.cssText='width:100%;height:100%;min-height:420px;border:0;border-radius:inherit;background:#000;';p.style.display='none';parent.appendChild(embedFrame);}
-async function prepare(item){const title=text(item?.name||item?.origin_name||item?.slug),m=await load(title);currentEpisodeList=m.es.map((e,i)=>({name:eno(e,i),link:'',__rfAniMapper:{mediaId:m.id,episode:e,index:i}}));currentMovieTitle=title;try{currentSlug=item?.slug||currentSlug;}catch(_){}return m;}
-async function play(item){const title=text(item?.name||item?.origin_name||item?.slug);try{await prepare(item);if(!currentEpisodeList[0])throw Error('Không có tập');currentEpisodeList[0].link=(await resolveEpisode(currentEpisodeList[0].__rfAniMapper.mediaId,currentEpisodeList[0].__rfAniMapper.episode,0)).url;await playMovieByIndex(0);}catch(e){console.warn('[RoFlix Anime] AniMapper failed',e);if(typeof showToastPro==='function')showToastPro('warning','AniMapper không phát được','Đang thử nguồn dự phòng...');return playMovie(item?.slug||'',item?._src||'');}}
-window.roflixAnimePlayer={play,prepareEpisodeList:prepare,resolveEpisode,mount,stop:cleanup};
+async function mount(url,title){
+  const p=document.getElementById('movie-player');if(!p)throw Error('Không tìm thấy movie-player');cleanup();
+  if(/\.m3u8(?:[?#]|$)/i.test(url)&&p instanceof HTMLMediaElement){
+    if(p.canPlayType('application/vnd.apple.mpegurl')){p.src=url;return;}
+    if(!window.Hls){const s=document.createElement('script');s.id='rf-hls-js';s.src='https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';await new Promise(res=>{s.onload=res;s.onerror=res;document.head.appendChild(s);});}
+    if(!window.Hls||!window.Hls.isSupported())throw Error('HLS không được hỗ trợ');hlsInstance=new window.Hls({enableWorker:true,lowLatencyMode:false});hlsInstance.loadSource(url);hlsInstance.attachMedia(p);return;
+  }
+  if(p.tagName==='IFRAME'){p.src=url;p.allow='autoplay; fullscreen; picture-in-picture';p.allowFullscreen=true;return;}
+  const parent=p.parentElement;if(!parent)throw Error('Không có vùng player');
+  embedFrame=document.createElement('iframe');embedFrame.src=url;embedFrame.title=title||'RoFlix Anime Player';embedFrame.allow='autoplay; fullscreen; picture-in-picture';embedFrame.allowFullscreen=true;embedFrame.referrerPolicy='strict-origin-when-cross-origin';embedFrame.style.cssText='width:100%;height:100%;min-height:420px;border:0;border-radius:inherit;background:#000;';p.style.display='none';parent.appendChild(embedFrame);
+}
+async function prepare(item){
+  const title=text(item?.name||item?.origin_name||item?.slug),media=await findMedia(title);
+  const usable=[];
+  for(const p of media.providers||[]){
+    const pk=providerKey(p);if(!pk)continue;
+    try{const ep=await loadEpisodes(media.id,p);usable.push(ep);}catch(e){console.warn('[RoFlix Anime] provider failed',pk,e);}
+  }
+  if(!usable.length)throw Error('Không có provider nào có tập');
+  const chosen=usable[0];
+  currentEpisodeList=chosen.episodes.map((e,i)=>({name:episodeName(e,i),link:'',__rfAniMapper:{mediaId:chosen.mediaId,provider:chosen.provider,episode:e,index:i}}));
+  currentMovieTitle=title;currentSlug=item?.slug||currentSlug;
+  return {media,providers:usable,chosen};
+}
+async function play(item){
+  try{
+    const prepared=await prepare(item);if(!currentEpisodeList[0])throw Error('Không có tập');
+    const meta=currentEpisodeList[0].__rfAniMapper;
+    currentEpisodeList[0].link=(await resolveEpisode(meta.mediaId,meta.provider,meta.episode,0)).url;
+    await playMovieByIndex(0);
+  }catch(e){
+    console.warn('[RoFlix Anime] multi-provider failed',e);
+    if(typeof showToastPro==='function')showToastPro('warning','Anime chưa phát được','Không tìm thấy nguồn phát khả dụng.');
+    if(item?._src&&item._src!=='anilist'&&typeof playMovie==='function')return playMovie(item.slug,item._src);
+  }
+}
+window.roflixAnimePlayer={play,prepareEpisodeList:prepare,resolveEpisode,mount,stop:cleanup,findMedia};
 })();
