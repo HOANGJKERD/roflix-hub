@@ -35,11 +35,21 @@
     document.head.appendChild(s);
   }
 
+  function loadAnimePlayer() {
+    if (document.getElementById('rf-anime-player-script')) return;
+    const s = document.createElement('script');
+    s.id = 'rf-anime-player-script';
+    s.src = 'js/features/anime-player.js?v=20261007-1';
+    s.async = false;
+    document.head.appendChild(s);
+  }
+
   function loadAnimeCatalog() {
+    loadAnimePlayer();
     if (document.getElementById('rf-anime-catalog-script')) return;
     const s = document.createElement('script');
     s.id = 'rf-anime-catalog-script';
-    s.src = 'js/features/anime-hub.js?v=20261006-1';
+    s.src = 'js/features/anime-hub.js?v=20261007-2';
     s.async = false;
     document.head.appendChild(s);
   }
