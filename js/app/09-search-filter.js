@@ -21,7 +21,34 @@
             });
         }
 
-                async function handleSearch() {
+        async function waitForAnimeSearchBridge(timeout = 8000) {
+            const started = Date.now();
+            while (Date.now() - started < timeout) {
+                const bridge = window.roflixAnime;
+                if (bridge && typeof bridge.searchAndAppend === 'function') return bridge;
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            return null;
+        }
+
+        async function appendAnimeSearchResults(val) {
+            if (!val) return 0;
+            const bridge = await waitForAnimeSearchBridge();
+            if (!bridge) {
+                console.warn('[RoFlix Anime] Search bridge chưa sẵn sàng sau 8 giây.');
+                return 0;
+            }
+            try {
+                const added = await bridge.searchAndAppend(val);
+                console.info('[RoFlix Anime] search=', val, 'added=', added);
+                return Number(added || 0);
+            } catch (e) {
+                console.warn('[RoFlix Anime] Không thể bổ sung kết quả Anime:', e);
+                return 0;
+            }
+        }
+
+        async function handleSearch() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(async () => {
                 const val = (document.getElementById('search-input')?.value || '').trim();
@@ -40,16 +67,17 @@
                 });
                 navigateTo('main-site');
                 await renderMoviesFromAPI(1);
-                if (val) await window.roflixAnime?.searchAndAppend?.(val);
+                if (val) await appendAnimeSearchResults(val);
                 if (val) scrollToMovieList();
             }, 350);
         }
 
-                async function handleSearchMobile() {
+        async function handleSearchMobile() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(async () => {
                 const val = (document.getElementById('search-input-mobile')?.value || '').trim();
                 searchKeyword = val;
+                currentGenreSlug = '';
                 currentGenreSlug = '';
                 currentCountrySlug = '';
                 homePriorityMode = !val;
@@ -64,7 +92,7 @@
                 navigateTo('main-site');
                 closeMobileMenu();
                 await renderMoviesFromAPI(1);
-                if (val) await window.roflixAnime?.searchAndAppend?.(val);
+                if (val) await appendAnimeSearchResults(val);
                 if (val) scrollToMovieList();
             }, 350);
         }
