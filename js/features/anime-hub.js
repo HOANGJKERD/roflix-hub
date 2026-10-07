@@ -9,6 +9,7 @@
   window.__ROFLIX_ANIME_HUB__ = true;
 
   const PAGE_SIZE = 50;
+  const NEW_ANIME_MIN = 12;
   const JIKAN_PAGE_SIZE = 25;
   const ANILIST_URL = 'https://graphql.anilist.co';
   const JIKAN_URL = 'https://api.jikan.moe/v4/anime';
@@ -288,8 +289,18 @@
       try {
         data = await aniListRequest({page, perPage:PAGE_SIZE, search:search || null, genre:genre || null, year: year || (search ? null : currentAnimeYear()), season: search ? null : currentAnimeSeason(), sort: search ? ['SEARCH_MATCH'] : ['START_DATE_DESC']});
         items = (data.media || []).map(normalizeAni);
+        if (!search && !genre && !year && items.length < NEW_ANIME_MIN) {
+          const broad = await aniListRequest({page, perPage:PAGE_SIZE, search:null, genre:null, year:currentAnimeYear(), season:null, sort:['START_DATE_DESC']});
+          const seen = new Set(items.map(x => x.idMal ? 'mal:' + x.idMal : 'ani:' + x.id));
+          for (const item of (broad.media || []).map(normalizeAni)) {
+            const key = item.idMal ? 'mal:' + item.idMal : 'ani:' + item.id;
+            if (!seen.has(key)) { seen.add(key); items.push(item); }
+          }
+          if (items.length) data = broad;
+        }
+        if (!items.length) throw new Error('AniList returned no anime');
       } catch (aniErr) {
-        console.warn('[RoFlix Anime Hub] AniList failed, using Jikan fallback', aniErr);
+        console.warn('[RoFlix Anime Hub] AniList unavailable/empty, using Jikan fallback', aniErr);
         const jk = await jikanRequest({page, search});
         items = (jk.data || []).map(normalizeJikan);
         data = { pageInfo: {
@@ -441,7 +452,7 @@
     const card = document.createElement('button');
     card.type = 'button'; card.id = 'rf-topic-anime'; card.className = 'topic-card';
     card.style.background = 'linear-gradient(135deg,#7c3aed 0%,#db2777 100%)';
-    card.innerHTML = '<h3>ANIME</h3><span>Catalog AniList ›</span>';
+    card.innerHTML = '<h3>ANIME</h3><span>Anime mới • AniList + Jikan ›</span>';
     card.addEventListener('click', () => window.roflixAnime.open(1)); row.appendChild(card);
   }
 
