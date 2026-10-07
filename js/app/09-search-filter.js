@@ -40,6 +40,7 @@
                 });
                 navigateTo('main-site');
                 await renderMoviesFromAPI(1);
+                if (val) await window.roflixAnime?.searchAndAppend?.(val);
                 if (val) scrollToMovieList();
             }, 350);
         }
@@ -63,6 +64,7 @@
                 navigateTo('main-site');
                 closeMobileMenu();
                 await renderMoviesFromAPI(1);
+                if (val) await window.roflixAnime?.searchAndAppend?.(val);
                 if (val) scrollToMovieList();
             }, 350);
         }
