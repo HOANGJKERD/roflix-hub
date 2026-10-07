@@ -231,7 +231,24 @@
   function normalizeSearchTitle(v) {
     return text(v).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLowerCase()
       .replace(/\\b(season|ss|part|phim|movie|anime|tv|series|special|ova|ona)\\b/g,' ')
+      .replace(/\\b(19|20)\\d{2}\\b/g,' ')
       .replace(/[^a-z0-9]+/g,' ').replace(/\\s+/g,' ').trim();
+  }
+
+  function titleTokens(v) {
+    return new Set(normalizeSearchTitle(v).split(' ').filter(w => w.length > 1));
+  }
+
+  function sameSearchTitle(a, b) {
+    const x = normalizeSearchTitle(a), y = normalizeSearchTitle(b);
+    if (!x || !y) return false;
+    if (x === y || x.includes(y) || y.includes(x)) return true;
+    const A = titleTokens(x), B = titleTokens(y);
+    if (!A.size || !B.size) return false;
+    let common = 0;
+    A.forEach(w => { if (B.has(w)) common++; });
+    const overlap = common / Math.min(A.size, B.size);
+    return overlap >= 0.8 && common >= 2;
   }
 
   async function searchResults(q) {
@@ -248,7 +265,7 @@
 
     const existing = new Set();
     host.querySelectorAll('[data-rf-title]').forEach(el => {
-      const key = normalizeSearchTitle(el.getAttribute('data-rf-title'));
+      const key = text(el.getAttribute('data-rf-title'));
       if (key) existing.add(key);
     });
 
@@ -257,10 +274,17 @@
     for (const item of items) {
       if (!item?.id || seenAni.has(item.id)) continue;
       seenAni.add(item.id);
-      const names = [item.name, item.origin_name].map(normalizeSearchTitle).filter(Boolean);
-      if (names.some(n => existing.has(n))) continue;
+      const names = [item.name, item.origin_name].filter(Boolean);
+      let duplicate = false;
+      for (const existingTitle of existing) {
+        if (names.some(name => sameSearchTitle(name, existingTitle))) {
+          duplicate = true;
+          break;
+        }
+      }
+      if (duplicate) continue;
       unique.push(item);
-      names.forEach(n => existing.add(n));
+      names.forEach(name => existing.add(name));
     }
     if (!unique.length) return 0;
 
