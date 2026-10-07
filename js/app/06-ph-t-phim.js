@@ -82,6 +82,7 @@
         }
 
         function goBackFromPlay() {
+            window.roflixAnimePlayer?.stop?.();
             document.getElementById('movie-player').src = '';
             navigateTo('detail-page');
         }
