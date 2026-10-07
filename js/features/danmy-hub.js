@@ -1,7 +1,7 @@
-/* RoFlix Đam Mỹ Catalog 2.0
+/* RoFlix Đam Mỹ Catalog 2.1
  * Dedicated BL / Danmei catalog.
  * Playback source: KKPhim + VSMOV only.
- * Discovery: multilingual search + romance/country fallback.
+ * Discovery: China/Thailand BL search + country fallback.
  * No fake/demo movie data.
  */
 (function () {
@@ -14,15 +14,18 @@
 
   // Không chỉ tìm "đam mỹ": nhiều API lưu BL dưới tên gốc/tiếng Anh/tiếng Trung/tiếng Thái.
   const SEARCH_TERMS = [
-    'đam mỹ', 'đam my', 'danmei', '耽美',
+    // Trung Quốc
+    'đam mỹ', 'đam my', 'danmei', '耽美', '男男', '双男主',
+    '同性恋', '同性爱情', '耽美剧',
+    // Thái Lan
     'boy love', 'boys love', "boy's love", 'boys-love',
-    'boylove', 'BL', 'boys love series',
-    'วาย', 'ชายรักชาย'
+    'boylove', 'boys love series', 'วาย', 'ชายรักชาย', 'ซีรีส์วาย',
+    'นิยายวาย', 'BL series'
   ];
 
   // Fallback rộng hơn: các kho thường xếp BL vào Tình Cảm theo quốc gia.
   const ROMANCE_COUNTRIES = [
-    'trung-quoc', 'thai-lan', 'dai-loan', 'han-quoc', 'nhat-ban', 'philippines'
+    'trung-quoc', 'thai-lan'
   ];
 
   const MAX_SEARCH_PAGES = 4;
@@ -78,15 +81,21 @@
 
     // Từ khóa mạnh, bao phủ metadata phổ biến của BL/Danmei.
     const strong = [
-      'dam my', 'danmei', 'boy love', 'boys love', 'boys love series',
-      'boylove', 'boys love drama', 'boys love series',
-      '耽美', '男男', 'ชายรักชาย', 'วาย'
+      'dam my', 'danmei', 'boy love', 'boys love', 'boylove',
+      'boys love series', 'boys love drama',
+      '耽美', '男男', '双男主', '同性恋', '同性爱情', '耽美剧',
+      'ชายรักชาย', 'วาย', 'ซีรีส์วาย', 'นิยายวาย'
     ];
 
-    if (strong.some(k => haystack.includes(normalize(k)))) return true;
+    // Không dùng includes('bl'): BL quá ngắn và sẽ khớp nhầm trong
+    // nhiều từ không liên quan. Chỉ chấp nhận BL khi là token riêng.
+    const tokens = new Set(haystack.split(/\s+/).filter(Boolean));
+    if (tokens.has('bl') || strong.some(k => haystack.includes(normalize(k)))) return true;
 
+    // Query chỉ được dùng nếu đó là một cụm BL rõ ràng, không phải chuỗi ngắn.
     const q = normalize(query);
-    return !!q && haystack.includes(q);
+    if (!q || q.length < 4 || q === 'bl') return false;
+    return strong.some(k => normalize(k) === q) && haystack.includes(q);
   }
 
   function dedupeKey(movie) {
@@ -203,7 +212,7 @@
 
       const results = await Promise.all(jobs);
       for (const result of results) {
-        // Chỉ nhận item mà metadata của provider thực sự đánh dấu BL/Danmei.
+        // Fallback chỉ nhận item có metadata BL/Danmei rõ ràng.
         addItems(result.items, result.sid, '');
       }
 
@@ -261,7 +270,7 @@
       host.innerHTML = '<div class="col-span-full"><div class="empty-state">'
         + '<div class="empty-icon"><i class="fa-solid fa-heart"></i></div>'
         + '<h3>Chưa tìm thấy phim Đam Mỹ</h3>'
-        + '<p>KKPhim/VSMOV chưa trả metadata BL/Danmei cho các kết quả hiện tại.</p>'
+        + '<p>Chỉ hiển thị phim Trung Quốc/Thái Lan có metadata BL/Đam Mỹ rõ ràng.</p>'
         + '</div></div>';
       return;
     }
