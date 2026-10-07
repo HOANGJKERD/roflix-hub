@@ -40,29 +40,29 @@
             }).join('');
         }
 
-        function playMovieByIndex(index, options = {}) {
+        async function playMovieByIndex(index, options = {}) {
             const ep = currentEpisodeList[index];
-            if (!ep || !ep.link) {
-                showToast('error', 'Lỗi', 'Không có link phát cho tập này!');
-                return;
+            if (!ep) { showToast('error', 'Lỗi', 'Không có tập này!'); return; }
+            if (!ep.link && ep.__rfAniMapper && window.roflixAnimePlayer?.resolveEpisode) {
+                try { ep.link = (await window.roflixAnimePlayer.resolveEpisode(ep.__rfAniMapper.mediaId, ep.__rfAniMapper.episode, ep.__rfAniMapper.index)).url; }
+                catch (error) { console.warn('[RoFlix Anime] episode source failed', error); }
             }
+            if (!ep.link) { showToast('error', 'Lỗi', 'Không có link phát cho tập này!'); return; }
             const title = currentMovieTitle || 'Đang phát';
             try { currentMovieData = currentMovieData || { title, origin_name: '', summary: '', _src: currentSourceId, poster: '' }; } catch (_) {}
             const player = document.getElementById('movie-player');
             const titleEl = document.getElementById('playing-title');
-            if (player) player.src = ep.link;
             if (titleEl) titleEl.textContent = `${title} - ${ep.name}`;
             renderPlayEpisodeGrid(index);
             navigateTo('play-page');
+            if (window.roflixAnimePlayer?.mount) {
+                try { await window.roflixAnimePlayer.mount(ep.link, `${title} - ${ep.name}`); }
+                catch (error) { console.warn('[RoFlix Anime] custom mount failed, using native player', error); if (player) player.src = ep.link; }
+            } else if (player) player.src = ep.link;
             try { if (window.rfAnalytics) window.rfAnalytics.movie('movie_play', currentSlug || '', title); } catch (_) {}
             try { if (window.rfAnalytics) window.rfAnalytics.track('movie_view', { movieSlug: currentSlug || '', movieTitle: title, metadata: { episode: ep.name || '', index } }); } catch (_) {}
             const detailPoster = document.querySelector('#detail-content-container img');
-            saveWatchHistory(currentSlug || 'unknown', index, 0, {
-                episodeName: ep.name || '',
-                poster: detailPoster ? detailPoster.src : undefined,
-                title: title,
-                sourceId: currentSourceId
-            });
+            saveWatchHistory(currentSlug || 'unknown', index, 0, { episodeName: ep.name || '', poster: detailPoster ? detailPoster.src : undefined, title: title, sourceId: currentSourceId });
             try { if (typeof window.rfWatchPartyBroadcast === 'function' && (!options || !options.fromParty)) window.rfWatchPartyBroadcast({ type: 'episode_change' }); } catch (_) {}
         }
 
