@@ -1,7 +1,7 @@
-/* RoFlix Đam Mỹ Catalog 2.1
+/* RoFlix Đam Mỹ Catalog 3.0
  * Dedicated BL / Danmei catalog.
  * Playback source: KKPhim + VSMOV only.
- * Discovery: China/Thailand BL search + country fallback.
+ * Discovery: curated China/Thailand BL seeds + provider search + metadata fallback.
  * No fake/demo movie data.
  */
 (function () {
@@ -28,7 +28,25 @@
     'trung-quoc', 'thai-lan'
   ];
 
-  const MAX_SEARCH_PAGES = 4;
+  const CURATED_TITLES = [
+    // 🇹🇭 Thai BL
+    'KinnPorsche', '2gether', 'Still 2gether', 'Bad Buddy', 'My School President',
+    'Love in the Air', 'TharnType', 'TharnType 2', 'Cutie Pie', 'Cutie Pie 2 You',
+    'I Told Sunset About You', 'I Promised You the Moon', 'Only Friends',
+    'Last Twilight', 'A Tale of Thousand Stars', 'Moonlight Chicken',
+    'Not Me', 'Until We Meet Again', 'Between Us', 'SOTUS', 'SOTUS S',
+    'Theory of Love', 'Vice Versa', 'Semantic Error', 'Fish Upon the Sky',
+    'We Best Love', 'Cherry Magic Thailand', 'The Eclipse', 'Dangerous Romance',
+    'Pit Babe', 'Wandee Goodday', 'Century of Love', 'Love Sea',
+    // 🇨🇳 Chinese / Taiwan BL
+    'Addicted', 'Heroin', 'Stay With Me', 'Advance Bravely', 'The Untamed',
+    'Word of Honor', 'Guardian', 'Eternal Faith', 'Justice in the Dark',
+    'Kiseki Dear to Me', 'About Youth', 'HIStory 3 Trapped',
+    'HIStory 3 Make Our Days Count', 'HIStory 4 Close to You',
+    'We Best Love', 'Plus & Minus', 'Unknown'
+  ];
+
+const MAX_SEARCH_PAGES = 4;
   const MAX_FALLBACK_PAGES = 4;
   const providerState = new Map();
   const catalog = [];
@@ -184,6 +202,37 @@
     return promise;
   }
 
+  async function runCuratedDiscovery(targetCount) {
+    // Search known BL titles first. These are trusted seeds, so they do not
+    // depend on inconsistent provider BL tags.
+    const jobs = [];
+    for (const title of CURATED_TITLES) {
+      for (const sid of SOURCE_IDS) jobs.push(fetchSearchPage(sid, title, 1));
+    }
+    const results = await Promise.all(jobs);
+
+    for (const result of results) {
+      for (const raw of result.items || []) {
+        if (!raw?.slug) continue;
+        const hay = searchableText(raw);
+        const exact = CURATED_TITLES.some(seed => {
+          const q = normalize(seed);
+          return q && (hay.includes(q) || normalize(raw?.origin_name) === q || normalize(raw?.name) === q);
+        });
+        if (!exact) continue;
+
+        const item = raw;
+        item._src = result.sid;
+        item._danmyMatch = 'curated';
+        const key = dedupeKey(item);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        catalog.push(item);
+        if (catalog.length >= targetCount) return;
+      }
+    }
+  }
+
   async function runSearchDiscovery(targetCount) {
     for (let page = 1; page <= MAX_SEARCH_PAGES && catalog.length < targetCount; page++) {
       const jobs = [];
@@ -222,7 +271,10 @@
   }
 
   async function ensureCatalog(targetCount) {
-    await runSearchDiscovery(targetCount);
+    await runCuratedDiscovery(targetCount);
+    if (catalog.length < targetCount) {
+      await runSearchDiscovery(targetCount);
+    }
 
     // Nếu tìm kiếm trực tiếp không đủ, mở rộng qua Tình Cảm + các quốc gia
     // nơi BL/Danmei xuất hiện nhiều, nhưng vẫn bắt buộc metadata phải match BL.
@@ -276,11 +328,12 @@
     }
 
     const mapped = movies
-      .map(item => mapMovieData(item))
-      .filter(m => isValidPosterUrl(m.poster));
+      .map(item => ({ sourceItem: item, movie: mapMovieData(item) }))
+      .filter(x => isValidPosterUrl(x.movie.poster));
 
-    host.innerHTML = mapped.map((m, i) => {
-      const sourceItem = movies[i];
+    host.innerHTML = mapped.map((entry, i) => {
+      const m = entry.movie;
+      const sourceItem = entry.sourceItem;
       return '<div class="movie-card-premium card-stagger" data-rf-danmy-card="' + i
         + '" tabindex="0" role="button">'
         + '<div class="card-poster">'
@@ -308,7 +361,7 @@
     }).join('');
 
     host.querySelectorAll('[data-rf-danmy-card]').forEach((card, i) => {
-      const sourceItem = movies[i];
+      const sourceItem = mapped[i].sourceItem;
 
       card.addEventListener('click', e => {
         if (e.target.closest('button')) return;
