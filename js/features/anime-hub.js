@@ -27,16 +27,17 @@
   const descOf = a => text(a?.description).replace(/<[^>]*>/g, ' ');
 
   const QUERY = `
-    query AnimeCatalog($page:Int!, $perPage:Int!, $search:String, $genre:String, $year:Int) {
+    query AnimeCatalog($page:Int!, $perPage:Int!, $search:String, $genre:String, $year:Int, $season:MediaSeason, $sort: [MediaSort]) {
       Page(page:$page, perPage:$perPage) {
         pageInfo { currentPage lastPage hasNextPage total }
         media(
           type:ANIME,
           isAdult:false,
-          sort:POPULARITY_DESC,
+          sort:$sort,
           search:$search,
           genre:$genre,
-          seasonYear:$year
+          seasonYear:$year,
+          season:$season
         ) {
           id
           idMal
@@ -67,6 +68,8 @@
     qs.set('page', String(variables.page || 1));
     qs.set('limit', String(Math.min(JIKAN_PAGE_SIZE, 25)));
     if (variables.search) qs.set('q', variables.search);
+    qs.set('order_by', 'start_date');
+    qs.set('sort', 'desc');
     const p = fetch(JIKAN_URL + '?' + qs.toString(), {
       headers: {'Accept':'application/json'}
     }).then(async r => {
@@ -112,7 +115,19 @@
     };
   }
 
-  async function aniListRequest(variables) {
+  function currentAnimeSeason() {
+    const month = new Date().getMonth() + 1;
+    if (month <= 3) return 'WINTER';
+    if (month <= 6) return 'SPRING';
+    if (month <= 9) return 'SUMMER';
+    return 'FALL';
+  }
+
+  function currentAnimeYear() {
+    return new Date().getFullYear();
+  }
+
+    async function aniListRequest(variables) {
     const key = JSON.stringify(variables);
     if (catalogCache.has(key)) return catalogCache.get(key);
     const p = fetch(ANILIST_URL, {
@@ -238,7 +253,7 @@
             <button class="watch-btn btn-ripple" data-rf-watch><i class="fa-solid fa-play"></i> Xem Ngay</button>
             <div class="card-actions"><button data-rf-fav title="Yêu thích"><i class="fa-${isFavorite(item.slug) ? 'solid' : 'regular'} fa-heart"></i></button><button data-rf-info title="Chi tiết"><i class="fa-solid fa-circle-info"></i></button></div>
           </div>
-          <div class="card-badges"><span class="src-chip">ANILIST</span><span class="badge" style="background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff">ANIME</span><span class="badge eps">${item.episode_total ? esc(item.episode_total + ' Tập') : 'ON AIR'}</span></div>
+          <div class="card-badges"><span class="src-chip">ANIME CATALOG</span><span class="badge" style="background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff">ANIME</span><span class="badge eps">${item.episode_total ? esc(item.episode_total + ' Tập') : 'ON AIR'}</span></div>
         </div>
         <div class="card-info"><div class="card-title">${esc(item.name)}</div><div class="card-meta"><span class="rating"><i class="fa-solid fa-star"></i> ${esc(item.rating || 'N/A')}</span><span>${esc(item.year || '')}</span></div></div>
       </div>`).join('');
@@ -264,14 +279,14 @@
     window.__ROFLIX_ANIME_MODE__ = true;
     if (typeof window.navigateTo === 'function') window.navigateTo('main-site');
     const title = document.getElementById('list-title');
-    if (title) title.textContent = search ? `Anime: ${search}` : 'Anime';
+    if (title) title.textContent = search ? `Anime: ${search}` : `Anime mới • ${currentAnimeSeason()} ${currentAnimeYear()}`;
     window.scrollTo({top:0, behavior:'smooth'});
     host.innerHTML = Array(12).fill(0).map(() => `<div class="skeleton-card-premium"><div class="skeleton-poster"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>`).join('');
     try {
       let data;
       let items;
       try {
-        data = await aniListRequest({page, perPage:PAGE_SIZE, search:search || null, genre:genre || null, year});
+        data = await aniListRequest({page, perPage:PAGE_SIZE, search:search || null, genre:genre || null, year: year || (search ? null : currentAnimeYear()), season: search ? null : currentAnimeSeason(), sort: search ? ['SEARCH_MATCH'] : ['START_DATE_DESC']});
         items = (data.media || []).map(normalizeAni);
       } catch (aniErr) {
         console.warn('[RoFlix Anime Hub] AniList failed, using Jikan fallback', aniErr);
@@ -322,7 +337,7 @@
     const query = text(q);
     if (!query) return [];
     const [ani, jikan] = await Promise.allSettled([
-      aniListRequest({page:1, perPage:50, search:query, genre:null, year:null}),
+      aniListRequest({page:1, perPage:50, search:query, genre:null, year:null, season:null, sort:['SEARCH_MATCH']}),
       jikanRequest({page:1, search:query})
     ]);
     const merged = [];
