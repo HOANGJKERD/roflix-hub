@@ -54,7 +54,11 @@ async function findMedia(title){
   let id=val(best.i,['id','mediaId','aniId','anilistId','malId']);
   let metadata=null;
   try{metadata=await api('/metadata?id='+encodeURIComponent(id));}catch(_){}
-  const providers=normalizeProviders(metadata).sort((a,b)=>providerScore(b)-providerScore(a));
+  let providers=normalizeProviders(metadata);
+  const fallbackProviders=PROVIDER_PRIORITY.map(provider=>({provider,id,name:provider}));
+  const known=new Set(providers.map(providerKey).filter(Boolean));
+  for(const p of fallbackProviders)if(!known.has(providerKey(p)))providers.push(p);
+  providers=providers.sort((a,b)=>providerScore(b)-providerScore(a));
   const result={id,metadata,providers};
   mediaCache.set(key,result);return result;
 }
@@ -111,6 +115,7 @@ async function prepare(item){
   }
   if(!usable.length)throw Error('Không có provider nào có tập');
   const chosen=usable[0];
+  window.__ROFLIX_ANIME_PROVIDER_POOL__=usable;
   currentEpisodeList=chosen.episodes.map((e,i)=>({name:episodeName(e,i),link:'',__rfAniMapper:{mediaId:chosen.mediaId,provider:chosen.provider,episode:e,index:i}}));
   currentMovieTitle=title;currentSlug=item?.slug||currentSlug;
   return {media,providers:usable,chosen};
@@ -118,8 +123,20 @@ async function prepare(item){
 async function play(item){
   try{
     const prepared=await prepare(item);if(!currentEpisodeList[0])throw Error('Không có tập');
-    const meta=currentEpisodeList[0].__rfAniMapper;
-    currentEpisodeList[0].link=(await resolveEpisode(meta.mediaId,meta.provider,meta.episode,0)).url;
+    let selected=null,last=null;
+    for(const candidate of prepared.providers||[]){
+      try{
+        const episode=candidate.episodes?.[0];
+        if(!episode)continue;
+        const resolved=await resolveEpisode(candidate.mediaId,candidate.provider,episode,0);
+        selected={candidate,episode,resolved};break;
+      }catch(e){last=e;console.warn('[RoFlix Anime] source failed',candidate.provider,e);}
+    }
+    if(!selected)throw last||Error('Không tìm thấy nguồn phát');
+    const meta={mediaId:selected.candidate.mediaId,provider:selected.candidate.provider,episode:selected.episode,index:0};
+    currentEpisodeList=selected.candidate.episodes.map((e,i)=>({name:episodeName(e,i),link:'',__rfAniMapper:{mediaId:selected.candidate.mediaId,provider:selected.candidate.provider,episode:e,index:i}}));
+    currentEpisodeList[0].link=selected.resolved.url;
+    window.__ROFLIX_ANIME_SELECTED_PROVIDER__=selected.candidate.provider;
     await playMovieByIndex(0);
   }catch(e){
     console.warn('[RoFlix Anime] multi-provider failed',e);
