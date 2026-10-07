@@ -244,7 +244,7 @@
     const title = animeTitle(item);
     if (!title) throw new Error('Anime không có tiêu đề');
     const search = await aniMapperJson('/search?title=' + encodeURIComponent(title) + '&mediaType=ANIME');
-    const mediaId = findMediaId(search);
+    let mediaId = findMediaId(search);
     if (!mediaId) throw new Error('AniMapper không tìm thấy anime');
 
     let episodeData = '';
