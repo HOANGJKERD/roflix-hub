@@ -18,7 +18,8 @@ const SOURCES = {
     }
 };
 
-let sourceMode = localStorage.getItem('roflix-source-mode') || 'kkphim';
+let sourceMode = 'kkphim';
+try { sourceMode = localStorage.getItem('roflix-source-mode') || 'kkphim'; } catch (_) {}
 if (sourceMode !== 'vsmov' && sourceMode !== 'kkphim') sourceMode = 'kkphim';
 let currentSourceId = sourceMode === 'vsmov' ? 'vsmov' : 'kkphim';
 
