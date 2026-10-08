@@ -22,7 +22,7 @@
   function api(path, ms) {
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(); }, ms || 14000);
-    return fetch(API + path, { headers: { Accept: 'application/json' }, signal: ctrl.signal })
+    return fetch(API + path, { headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }, cache: 'no-store', signal: ctrl.signal })
       .then(function (res) {
         clearTimeout(timer);
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -160,49 +160,82 @@
       var episodeData = ep.episodeId || ep.episodeData;
       if (!episodeData) { showMessage('Tập lỗi', 'Không có mã tập'); return; }
 
-      // AnimeVietSub: DU = HLS + proxy/Referer, HDX = embed không cần proxy.
-      // Không gọi DU trước rồi chờ timeout. Ưu tiên HDX để browser có thể phát ngay.
-      showMessage('Đang lấy link...', 'Ưu tiên server HDX');
-      var reported = ep.server && String(ep.server).toUpperCase() !== 'UNKNOWN' ? String(ep.server) : '';
-      var servers = ['HDX'];
-      if (reported && reported.toUpperCase() !== 'DU' && reported.toUpperCase() !== 'HDX') {
-        servers.push(reported);
-      }
-      if (reported && reported.toUpperCase() === 'HDX') {
-        servers = ['HDX'];
-      }
+      showMessage('Đang lấy link...', 'Đang kiểm tra server AniMapper');
+      var provider = state.provider || 'ANIMEVIETSUB';
+      var last = 'Không có nguồn';
 
-      var last = 'Không có link';
-      for (var i = 0; i < servers.length; i++) {
-        var server = servers[i];
+      async function sourceForProvider(providerName, episodeId, preferred) {
+        var servers = [];
         try {
-          var path = '/stream/source?episodeData=' + encodeURIComponent(episodeData) +
-            '&provider=' + encodeURIComponent(state.provider) +
-            '&server=' + encodeURIComponent(server);
-          var data = await api(path, 14000);
-          var url = data.url || (data.result && data.result.url) || (data.data && data.data.url);
-          var type = String(data.type || (data.result && data.result.type) || (data.data && data.data.type) || '').toUpperCase();
+          var sd = await api('/stream/episodes/servers?id=' + encodeURIComponent(state.item.id) +
+            '&provider=' + encodeURIComponent(providerName), 6000);
+          if (Array.isArray(sd.servers)) servers = sd.servers.map(function (x) { return String(x).toUpperCase(); });
+        } catch (_) {}
 
-          if (data.corsProxyRequired && type === 'HLS') {
-            last = 'Server ' + server + ' cần CORS/Referer proxy';
-            continue;
-          }
-          if (!url) {
-            last = 'Server ' + server + ' không trả URL';
-            continue;
-          }
+        // Prefer browser-safe embeds. If the API does not advertise servers,
+        // still try HDX because AnimeVietSub documents it as the embed server.
+        var ordered = [];
+        if (preferred) ordered.push(String(preferred).toUpperCase());
+        ['HDX'].forEach(function (x) { if (ordered.indexOf(x) < 0) ordered.push(x); });
+        servers.forEach(function (x) { if (ordered.indexOf(x) < 0) ordered.push(x); });
 
-          showFrame(url);
-          setSub((data.server || server || state.provider) + ' · Tập ' + (ep.episodeNumber || ''));
-          return;
-        } catch (e) {
-          last = e.message || String(e);
+        // DU is HLS and may require Referer/CORS proxy. Do not block the UI on it.
+        ordered = ordered.filter(function (x) { return x !== 'DU'; });
+
+        for (var i = 0; i < ordered.length; i++) {
+          var server = ordered[i];
+          try {
+            var path = '/stream/source?episodeData=' + encodeURIComponent(episodeId) +
+              '&provider=' + encodeURIComponent(providerName) +
+              '&server=' + encodeURIComponent(server) +
+              '&_rf=' + Date.now();
+            var data = await api(path, 7000);
+            var url = data.url || (data.result && data.result.url) || (data.data && data.data.url);
+            var type = String(data.type || (data.result && data.result.type) || (data.data && data.data.type) || '').toUpperCase();
+            if (data.corsProxyRequired && type === 'HLS') {
+              last = providerName + '/' + server + ' cần CORS proxy';
+              continue;
+            }
+            if (url) return { url: url, type: type, server: data.server || server, provider: providerName };
+            last = providerName + '/' + server + ' không trả URL';
+          } catch (e) {
+            last = providerName + '/' + server + ': ' + (e.message || String(e));
+          }
         }
+        return null;
       }
 
-      // Không gọi endpoint không có server vì AniMapper mặc định DU/HLS.
-      // DU cần proxy nên gọi nó từ browser chỉ làm chậm thêm rồi thất bại.
-      showMessage('Chưa phát được tập này', last + '. Server HDX không khả dụng.');
+      // First, use the selected provider's exact episodeId.
+      var result = await sourceForProvider(provider, episodeData, ep.server);
+      if (result) {
+        showFrame(result.url);
+        setSub(result.provider + ' · ' + result.server + ' · Tập ' + (ep.episodeNumber || ''));
+        return;
+      }
+
+      // If AnimeVietSub's source endpoint is unavailable, try another mapped
+      // provider and match the same episode number.
+      var fallbackProviders = PROVIDERS.filter(function (p) { return p !== provider; });
+      for (var p = 0; p < fallbackProviders.length; p++) {
+        var fp = fallbackProviders[p];
+        try {
+          var edata = await api('/stream/episodes?id=' + encodeURIComponent(state.item.id) +
+            '&provider=' + encodeURIComponent(fp) + '&limit=60&offset=0&_rf=' + Date.now(), 8000);
+          var eps = Array.isArray(edata.episodes) ? edata.episodes : [];
+          var wanted = String(ep.episodeNumber || '').trim();
+          var match = eps.find(function (x) { return String(x.episodeNumber || '').trim() === wanted; }) ||
+                      eps.find(function (x) { return String(x.episodeNumber || '').replace(/[^0-9].*$/, '') === wanted.replace(/[^0-9].*$/, ''); });
+          if (!match) continue;
+          result = await sourceForProvider(fp, match.episodeId, match.server);
+          if (result) {
+            showFrame(result.url);
+            setSub(result.provider + ' · ' + result.server + ' · Tập ' + (match.episodeNumber || wanted));
+            return;
+          }
+        } catch (_) {}
+      }
+
+      showMessage('Chưa phát được tập này', last + '. AniMapper hiện không cung cấp embed khả dụng cho tập này.');
       setSub(last);
     }
 
