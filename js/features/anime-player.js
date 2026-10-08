@@ -5,7 +5,7 @@
 (function(){'use strict';
 if(window.__ROFLIX_ANIME_PLAYER__)return;window.__ROFLIX_ANIME_PLAYER__=true;
 const API='https://api.animapper.net/api/v1';
-const PROVIDER_PRIORITY=['ANIMEVIETSUB','NINIYO'];
+const PROVIDER_PRIORITY=['ANIMEVIETSUB','NINIYO','ANIMETVN'];
 const sourceCache=new Map(),mediaCache=new Map(),episodeCache=new Map();
 let hlsInstance=null,embedFrame=null;
 
@@ -73,22 +73,46 @@ function episodeId(e){return val(e,['episodeId','episode_id','id','numberId','ep
 function episodeName(e,i){return val(e,['number','episodeNumber','episode','title','name'])||String(i+1);}
 async function resolveEpisode(providerMediaId,provider,e,i){
   const pk=providerKey(provider)||text(provider),raw=episodeId(e);if(!raw)throw Error('Tập không có episodeId');
-  // AniMapper returns provider-specific episodeId formats. Use it verbatim.\n  // AnimeVietSub happens to return {mediaId}${episodeId}, while Niniyo can differ.\n  const ed=raw;
+  // AniMapper returns provider-specific episodeId formats. Use it verbatim.
+  const ed=raw;
   const key=pk+':'+ed;if(sourceCache.has(key))return sourceCache.get(key);
-  const servers=['HDX'];
+
+  // Server phải lấy từ chính episode mà AniMapper trả về, không hard-code HDX.
+  const episodeServer=text(e?.server||e?.serverName||e?.sourceServer);
+  const servers=[];
+  if(episodeServer)servers.push(episodeServer);
+  ['HDX','DEFAULT'].forEach(s=>{
+    if(!servers.some(x=>x.toUpperCase()===s))servers.push(s);
+  });
+
   let last=null;
   for(const server of servers){
     try{
       const d=await api('/stream/source?episodeData='+encodeURIComponent(ed)+'&provider='+encodeURIComponent(pk)+'&server='+encodeURIComponent(server));
       const u=sourceUrl(d);
-      if(u){const r={url:u,type:text(d?.type||d?.data?.type||d?.result?.type).toUpperCase()||'EMBED',server:text(d?.server||d?.data?.server||d?.result?.server)||server,provider:pk,episodeData:ed,index:i};sourceCache.set(key,r);return r;}
-    }catch(e){last=e;}
+      const type=text(d?.type||d?.data?.type||d?.result?.type).toUpperCase()||'EMBED';
+      if(d?.corsProxyRequired&&type==='HLS'){last=Error('HLS yêu cầu proxy CORS');continue;}
+      if(u){
+        const r={url:u,type,server:text(d?.server||d?.data?.server||d?.result?.server)||server,provider:pk,episodeData:ed,index:i};
+        sourceCache.set(key,r);return r;
+      }
+      last=Error('AniMapper không trả URL cho server '+server);
+    }catch(err){last=err;}
   }
+
+  // Fallback cuối cùng: để AniMapper tự chọn server khả dụng.
   try{
     const d=await api('/stream/source?episodeData='+encodeURIComponent(ed)+'&provider='+encodeURIComponent(pk));
     const u=sourceUrl(d);
-    if(u){const r={url:u,type:text(d?.type||d?.data?.type||d?.result?.type).toUpperCase()||'EMBED',server:text(d?.server||d?.data?.server||d?.result?.server)||'DEFAULT',provider:pk,episodeData:ed,index:i};sourceCache.set(key,r);return r;}
-  }catch(e){last=e;}
+    const type=text(d?.type||d?.data?.type||d?.result?.type).toUpperCase()||'EMBED';
+    if(d?.corsProxyRequired&&type==='HLS')throw Error('HLS yêu cầu proxy CORS');
+    if(u){
+      const r={url:u,type,server:text(d?.server||d?.data?.server||d?.result?.server)||'DEFAULT',provider:pk,episodeData:ed,index:i};
+      sourceCache.set(key,r);return r;
+    }
+    last=Error('AniMapper không trả URL');
+  }catch(err){last=err;}
+
   throw last||Error('Không tìm thấy nguồn phát');
 }
 function cleanup(){if(hlsInstance){try{hlsInstance.destroy();}catch(_){}hlsInstance=null;}if(embedFrame){embedFrame.remove();embedFrame=null;}const p=document.getElementById('movie-player');if(p)p.style.display='';}
