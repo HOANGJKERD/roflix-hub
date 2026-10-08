@@ -7,7 +7,7 @@ if(window.__ROFLIX_ANIME_PLAYER__)return;window.__ROFLIX_ANIME_PLAYER__=true;
 const API='https://api.animapper.net/api/v1';
 const PROVIDER_PRIORITY=['ANIMEVIETSUB','NINIYO','ANIMETVN'];
 const sourceCache=new Map(),mediaCache=new Map(),episodeCache=new Map();
-let hlsInstance=null,embedFrame=null;
+let hlsInstance=null,embedFrame=null,videoElement=null;
 
 const text=v=>String(v==null?'':v).trim();
 const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
@@ -115,21 +115,28 @@ async function resolveEpisode(providerMediaId,provider,e,i){
 
   throw last||Error('Không tìm thấy nguồn phát');
 }
-function cleanup(){if(hlsInstance){try{hlsInstance.destroy();}catch(_){}hlsInstance=null;}if(embedFrame){embedFrame.remove();embedFrame=null;}const p=document.getElementById('movie-player');if(p)p.style.display='';}
+function cleanup(){if(hlsInstance){try{hlsInstance.destroy();}catch(_){}hlsInstance=null;}if(videoElement){try{videoElement.pause();videoElement.removeAttribute('src');videoElement.load();}catch(_){}videoElement.remove();videoElement=null;}if(embedFrame){embedFrame.remove();embedFrame=null;}const p=document.getElementById('movie-player');if(p){p.style.display='';p.src='';}}
 function fullscreen(){
-  const target=embedFrame||document.getElementById('movie-player');
+  const target=videoElement||embedFrame||document.getElementById('movie-player');
   try{if(target?.requestFullscreen)return target.requestFullscreen();if(target?.webkitRequestFullscreen)return target.webkitRequestFullscreen();}catch(_){}
 }
-async function mount(url,title){
+async function mount(url,title,type){
   const p=document.getElementById('movie-player');if(!p)throw Error('Không tìm thấy movie-player');cleanup();
-  if(/\.m3u8(?:[?#]|$)/i.test(url)&&p instanceof HTMLMediaElement){
-    if(p.canPlayType('application/vnd.apple.mpegurl')){p.src=url;return;}
-    if(!window.Hls){const s=document.createElement('script');s.id='rf-hls-js';s.src='https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';await new Promise(res=>{s.onload=res;s.onerror=res;document.head.appendChild(s);});}
-    if(!window.Hls||!window.Hls.isSupported())throw Error('HLS không được hỗ trợ');hlsInstance=new window.Hls({enableWorker:true,lowLatencyMode:false});hlsInstance.loadSource(url);hlsInstance.attachMedia(p);return;
+  const upper=String(type||'').toUpperCase();
+  const isHls=/\.m3u8(?:[?#]|$)/i.test(url)||upper==='HLS';
+  const isVideo=isHls||/\.(mp4|webm|ogg)(?:[?#]|$)/i.test(url)||['MP4','VIDEO'].includes(upper);
+  if(isVideo){
+    const parent=p.parentElement;if(!parent)throw Error('Không có vùng player');
+    videoElement=document.createElement('video');videoElement.id='rf-anime-video';videoElement.controls=true;videoElement.playsInline=true;videoElement.autoplay=true;videoElement.setAttribute('aria-label',title||'RoFlix Anime Player');videoElement.style.cssText='width:100%;height:100%;min-height:420px;display:block;background:#000;';p.style.display='none';parent.appendChild(videoElement);
+    if(isHls&&!videoElement.canPlayType('application/vnd.apple.mpegurl')){
+      if(!window.Hls){const hs=document.createElement('script');hs.id='rf-hls-js';hs.src='https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';await new Promise((resolve,reject)=>{hs.onload=resolve;hs.onerror=()=>reject(Error('Không tải được HLS player'));document.head.appendChild(hs);});}
+      if(!window.Hls||!window.Hls.isSupported())throw Error('Trình duyệt không hỗ trợ HLS');
+      hlsInstance=new window.Hls({enableWorker:true,lowLatencyMode:false});hlsInstance.loadSource(url);hlsInstance.attachMedia(videoElement);
+    }else{videoElement.src=url;}
+    try{await videoElement.play();}catch(_){}
+    return;
   }
-  if(p.tagName==='IFRAME'){p.src=url;p.allow='autoplay; fullscreen; picture-in-picture';p.allowFullscreen=true;return;}
-  const parent=p.parentElement;if(!parent)throw Error('Không có vùng player');
-  embedFrame=document.createElement('iframe');embedFrame.src=url;embedFrame.title=title||'RoFlix Anime Player';embedFrame.allow='autoplay; fullscreen; picture-in-picture';embedFrame.allowFullscreen=true;embedFrame.referrerPolicy='strict-origin-when-cross-origin';embedFrame.style.cssText='width:100%;height:100%;min-height:420px;border:0;border-radius:inherit;background:#000;';p.style.display='none';parent.appendChild(embedFrame);
+  p.src=url;p.allow='autoplay; fullscreen; picture-in-picture';p.allowFullscreen=true;
 }
 async function prepare(item){
   const title=text(item?.name||item?.origin_name||item?.slug),media=await findMedia(title);
