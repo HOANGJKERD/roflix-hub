@@ -1,6 +1,6 @@
 // AniMapper watch page. Search + episodes from the public API.
-// Playback uses the server name returned with each episode (not HDX).
-// HLS that requires a Referer proxy is skipped. Hung /stream/source calls abort.
+// Playback prefers AniMapper's HDX embed because it works directly in the browser.
+// DU/HLS is skipped when AniMapper marks it as requiring a CORS/Referer proxy.
 (function (w) {
   'use strict';
   var API = 'https://api.animapper.net/api/v1';
@@ -159,27 +159,50 @@
     async function playEpisode(ep) {
       var episodeData = ep.episodeId || ep.episodeData;
       if (!episodeData) { showMessage('Tập lỗi', 'Không có mã tập'); return; }
-      showMessage('Đang lấy link...', 'Server ' + (ep.server || 'mặc định'));
-      var server = ep.server && String(ep.server).toLowerCase() !== 'unknown' ? ep.server : '';
-      var paths = [];
-      if (server) {
-        paths.push('/stream/source?episodeData=' + encodeURIComponent(episodeData) + '&provider=' + encodeURIComponent(state.provider) + '&server=' + encodeURIComponent(server));
+
+      // AnimeVietSub: DU = HLS + proxy/Referer, HDX = embed không cần proxy.
+      // Không gọi DU trước rồi chờ timeout. Ưu tiên HDX để browser có thể phát ngay.
+      showMessage('Đang lấy link...', 'Ưu tiên server HDX');
+      var reported = ep.server && String(ep.server).toUpperCase() !== 'UNKNOWN' ? String(ep.server) : '';
+      var servers = ['HDX'];
+      if (reported && reported.toUpperCase() !== 'DU' && reported.toUpperCase() !== 'HDX') {
+        servers.push(reported);
       }
-      paths.push('/stream/source?episodeData=' + encodeURIComponent(episodeData) + '&provider=' + encodeURIComponent(state.provider));
+      if (reported && reported.toUpperCase() === 'HDX') {
+        servers = ['HDX'];
+      }
+
       var last = 'Không có link';
-      for (var i = 0; i < paths.length; i++) {
+      for (var i = 0; i < servers.length; i++) {
+        var server = servers[i];
         try {
-          var data = await api(paths[i], 14000);
+          var path = '/stream/source?episodeData=' + encodeURIComponent(episodeData) +
+            '&provider=' + encodeURIComponent(state.provider) +
+            '&server=' + encodeURIComponent(server);
+          var data = await api(path, 14000);
           var url = data.url || (data.result && data.result.url) || (data.data && data.data.url);
-          var type = String(data.type || '').toUpperCase();
-          if (data.corsProxyRequired && type === 'HLS') { last = 'Link HLS cần proxy, bỏ qua'; continue; }
-          if (!url) { last = 'API không trả url'; continue; }
+          var type = String(data.type || (data.result && data.result.type) || (data.data && data.data.type) || '').toUpperCase();
+
+          if (data.corsProxyRequired && type === 'HLS') {
+            last = 'Server ' + server + ' cần CORS/Referer proxy';
+            continue;
+          }
+          if (!url) {
+            last = 'Server ' + server + ' không trả URL';
+            continue;
+          }
+
           showFrame(url);
-          setSub((data.server || state.provider) + ' · Tập ' + (ep.episodeNumber || ''));
+          setSub((data.server || server || state.provider) + ' · Tập ' + (ep.episodeNumber || ''));
           return;
-        } catch (e) { last = e.message || String(e); }
+        } catch (e) {
+          last = e.message || String(e);
+        }
       }
-      showMessage('Chưa phát được tập này', last + '. Bấm tập khác hoặc thử lại.');
+
+      // Không gọi endpoint không có server vì AniMapper mặc định DU/HLS.
+      // DU cần proxy nên gọi nó từ browser chỉ làm chậm thêm rồi thất bại.
+      showMessage('Chưa phát được tập này', last + '. Server HDX không khả dụng.');
       setSub(last);
     }
 
