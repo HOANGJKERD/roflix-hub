@@ -77,13 +77,11 @@ async function resolveEpisode(providerMediaId,provider,e,i){
   const ed=raw;
   const key=pk+':'+ed;if(sourceCache.has(key))return sourceCache.get(key);
 
-  // Server phải lấy từ chính episode mà AniMapper trả về, không hard-code HDX.
-  const episodeServer=text(e?.server||e?.serverName||e?.sourceServer);
-  const servers=[];
-  if(episodeServer)servers.push(episodeServer);
-  ['HDX','DEFAULT'].forEach(s=>{
-    if(!servers.some(x=>x.toUpperCase()===s))servers.push(s);
-  });
+  // AnimeVietSub: DU = HLS cần CORS/Referer proxy; HDX = embed không cần proxy.
+  // Browser không thể tự thêm Referer tùy ý, vì vậy không chờ DU rồi mới thử HDX.
+  const reported=text(e?.server||e?.serverName||e?.sourceServer).toUpperCase();
+  const servers=['HDX'];
+  if(reported && reported!=='UNKNOWN' && reported!=='DU' && reported!=='HDX')servers.push(reported);
 
   let last=null;
   for(const server of servers){
@@ -100,20 +98,8 @@ async function resolveEpisode(providerMediaId,provider,e,i){
     }catch(err){last=err;}
   }
 
-  // Fallback cuối cùng: để AniMapper tự chọn server khả dụng.
-  try{
-    const d=await api('/stream/source?episodeData='+encodeURIComponent(ed)+'&provider='+encodeURIComponent(pk));
-    const u=sourceUrl(d);
-    const type=text(d?.type||d?.data?.type||d?.result?.type).toUpperCase()||'EMBED';
-    if(d?.corsProxyRequired&&type==='HLS')throw Error('HLS yêu cầu proxy CORS');
-    if(u){
-      const r={url:u,type,server:text(d?.server||d?.data?.server||d?.result?.server)||'DEFAULT',provider:pk,episodeData:ed,index:i};
-      sourceCache.set(key,r);return r;
-    }
-    last=Error('AniMapper không trả URL');
-  }catch(err){last=err;}
-
-  throw last||Error('Không tìm thấy nguồn phát');
+  // Không gọi endpoint không có server: AniMapper mặc định DU và DU cần proxy.
+  throw last||Error('Không tìm thấy nguồn phát khả dụng');
 }
 function cleanup(){if(hlsInstance){try{hlsInstance.destroy();}catch(_){}hlsInstance=null;}if(videoElement){try{videoElement.pause();videoElement.removeAttribute('src');videoElement.load();}catch(_){}videoElement.remove();videoElement=null;}if(embedFrame){embedFrame.remove();embedFrame=null;}const p=document.getElementById('movie-player');if(p){p.style.display='';p.src='';}}
 function fullscreen(){
