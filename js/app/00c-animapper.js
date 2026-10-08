@@ -3,8 +3,8 @@
 // DU/HLS is skipped when AniMapper marks it as requiring a CORS/Referer proxy.
 (function (w) {
   'use strict';
-  var API = 'https://api.animapper.net/api/v1';
-  var PROVIDERS = ['ANIMEVIETSUB', 'NINIYO', 'ANIMETVN'];
+  var API = '/api/animapper?path=';
+  var PROVIDERS = ['ANIMEVIETSUB'];
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -22,7 +22,7 @@
   function api(path, ms) {
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(); }, ms || 14000);
-    return fetch(API + path, { headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }, cache: 'no-store', signal: ctrl.signal })
+    return fetch(API + encodeURIComponent(path), { headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }, cache: 'no-store', signal: ctrl.signal })
       .then(function (res) {
         clearTimeout(timer);
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -213,27 +213,6 @@
         return;
       }
 
-      // If AnimeVietSub's source endpoint is unavailable, try another mapped
-      // provider and match the same episode number.
-      var fallbackProviders = PROVIDERS.filter(function (p) { return p !== provider; });
-      for (var p = 0; p < fallbackProviders.length; p++) {
-        var fp = fallbackProviders[p];
-        try {
-          var edata = await api('/stream/episodes?id=' + encodeURIComponent(state.item.id) +
-            '&provider=' + encodeURIComponent(fp) + '&limit=60&offset=0&_rf=' + Date.now(), 8000);
-          var eps = Array.isArray(edata.episodes) ? edata.episodes : [];
-          var wanted = String(ep.episodeNumber || '').trim();
-          var match = eps.find(function (x) { return String(x.episodeNumber || '').trim() === wanted; }) ||
-                      eps.find(function (x) { return String(x.episodeNumber || '').replace(/[^0-9].*$/, '') === wanted.replace(/[^0-9].*$/, ''); });
-          if (!match) continue;
-          result = await sourceForProvider(fp, match.episodeId, match.server);
-          if (result) {
-            showFrame(result.url);
-            setSub(result.provider + ' · ' + result.server + ' · Tập ' + (match.episodeNumber || wanted));
-            return;
-          }
-        } catch (_) {}
-      }
 
       showMessage('Chưa phát được tập này', last + '. AniMapper hiện không cung cấp embed khả dụng cho tập này.');
       setSub(last);
