@@ -58,21 +58,32 @@ function updateSourceUi() {
             ? 'Đang dùng VSMOV (dự phòng)'
             : 'Ưu tiên KKPhim · VSMOV chỉ khi KKPhim lỗi/trống';
     }
-    // Đảm bảo pill VidSrc luôn có
     try {
         if (window.RoflixVidSrc && typeof window.RoflixVidSrc.injectSourcePill === 'function') {
             window.RoflixVidSrc.injectSourcePill();
         }
     } catch (_) {}
+    try {
+        if (window.RoflixAniMapper && typeof window.RoflixAniMapper.injectSourcePill === 'function') {
+            window.RoflixAniMapper.injectSourcePill();
+        }
+    } catch (_) {}
 }
 
 function switchSource(id) {
-    // VidSrc = mở tester panel, không đổi catalog
     if (id === 'vidsrc') {
         if (window.RoflixVidSrc && typeof window.RoflixVidSrc.openTester === 'function') {
             window.RoflixVidSrc.openTester();
         } else if (typeof showToast === 'function') {
-            showToast('info', 'VidSrc', 'Đang tải bảng điều khiển...');
+            showToast('info', 'VidSrc', 'Đang tải trang phát...');
+        }
+        return;
+    }
+    if (id === 'animapper') {
+        if (window.RoflixAniMapper && typeof window.RoflixAniMapper.open === 'function') {
+            window.RoflixAniMapper.open();
+        } else if (typeof showToast === 'function') {
+            showToast('info', 'AniMapper', 'Đang tải catalog anime...');
         }
         return;
     }
@@ -93,18 +104,20 @@ function switchSource(id) {
     if (typeof loadWeeklyPicks === 'function') loadWeeklyPicks();
 }
 
-// Auto-load VidSrc helper (pill + tester) — không sửa index.html
-(function loadVidSrcHelper() {
-    if (window.RoflixVidSrc) return;
-    if (document.querySelector('script[src*="00b-vidsrc"]')) return;
+function loadOptionalSource(src, flag) {
+    if (window[flag]) return;
+    if (document.querySelector('script[src*="' + src.split('/').pop() + '"]')) return;
     var s = document.createElement('script');
-    s.src = 'js/app/00b-vidsrc.js';
+    s.src = src;
     s.async = true;
     s.onload = function () {
-        try { if (window.RoflixVidSrc) window.RoflixVidSrc.injectSourcePill(); } catch (_) {}
+        try { updateSourceUi(); } catch (_) {}
     };
     (document.head || document.documentElement).appendChild(s);
-})();
+}
+
+loadOptionalSource('js/app/00b-vidsrc.js', 'RoflixVidSrc');
+loadOptionalSource('js/app/00c-animapper.js', 'RoflixAniMapper');
 
 const ITEMS_PER_PAGE = 24;
 let currentPage = 1;
