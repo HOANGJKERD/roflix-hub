@@ -20,23 +20,24 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const rawPath = String(req.query?.path || '');
-  let path;
+  let parsed;
   try {
-    path = decodeURIComponent(rawPath);
+    parsed = new URL(rawPath, ORIGIN);
   } catch (_) {
     return res.status(400).json({ error: 'Invalid path' });
   }
 
+  const path = parsed.pathname;
   if (!ALLOWED.has(path)) {
     return res.status(400).json({ error: 'AniMapper endpoint not allowed' });
   }
 
-  const params = new URLSearchParams();
+  const params = new URLSearchParams(parsed.search);
   for (const [key, value] of Object.entries(req.query || {})) {
     if (key === 'path') continue;
     const values = Array.isArray(value) ? value : [value];
     for (const v of values) {
-      if (v != null) params.append(key, String(v));
+      if (v != null) params.set(key, String(v));
     }
   }
 
