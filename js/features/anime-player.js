@@ -4,14 +4,14 @@
  */
 (function(){'use strict';
 if(window.__ROFLIX_ANIME_PLAYER__)return;window.__ROFLIX_ANIME_PLAYER__=true;
-const API='https://api.animapper.net/api/v1';
+const API='/api/animapper?path=';
 const PROVIDER_PRIORITY=['ANIMEVIETSUB','NINIYO','ANIMETVN'];
 const sourceCache=new Map(),mediaCache=new Map(),episodeCache=new Map();
 let hlsInstance=null,embedFrame=null,videoElement=null;
 
 const text=v=>String(v==null?'':v).trim();
 const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-async function api(p){const r=await fetch(API+p,{headers:{Accept:'application/json'}});if(!r.ok)throw Error('AniMapper '+r.status);return r.json();}
+async function api(p){const r=await fetch(API+encodeURIComponent(p),{headers:{Accept:'application/json','Cache-Control':'no-cache'},cache:'no-store'});if(!r.ok)throw Error('AniMapper '+r.status);return r.json();}
 function arr(d,keys){
   if(Array.isArray(d))return d;
   for(const k of keys)if(Array.isArray(d?.[k]))return d[k];
