@@ -124,12 +124,14 @@ async function playMovieByIndex(index, options = {}) {
 
     if (!ep.link && ep.__rfAniMapper && window.roflixAnimePlayer?.resolveEpisode) {
         try {
-            ep.link = (await window.roflixAnimePlayer.resolveEpisode(
+            const resolved = await window.roflixAnimePlayer.resolveEpisode(
                 ep.__rfAniMapper.mediaId,
                 ep.__rfAniMapper.provider,
                 ep.__rfAniMapper.episode,
                 ep.__rfAniMapper.index
-            )).url;
+            );
+            ep.link = resolved.url;
+            ep.__rfAniSource = resolved;
         } catch (error) {
             console.warn('[RoFlix Anime] episode source failed', error);
         }
@@ -152,7 +154,7 @@ async function playMovieByIndex(index, options = {}) {
     // Mặc định: link KKPhim/VSMOV (không auto VidSrc)
     if (ep.__rfAniMapper && window.roflixAnimePlayer?.mount) {
         try {
-            await window.roflixAnimePlayer.mount(ep.link, `${title} - ${ep.name}`);
+            await window.roflixAnimePlayer.mount(ep.link, `${title} - ${ep.name}`, ep.__rfAniSource?.type);
         } catch (error) {
             console.warn('[RoFlix Anime] custom mount failed', error);
             showToast('error', 'Lỗi phát Anime', 'Nguồn phát không mở được.');
