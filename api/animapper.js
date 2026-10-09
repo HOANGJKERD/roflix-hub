@@ -49,8 +49,8 @@ module.exports = async function handler(req, res) {
       headers: { Accept: 'application/json', 'User-Agent': 'RoFlix-AniMapper/1.1' },
       signal: ctrl.signal
     });
-    clearTimeout(timer);
     const text = await upstream.text();
+    clearTimeout(timer);
     res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', upstream.ok ? cacheHeader(path) : 'no-store');
     return res.status(upstream.status).send(text);
