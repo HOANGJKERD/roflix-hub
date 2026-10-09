@@ -147,6 +147,7 @@ function bind(){
  const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){showLogin(error.message);return;}
  if(await requireAdmin()){await loadSeries();await loadSettingByKey('public.sources');await loadAudit();}});
  $('logout').addEventListener('click',async()=>{await sb?.auth.signOut();state.user=null;showLogin('Bạn đã đăng xuất.');});
+ $('security-dismiss')?.addEventListener('click',()=>{const el=$('devtools-block');if(el)el.style.display='none';});
  $('new-series').addEventListener('click',()=>openEditor());$('editor-close').addEventListener('click',closeEditor);$('cancel-editor').addEventListener('click',closeEditor);$('editor').addEventListener('click',e=>{if(e.target===$('editor'))closeEditor();});
  $('series-form').addEventListener('submit',saveSeries);$('series-search').addEventListener('input',renderSeries);$('series-status').addEventListener('change',renderSeries);$('series-source').addEventListener('change',renderSeries);$('refresh-series').addEventListener('click',loadSeries);
  $('series-body').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.edit)openEditor(state.series.find(s=>s.id===b.dataset.edit));if(b.dataset.toggle)togglePublish(b.dataset.toggle);if(b.dataset.delete)deleteSeries(b.dataset.delete);});
