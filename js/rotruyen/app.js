@@ -50,7 +50,7 @@
     } finally { clearTimeout(timer); }
   }
   async function searchMangaDex() {
-    const params=new URLSearchParams({limit:'24',offset:'0',order:'followedCount.desc',hasAvailableChapters:'true'}); params.append('includes[]','cover_art'); params.append('includes[]','author'); params.append('contentRating[]','safe'); params.append('contentRating[]','suggestive');
+    const params=new URLSearchParams({limit:'24',offset:'0',hasAvailableChapters:'true'}); params.set('order[followedCount]','desc'); params.append('includes[]','cover_art'); params.append('includes[]','author'); params.append('contentRating[]','safe'); params.append('contentRating[]','suggestive');
     if(state.query) params.set('title',state.query);
     params.set('availableTranslatedLanguage[]','vi');
     if(state.genre!=='all') {
