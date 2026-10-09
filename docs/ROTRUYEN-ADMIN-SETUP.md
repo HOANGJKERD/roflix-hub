@@ -44,3 +44,12 @@ TruyenDex được xem là tham khảo về trải nghiệm MangaDex tiếng Vi�
 ## Trạng thái
 
 Đây là nhánh triển khai và chưa tự động có nghĩa schema đã được áp dụng lên Supabase. Chưa xác nhận được API LongBook live, chưa có test trình duyệt end-to-end, và chưa nên merge/production cho tới khi hoàn tất các kiểm tra trên.
+
+## Tài khoản dùng chung RoFlix / RoTruyện
+
+- Mở `/rotruyen-account.html` để đăng nhập, tạo tài khoản, sửa tên hiển thị/giới thiệu, đổi giao diện sáng/tối và đăng xuất.
+- RoTruyện dùng cùng `window.rfSupabase`, project URL và publishable key với RoFlix. Phiên Supabase Auth trên cùng origin được chia sẻ bởi SDK storage key mặc định; đăng nhập tại một app sẽ được app còn lại nhận ra khi tải lại hoặc nhận auth event.
+- Không tạo bảng mật khẩu riêng. Mật khẩu được quản lý bởi Supabase Auth; tên hiển thị/giới thiệu được cập nhật vào auth user metadata, còn phần hồ sơ cục bộ tương thích với `roflix-profile`.
+- Theme được lưu trong `localStorage.rohub-theme` và áp dụng trên các trang RoTruyện/account. Hiện theme chưa tự đồng bộ với theme RoFlix nếu RoFlix không đọc khóa này.
+- Tủ truyện và lịch sử đọc vẫn là localStorage ở bản hiện tại; chưa tuyên bố đồng bộ giữa nhiều thiết bị.
+- Sau khi đăng nhập, hãy kiểm thử cùng email trên RoFlix và RoTruyện, rồi đăng xuất ở một bên và xác nhận phiên bên kia cũng hết hiệu lực.
