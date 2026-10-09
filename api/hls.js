@@ -137,13 +137,18 @@ async function handler(req, res) {
     clearTimeout(timer);
     return res.status(502).json({ error: 'Upstream lỗi', detail: String((e && e.message) || e) });
   }
-  clearTimeout(timer);
 
   const ct = upstream.headers.get('content-type') || '';
   const looksPlaylist = firstHop || /mpegurl/i.test(ct) || /\.m3u8$/i.test(target.pathname);
 
   if (looksPlaylist) {
-    const body = await upstream.text();
+    let body;
+    try { body = await upstream.text(); }
+    catch (e) {
+      clearTimeout(timer);
+      return res.status(502).json({ error: 'Không đọc được playlist upstream', detail: String((e && e.message) || e) });
+    }
+    clearTimeout(timer);
     if (!upstream.ok || body.replace(/^\uFEFF/, '').trimStart().indexOf('#EXTM3U') !== 0) {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(upstream.ok ? 502 : upstream.status).json({
@@ -161,6 +166,7 @@ async function handler(req, res) {
     }
   }
 
+  clearTimeout(timer);
   res.status(upstream.status);
   if (ct) res.setHeader('Content-Type', ct);
   ['content-length', 'content-range', 'accept-ranges'].forEach(function (h) {
