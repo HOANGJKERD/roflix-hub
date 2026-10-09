@@ -20,7 +20,7 @@
   };
   state.saved = new Set(memory.read('saved:v1', []));
   state.history = memory.read('history:v1', []);
-  let cloudUserId=null, libraryChannel=null, cloudSyncBusy=false, cloudSyncTimer=null;
+  let cloudUserId=null, libraryChannel=null, userLibraryChannel=null, cloudSyncBusy=false, cloudSyncTimer=null;
   async function syncCloudLibrary(){
     const sb=window.rfSupabase;if(!sb||cloudSyncBusy)return;
     cloudSyncBusy=true;
