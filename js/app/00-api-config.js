@@ -117,7 +117,7 @@ function loadOptionalSource(src, flag) {
 }
 
 loadOptionalSource('js/app/00b-vidsrc.js', 'RoflixVidSrc');
-loadOptionalSource('js/app/00c-animapper.js?v=20261008-4', 'RoflixAniMapper');
+loadOptionalSource('js/app/00c-animapper.js?v=20261009-1', 'RoflixAniMapper');
 
 const ITEMS_PER_PAGE = 24;
 let currentPage = 1;
