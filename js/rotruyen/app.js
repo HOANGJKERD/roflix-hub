@@ -50,7 +50,7 @@
     } finally { clearTimeout(timer); }
   }
   async function searchMangaDex() {
-    const params=new URLSearchParams({limit:'24',offset:'0',order:'followedCount.desc',includes:'cover_art,author',hasAvailableChapters:'true'}); params.append('contentRating[]','safe'); params.append('contentRating[]','suggestive');
+    const params=new URLSearchParams({limit:'24',offset:'0',order:'followedCount.desc',hasAvailableChapters:'true'}); params.append('includes[]','cover_art'); params.append('includes[]','author'); params.append('contentRating[]','safe'); params.append('contentRating[]','suggestive');
     if(state.query) params.set('title',state.query);
     params.set('availableTranslatedLanguage[]','vi');
     if(state.genre!=='all') {
@@ -100,7 +100,7 @@
     state.apiBusy=true; const btn=$('#load-source');if(btn){btn.disabled=true;btn.textContent='Đang kết nối…';}
     const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải danh mục từ MangaDex…</p></div>';
     try {state.items=await searchMangaDex();render();if(!state.items.length)notify('Nguồn đã phản hồi nhưng chưa có kết quả phù hợp.');}
-    catch(e){state.items=[];render();notify('Không tải được MangaDex: '+(e.name==='AbortError'?'hết thời gian chờ':e.message));}
+    catch(e){state.items=DEMOS;state.source='demo';render();notify('MangaDex chưa tải được: '+(e.name==='AbortError'?'hết thời gian chờ':e.message)+'. Đang hiển thị truyện mẫu, hãy thử lại.');}
     finally{state.apiBusy=false;if(btn){btn.disabled=false;btn.textContent='Tải truyện từ MangaDex';}}
   }
 
@@ -204,5 +204,5 @@
   async function rtRenderAccountLink(){const link=$('#rt-account-link'),label=$('#rt-account-label'),sb=window.rfSupabase;if(!link||!sb)return;try{const {data}=await sb.auth.getUser();const user=data?.user;if(user){let p={};try{p=JSON.parse(localStorage.getItem('roflix-profile')||'{}')}catch(_){}link.href='rotruyen-account.html';if(label)label.textContent=(user.user_metadata?.display_name||p.name||user.email?.split('@')[0]||'Tài khoản').slice(0,24);link.title='Tài khoản '+(user.email||'')}else{link.href='rotruyen-account.html';if(label)label.textContent='Đăng nhập'}}catch(_){if(label)label.textContent='Tài khoản'}}
   rtRenderAccountLink();
   if(window.rfSupabase){window.rfSupabase.auth.onAuthStateChange(()=>{setTimeout(rtRenderAccountLink,0)})}
-  bind();state.items=DEMOS;render();
+  bind();state.items=DEMOS;render();state.source='mangadex';loadCatalog();
 })();
