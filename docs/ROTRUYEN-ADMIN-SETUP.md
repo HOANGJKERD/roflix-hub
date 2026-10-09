@@ -20,17 +20,17 @@
 
 ## Adapter nguồn ngoài
 
-### MangaDex
+### MangaDex / TruyenDex
 
-Chọn **Tìm trên MangaDex** để truy vấn API công khai. Giao diện lọc kết quả theo bản dịch tiếng Việt và chỉ yêu cầu rating `safe` / `suggestive`; không truy vấn rating `erotica` hoặc `pornographic`. Chương chỉ hiển thị nếu API có bản dịch tiếng Việt. API, CORS, tốc độ và dữ liệu sẵn có do nhà cung cấp kiểm soát, nên lỗi nguồn sẽ không đồng nghĩa với lỗi toàn bộ ứng dụng.
+Repo [zennomi/truyendex](https://github.com/zennomi/truyendex) là mã nguồn website đọc truyện dựa trên MangaDex, không phải một REST API riêng có endpoint công khai được cam kết. RoTruyện không nhúng/copy frontend TruyenDex; thay vào đó, tích hợp trực tiếp MangaDex Public API tương tự cách TruyenDex lấy dữ liệu. Chọn **Tìm trên MangaDex** để truy vấn API công khai. Danh sách chương yêu cầu bản dịch tiếng Việt và cố gắng hiển thị tên nhóm dịch khi API trả metadata đó. Giao diện lọc kết quả theo bản dịch tiếng Việt và chỉ yêu cầu rating `safe` / `suggestive`; không truy vấn rating `erotica` hoặc `pornographic`. Chương chỉ hiển thị nếu API có bản dịch tiếng Việt. API, CORS, tốc độ và dữ liệu sẵn có do nhà cung cấp kiểm soát, nên lỗi nguồn sẽ không đồng nghĩa với lỗi toàn bộ ứng dụng.
 
 ### LongBookApi
 
 Chọn **LongBook API** chỉ sau khi đã triển khai LongBookApi của riêng bạn hoặc có endpoint mà bạn được phép dùng. Trong Admin → Nguồn API, cấu hình base URL HTTPS và bật adapter. Frontend thử `GET /book?start=0&limit=24` và `GET /book/search?keyword=...`; nếu bản triển khai có response schema hoặc tham số tìm kiếm khác, cần điều chỉnh adapter theo README/source của đúng phiên bản. Repo công khai không có nghĩa là đã có endpoint live. Không đặt mật khẩu hoặc khóa riêng tư trong base URL hay JavaScript.
 
-### TruyenDex
+### Lưu ý về TruyenDex
 
-TruyenDex được xem là tham khảo về trải nghiệm MangaDex tiếng Việt, không được nhúng hoặc sao chép mã nguồn khi chưa xác minh license. Kiểm tra lại điều khoản hiện hành và chính sách attribution trước khi dùng bất kỳ API hay dữ liệu nào của bên thứ ba. Không giả định TruyenDex có API public ổn định.
+TruyenDex đã thông báo dừng phát triển chính thức; README của họ mô tả MangaDex là nguồn dữ liệu truyện và nhấn mạnh không gắn quảng cáo, ghi nguồn nhóm dịch, tôn trọng quyền tự quyết của nhóm dịch. Vì vậy RoTruyện tích hợp MangaDex trực tiếp, không gọi một API TruyenDex không được tài liệu hóa. Cần tuân thủ điều khoản MangaDex hiện hành, attribution và giới hạn nội dung/rating; dữ liệu, chương hoặc nhóm dịch có thể không có sẵn.
 
 ## Bảo mật
 
