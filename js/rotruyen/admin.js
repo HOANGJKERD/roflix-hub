@@ -14,7 +14,7 @@ async function requireAdmin(){
  if(error||!user){showLogin('Hãy đăng nhập tài khoản quản trị.');return false;}
  const {data,error:profileError}=await sb.from('profiles').select('id,role,account_status').eq('id',user.id).maybeSingle();
  if(profileError){showLogin('Không xác minh được quyền. Hãy áp dụng migration RoTruyen và kiểm tra bảng profiles.');return false;}
- if(profile?.role!=='admin'||(profile.account_status&&profile.account_status!=='active')){await sb.auth.signOut();showLogin('Tài khoản không có quyền admin đang hoạt động.');return false;}
+ if(data?.role!=='admin'||(data.account_status&&data.account_status!=='active')){await sb.auth.signOut();showLogin('Tài khoản không có quyền admin đang hoạt động.');return false;}
  state.user=user;showAdmin();return true;
 }
 async function audit(action,type,id,details={}){
