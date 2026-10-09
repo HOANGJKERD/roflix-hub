@@ -79,6 +79,19 @@
     renderSavedCount();
   }
   function renderSavedCount(){const el=$('#saved-count');if(el)el.textContent=state.saved.size;}
+  async function loadOwnCatalog() {
+    const sb=window.rfSupabase;
+    if(!sb){state.source='demo';state.items=DEMOS;render();notify('Supabase chưa sẵn sàng, đang hiển thị dữ liệu mẫu.');return;}
+    const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải catalog RoTruyện…</p></div>';
+    try{
+      const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,source_id,genres,content_rating,status,is_published,sort_order').eq('is_published',true).order('sort_order',{ascending:true}).limit(100);
+      if(error)throw error;
+      state.items=(data||[]).map(s=>({id:s.id,source:'database',title:s.title,author:s.author,genre:(s.genres||[])[0]||'all',kind:(s.genres||[]).join(' · ')||'Truyện',chapters:null,rating:null,pop:0,updated:0,cover:s.cover_url,description:s.synopsis,status:s.status,contentRating:s.content_rating,sourceId:s.source_id}));
+      state.source='database';
+      if(!state.items.length){state.items=DEMOS;state.source='demo';notify('Catalog chưa có tác phẩm đã xuất bản. Đang hiển thị dữ liệu mẫu.');}
+      render();
+    }catch(e){state.items=DEMOS;state.source='demo';render();notify('Catalog chưa sẵn sàng: '+e.message+'. Đang dùng dữ liệu mẫu.');}
+  }
   async function loadCatalog() {
     if(state.source==='demo'){state.items=DEMOS;render();return;}
     state.apiBusy=true; const btn=$('#load-source');if(btn){btn.disabled=true;btn.textContent='Đang kết nối…';}
@@ -134,7 +147,8 @@
     $('#show-saved').addEventListener('click',showSaved);
     $('#focus-search').addEventListener('click',()=>{$('#story-search').focus();$('#stories').scrollIntoView({behavior:'smooth'});});
     $('#load-source')?.addEventListener('click',()=>{state.source='mangadex';loadCatalog();});
-    $('#source-demo')?.addEventListener('click',()=>{state.source='demo';state.items=DEMOS;loadCatalog();});
+    $('#source-demo')?.addEventListener('click',()=>{state.source='demo';state.items=DEMOS;render();});
+    $('#load-catalog')?.addEventListener('click',loadOwnCatalog);
     $('#detail-close').addEventListener('click',()=>closeModal('detail-modal'));$('#reader-close').addEventListener('click',()=>closeModal('reader-modal'));
     $$('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);}));
     $('#detail-read').addEventListener('click',loadChapters);
