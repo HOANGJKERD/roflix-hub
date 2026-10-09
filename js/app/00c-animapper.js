@@ -24,25 +24,47 @@
     var img = (item && item.images) || {};
     return img.coverXl || img.coverLg || img.coverMd || '';
   }
+  var inFlight = new Map();
+  var memoryCache = new Map();
   function api(path, ms) {
+    var timeoutMs = ms || 14000;
+    var key = String(path);
+    if (memoryCache.has(key)) return Promise.resolve(memoryCache.get(key));
+    if (inFlight.has(key)) return inFlight.get(key);
     var ctrl = new AbortController();
-    var timer = setTimeout(function () { ctrl.abort(); }, ms || 14000);
-    return fetch(API + encodeURIComponent(path), { headers: { Accept: 'application/json' }, signal: ctrl.signal })
+    var timer = setTimeout(function () { ctrl.abort(); }, timeoutMs);
+    var request = fetch(API + encodeURIComponent(path), { headers: { Accept: 'application/json' }, signal: ctrl.signal })
       .then(function (res) {
-        clearTimeout(timer);
         return res.json().catch(function () { return null; }).then(function (json) {
           if (!res.ok || (json && json.success === false)) {
-            var msg = (json && (json.message || json.error)) || ('HTTP ' + res.status);
-            throw new Error(msg);
+            var err = new Error((json && (json.message || json.error)) || ('HTTP ' + res.status));
+            err.code = json && json.code || '';
+            err.status = res.status;
+            err.retryAfter = json && json.retryAfter;
+            throw err;
+          }
+          if (!json) {
+            var bad = new Error('AniMapper trả dữ liệu không hợp lệ');
+            bad.code = 'UPSTREAM_BAD_RESPONSE';
+            throw bad;
           }
           return json;
         });
       })
       .catch(function (err) {
-        clearTimeout(timer);
-        if (err && err.name === 'AbortError') throw new Error('quá thời gian chờ');
+        if (err && err.name === 'AbortError') {
+          var timeout = new Error('Quá thời gian chờ phản hồi từ AniMapper');
+          timeout.code = 'CLIENT_TIMEOUT';
+          throw timeout;
+        }
         throw err;
+      })
+      .finally(function () {
+        clearTimeout(timer);
+        inFlight.delete(key);
       });
+    inFlight.set(key, request);
+    return request;
   }
 
   var hlsLibPromise = null;
@@ -161,6 +183,8 @@
     document.body.classList.add('rf-am-lock');
 
     var state = { item: null, provider: '', episodes: [], offset: 0, hasNext: false, activeIndex: -1, server: '', servers: [] };
+    var episodeCache = new Map();
+    var serverCache = new Map();
 
     function setSub(text) { document.getElementById('rf-am-sub').textContent = text; }
     function stage() { return root.querySelector('.stage'); }
@@ -237,7 +261,7 @@
       var path = '/stream/source?episodeData=' + encodeURIComponent(episodeData) +
         '&provider=' + encodeURIComponent(provider) +
         '&server=' + encodeURIComponent(server);
-      return api(path, 20000).then(function (d) {
+      return api(path, 24000).then(function (d) {
         var data = (d && (d.result || d.data)) || d || {};
         var url = data.url || d.url;
         if (!url) throw new Error('không trả URL');
@@ -302,6 +326,27 @@
           return;
         } catch (e) {
           if (e && e.message === 'đã huỷ') return;
+          if (e && (e.code === 'UPSTREAM_TIMEOUT' || e.code === 'UPSTREAM_RATE_LIMITED' || e.code === 'CLIENT_TIMEOUT')) {
+            if (token !== playToken) return;
+            var wait = Number(e.retryAfter || 30);
+            if (!Number.isFinite(wait) || wait < 1) wait = 30;
+            wait = Math.min(wait, 300);
+            showMessage('AniMapper đang quá tải', e.code === 'UPSTREAM_RATE_LIMITED'
+              ? 'AniMapper đang giới hạn tốc độ. Hãy thử lại sau ' + wait + ' giây.'
+              : 'AniMapper phản hồi quá chậm. Hãy thử lại sau ' + wait + ' giây.');
+            var ph = document.getElementById('rf-am-ph');
+            if (ph && !ph.querySelector('[data-retry]')) {
+              var retry = document.createElement('button');
+              retry.type = 'button';
+              retry.dataset.retry = '1';
+              retry.textContent = 'Thử lại';
+              retry.style.cssText = 'margin-top:12px;padding:10px 18px;border:0;border-radius:10px;background:#f59e0b;color:#111;font-weight:800;cursor:pointer';
+              retry.onclick = function () { playEpisode(ep, forcedServer); };
+              ph.appendChild(retry);
+            }
+            setSub('AniMapper đang giới hạn tốc độ hoặc quá tải');
+            return;
+          }
           errors.push(server + ': ' + (e && e.message ? e.message : e));
         }
       }
@@ -333,6 +378,23 @@
       setSub('Đang lấy danh sách tập...');
       showMessage(titleOf(item), 'Đang tìm nguồn phát');
       var providers = state.provider ? [state.provider] : PROVIDERS;
+      var episodeKey = String(item.id) + ':' + state.offset;
+      if (episodeCache.has(episodeKey)) {
+        var cached = episodeCache.get(episodeKey);
+        state.provider = cached.provider;
+        state.hasNext = cached.hasNext;
+        state.offset = cached.offset;
+        state.episodes = reset ? cached.episodes.slice() : state.episodes.concat(cached.episodes);
+        setSub(cached.provider + ' · ' + state.episodes.length + ' tập');
+        if (reset) {
+          state.activeIndex = state.episodes.length ? 0 : -1;
+          state.servers = serverCache.get(String(item.id)) || [];
+          renderServerButtons();
+        }
+        renderEpisodes();
+        if (reset && state.episodes[0]) playEpisode(state.episodes[0]);
+        return;
+      }
       var found = null;
       var lastErr = '';
       for (var p = 0; p < providers.length && !found; p++) {
@@ -350,11 +412,13 @@
       state.hasNext = !!found.data.hasNextPage;
       state.offset = (found.data.offset || 0) + (found.data.episodes.length || 0);
       state.episodes = state.episodes.concat(found.data.episodes);
+      episodeCache.set(episodeKey, { provider: found.provider, hasNext: state.hasNext, offset: state.offset, episodes: found.data.episodes.slice() });
       setSub(found.provider + ' · ' + (found.data.total || state.episodes.length) + ' tập');
       if (reset) {
         try {
           var sd = await api('/stream/episodes/servers?id=' + encodeURIComponent(item.id) + '&provider=' + encodeURIComponent(found.provider), 10000);
           if (sd && Array.isArray(sd.servers)) state.servers = sd.servers.map(function (x) { return String(x).toUpperCase(); });
+          serverCache.set(String(item.id), state.servers.slice());
         } catch (_) { state.servers = []; }
         renderServerButtons();
         if (state.episodes[0]) state.activeIndex = 0;
@@ -403,7 +467,6 @@
       if (state.item) loadShow(state.item, false);
     };
     document.getElementById('rf-am-q').focus();
-    search('naruto');
   }
 
   function boot() { injectSourcePill(); }
