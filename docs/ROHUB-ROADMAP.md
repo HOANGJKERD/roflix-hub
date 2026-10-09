@@ -35,7 +35,7 @@ README mo ta REST API Java Jersey/MySQL, GET danh sach/chi tiet va CRUD can auth
 5. Integration: cong RoHub, cache/service worker, test route va hoi quy RoFlix.
 
 ## Kiem thu truoc merge
-- / va /index.html van giu RoFlix hien tai.
+- / va /index.html la cong RoHub; /roflix.html giu entry point RoFlix rieng.
 - /rotruyen.html chay doc lap, khong can script RoFlix.
 - Tim kiem, loc, reset va responsive hoat dong.
 - Ton trong prefers-reduced-motion.
@@ -45,6 +45,8 @@ README mo ta REST API Java Jersey/MySQL, GET danh sach/chi tiet va CRUD can auth
 - Khong merge/production truoc khi hoi quy RoFlix.
 
 ## Trang thai
-- Foundation: dang trien khai.
-- API live: chua bat, can xac minh dieu khoan/giay phep.
-- Admin CRUD that: chua bat, can backend authorization.
+- Foundation: da tao tren nhanh; can kiem tra browser truoc khi merge.
+- MangaDex: adapter phia client da them; chua xac minh runtime/CORS tren deployment.
+- LongBook: adapter co the cau hinh; endpoint live va schema chua duoc xac minh.
+- Admin CRUD: da tao UI va migration RLS; can ap dung migration tren dung Supabase project va test role/policies.
+- Production: chua merge, chua deploy va chua kiem thu end-to-end.
