@@ -67,7 +67,7 @@
   }
   function coverMarkup(s) {
     const style='--cover:'+esc(s.coverColor||'#282449')+';--glow:'+esc(s.glow||'#8c6ce0')+';--accent:'+esc(s.accent||'#d3b9ff');
-    const visual=s.cover && ['mangadex','database'].includes(s.source) && s.cover ? '<img loading="lazy" src="'+esc(s.cover)+'" alt="" onerror="this.style.display=\\'none\\'">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
+    const visual=s.cover && ['mangadex','database','longbook'].includes(s.source) && s.cover ? '<img loading="lazy" src="'+esc(s.cover)+'" alt="" onerror="this.style.display=\\'none\\'">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     return '<div class="cover" style="'+style+'">'+visual+'<small>'+esc(s.kind||'Truyện')+'</small><button data-save="'+esc(s.id)+'" class="'+(state.saved.has(s.id)?'saved':'')+'" aria-label="'+(state.saved.has(s.id)?'Bỏ lưu':'Lưu truyện')+'"><i class="fa-'+(state.saved.has(s.id)?'solid':'regular')+' fa-bookmark"></i></button></div>';
   }
   function render() {
@@ -100,10 +100,29 @@
     catch(e){state.items=[];render();notify('Không tải được MangaDex: '+(e.name==='AbortError'?'hết thời gian chờ':e.message));}
     finally{state.apiBusy=false;if(btn){btn.disabled=false;btn.textContent='Tải truyện từ MangaDex';}}
   }
+
+  async function loadLongBook() {
+    const sb=window.rfSupabase;
+    if(!sb){notify('Supabase chưa sẵn sàng để đọc cấu hình nguồn.');return;}
+    try{
+      const {data:cfg,error}=await sb.from('rotruyen_settings').select('value').eq('key','public.sources').maybeSingle();
+      if(error)throw error;
+      const source=cfg?.value?.longbook;
+      if(!source?.enabled){notify('LongBookApi đang tắt. Hãy bật trong RoTruyện Admin.');return;}
+      const base=String(source.baseUrl||'').replace(/\/+$/,'');
+      if(!/^https:\/\/[^/]+/i.test(base))throw new Error('Base URL chưa được cấu hình bằng HTTPS.');
+      const params=new URLSearchParams({start:'0',limit:'24'});
+      const endpoint=state.query?'/book/search?keyword='+encodeURIComponent(state.query):'/book?'+params.toString();
+      const data=await fetchJSON(base+endpoint);
+      const rows=Array.isArray(data)?data:(data.books||data.items||data.data||[]);
+      state.items=rows.map((b,i)=>{const id=String(b.id??b.book_id??b._id??i);return{id:'longbook:'+id,source:'longbook',sourceId:id,title:String(b.title??b.name??b.book_name??'Chưa có tiêu đề'),author:String(b.author??b.writer??'Chưa rõ tác giả'),genre:'all',kind:String(b.category??b.genre??'LongBook'),chapters:Number(b.chapter_count??b.chapters_count)||null,rating:null,pop:0,updated:0,cover:String(b.cover_url??b.cover??b.thumbnail??''),description:String(b.description??b.summary??''),status:String(b.status??'unknown'),raw:b};});
+      state.source='longbook';render();if(!state.items.length)notify('LongBookApi đã phản hồi nhưng không nhận diện được danh sách truyện.');
+    }catch(e){notify('LongBookApi chưa khả dụng: '+e.message);}
+  }
   function resetFilters(){state.query='';state.genre='all';state.sort='featured';$('#story-search').value='';$('#genre-filter').value='all';$$('[data-sort]').forEach(b=>{b.classList.toggle('active',b.dataset.sort===state.sort);b.setAttribute('aria-selected',String(b.dataset.sort===state.sort));});render();}
   function openDetail(id) {
     const s=state.items.find(x=>x.id===id)||DEMOS.find(x=>x.id===id);if(!s)return;state.selected=s;
-    $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&['mangadex','database'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
+    $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&['mangadex','database','longbook'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     $('#detail-meta').textContent=(s.kind||'Truyện')+' · '+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':'Bản demo');
     const read=$('#detail-read');read.disabled=!['mangadex','database'].includes(s.source);read.textContent=s.source==='mangadex'?'Xem chương có sẵn':s.source==='database'?'Xem chương đã xuất bản':'Bản demo chưa có nội dung chương';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');
   }
@@ -162,6 +181,7 @@
     $('#load-source')?.addEventListener('click',()=>{state.source='mangadex';loadCatalog();});
     $('#source-demo')?.addEventListener('click',()=>{state.source='demo';state.items=DEMOS;render();});
     $('#load-catalog')?.addEventListener('click',loadOwnCatalog);
+    $('#load-longbook')?.addEventListener('click',loadLongBook);
     $('#detail-close').addEventListener('click',()=>closeModal('detail-modal'));$('#reader-close').addEventListener('click',()=>closeModal('reader-modal'));
     $$('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);}));
     $('#detail-read').addEventListener('click',loadChapters);
