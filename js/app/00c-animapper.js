@@ -1,19 +1,24 @@
-// AniMapper watch page. Search + episodes from the public API.
-// Playback prefers AniMapper's HDX embed because it works directly in the browser.
-// DU/HLS is skipped when AniMapper marks it as requiring a CORS/Referer proxy.
+// AniMapper watch page. Search + episodes + playback qua AniMapper API (đi qua proxy Vercel /api/animapper).
+// Server AnimeVietSub:
+//   DU  = HLS, cần Referer -> phát bằng <video> + hls.js qua proxy /api/hls
+//   HDX = EMBED -> iframe
+// Mặc định thử DU trước (kiểm tra được lỗi), lỗi thì tự chuyển HDX. Có nút đổi server thủ công.
 (function (w) {
   'use strict';
   var API = '/api/animapper?path=';
+  var HLS_PROXY = '/api/hls?u=';
+  var HLS_LIB = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';
   var PROVIDERS = ['ANIMEVIETSUB'];
+  var DEFAULT_SERVERS = ['DU', 'HDX'];
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return ({ '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;' })[c];
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
     });
   }
   function titleOf(item) {
     var t = (item && item.titles) || {};
-    return t.vi || t['user-preferred'] || t.en || t.main || t['ja-ro'] || 'Anime';
+    return t.vi || t['user-preferred'] || t.en || t.main || t['ja-ro'] || t.romaji || 'Anime';
   }
   function posterOf(item) {
     var img = (item && item.images) || {};
@@ -22,17 +27,36 @@
   function api(path, ms) {
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(); }, ms || 14000);
-    return fetch(API + encodeURIComponent(path), { headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }, cache: 'no-store', signal: ctrl.signal })
+    return fetch(API + encodeURIComponent(path), { headers: { Accept: 'application/json' }, signal: ctrl.signal })
       .then(function (res) {
         clearTimeout(timer);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
+        return res.json().catch(function () { return null; }).then(function (json) {
+          if (!res.ok || (json && json.success === false)) {
+            var msg = (json && (json.message || json.error)) || ('HTTP ' + res.status);
+            throw new Error(msg);
+          }
+          return json;
+        });
       })
       .catch(function (err) {
         clearTimeout(timer);
-        if (err && err.name === 'AbortError') throw new Error('AniMapper không trả link (quá 14 giây)');
+        if (err && err.name === 'AbortError') throw new Error('quá thời gian chờ');
         throw err;
       });
+  }
+
+  var hlsLibPromise = null;
+  function loadHlsLib() {
+    if (w.Hls) return Promise.resolve(w.Hls);
+    if (hlsLibPromise) return hlsLibPromise;
+    hlsLibPromise = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = HLS_LIB;
+      s.onload = function () { resolve(w.Hls); };
+      s.onerror = function () { hlsLibPromise = null; reject(new Error('không tải được hls.js')); };
+      document.head.appendChild(s);
+    });
+    return hlsLibPromise;
   }
 
   function injectSourcePill() {
@@ -68,13 +92,18 @@
       '@media(max-width:980px){#rf-am-page .body{grid-template-columns:1fr;overflow:auto;} #rf-am-page .side{border-left:0;border-top:1px solid #1c1f2a;max-height:none;}}',
       '#rf-am-page .watch{min-width:0;overflow:auto;padding:16px 18px 28px;}',
       '#rf-am-page .stage{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:18px;overflow:hidden;border:1px solid #222;box-shadow:0 30px 80px #000a;}',
-      '#rf-am-page iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;}',
+      '#rf-am-page iframe,#rf-am-page video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;}',
       '#rf-am-page .ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 40%,#1a1428,#05060a 70%);color:#9ca3af;}',
       '#rf-am-page .ph strong{color:#fff;font-size:20px;}',
+      '#rf-am-page .ph span{max-width:640px;font-size:13px;line-height:1.5;word-break:break-word;}',
       '#rf-am-page .now{margin:14px 0 8px;}',
       '#rf-am-page .now h1{margin:0;font-size:22px;font-weight:900;}',
       '#rf-am-page .now p{margin:4px 0 0;color:#9ca3af;font-size:13px;}',
-      '#rf-am-page .eps{display:flex;gap:8px;overflow:auto;padding-bottom:6px;}',
+      '#rf-am-page .servers{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0;}',
+      '#rf-am-page .servers small{color:#9ca3af;font-weight:700;}',
+      '#rf-am-page .srv{border:1px solid #2c3142;background:#141824;color:#eee;border-radius:999px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;}',
+      '#rf-am-page .srv.on{background:#a78bfa;color:#111;border-color:#a78bfa;}',
+      '#rf-am-page .eps{display:flex;gap:8px;overflow:auto;padding-bottom:6px;flex-wrap:wrap;}',
       '#rf-am-page .ep{flex:0 0 auto;border:1px solid #2c3142;background:#141824;color:#eee;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;}',
       '#rf-am-page .ep.on{background:#f59e0b;color:#111;border-color:#f59e0b;}',
       '#rf-am-page .more{margin-top:8px;border:0;background:transparent;color:#c4b5fd;font-weight:700;cursor:pointer;}',
@@ -94,13 +123,22 @@
     document.head.appendChild(css);
   }
 
+  // ----- Player (một instance cho cả trang) -----
+  var hls = null;
+  var playToken = 0; // huỷ kết quả của lần phát cũ khi người dùng bấm tập/server khác
+
+  function stopPlayer() {
+    if (hls) { try { hls.destroy(); } catch (_) {} hls = null; }
+    var v = document.getElementById('rf-am-video');
+    if (v) { try { v.pause(); v.removeAttribute('src'); v.load(); } catch (_) {} v.remove(); }
+    var f = document.getElementById('rf-am-frame');
+    if (f) { f.style.display = 'none'; f.src = 'about:blank'; }
+  }
+
   function closePage() {
+    stopPlayer();
     var el = document.getElementById('rf-am-page');
-    if (el) {
-      var frame = document.getElementById('rf-am-frame');
-      if (frame) frame.src = '';
-      el.remove();
-    }
+    if (el) el.remove();
     document.body.classList.remove('rf-am-lock');
   }
 
@@ -114,126 +152,198 @@
       '<div class="brand">Ro<b>Flix</b></div><button class="fs" id="rf-am-fs" type="button">Toàn màn hình</button></div>' +
       '<div class="body"><section class="watch">' +
         '<div class="stage"><div class="ph" id="rf-am-ph"><strong>Chọn anime ở cột phải</strong><span>Rồi bấm tập để phát</span></div>' +
-        '<iframe id="rf-am-frame" allowfullscreen allow="autoplay; fullscreen; encrypted-media" style="display:none"></iframe></div>' +
-        '<div class="now"><h1 id="rf-am-title">AniMapper</h1><p id="rf-am-sub">Nguồn phát anime công khai. Không đổi KKPhim.</p></div>' +
+        '<iframe id="rf-am-frame" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" style="display:none"></iframe></div>' +
+        '<div class="now"><h1 id="rf-am-title">AniMapper</h1><p id="rf-am-sub">Nguồn phát anime công khai.</p></div>' +
+        '<div class="servers" id="rf-am-servers" hidden></div>' +
         '<div class="eps" id="rf-am-eps"></div><button class="more" id="rf-am-more" type="button" hidden>Tải thêm tập</button>' +
       '</section><aside class="side"><form id="rf-am-form"><input id="rf-am-q" placeholder="Tìm anime..." autocomplete="off"><button class="go" type="submit">Tìm</button></form><div class="list" id="rf-am-list"></div></aside></div>';
     document.body.appendChild(root);
     document.body.classList.add('rf-am-lock');
 
-    var state = { item: null, provider: '', episodes: [], offset: 0, hasNext: false };
+    var state = { item: null, provider: '', episodes: [], offset: 0, hasNext: false, activeIndex: -1, server: '', servers: [] };
 
     function setSub(text) { document.getElementById('rf-am-sub').textContent = text; }
-    function showFrame(url) {
-      var frame = document.getElementById('rf-am-frame');
-      var ph = document.getElementById('rf-am-ph');
-      frame.style.display = 'block';
-      if (ph) ph.style.display = 'none';
-      frame.src = url;
-    }
+    function stage() { return root.querySelector('.stage'); }
+
     function showMessage(title, detail) {
-      var frame = document.getElementById('rf-am-frame');
+      stopPlayer();
       var ph = document.getElementById('rf-am-ph');
-      if (frame) { frame.style.display = 'none'; frame.src = ''; }
       if (ph) {
         ph.style.display = 'flex';
-        ph.innerHTML = '<strong>' + esc(title) + '</strong><span>' + esc(detail) + '</span>';
+        ph.innerHTML = '<strong>' + esc(title) + '</strong><span>' + esc(detail || '') + '</span>';
       }
+    }
+    function hidePlaceholder() {
+      var ph = document.getElementById('rf-am-ph');
+      if (ph) ph.style.display = 'none';
+    }
+
+    function playEmbed(url) {
+      stopPlayer();
+      hidePlaceholder();
+      var f = document.getElementById('rf-am-frame');
+      f.style.display = 'block';
+      f.src = url;
+    }
+
+    // Trả về Promise: resolve khi đã thực sự có hình/segment, reject khi lỗi nặng hoặc quá 20s.
+    function playHls(sourceUrl, token) {
+      return loadHlsLib().then(function (Hls) {
+        if (token !== playToken) throw new Error('đã huỷ');
+        stopPlayer();
+        hidePlaceholder();
+        var video = document.createElement('video');
+        video.id = 'rf-am-video';
+        video.controls = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        stage().appendChild(video);
+        var viaProxy = /^https:\/\/api\.animapper\.net\/api\/v1\/stream\/source\/m3u8\//.test(sourceUrl);
+        var src = viaProxy ? HLS_PROXY + encodeURIComponent(sourceUrl) : sourceUrl;
+
+        return new Promise(function (resolve, reject) {
+          var settled = false;
+          function ok() { if (!settled) { settled = true; clearTimeout(timer); resolve(); } }
+          function fail(msg) {
+            if (settled) { setSub('Lỗi phát: ' + msg); return; }
+            settled = true; clearTimeout(timer); reject(new Error(msg));
+          }
+          var timer = setTimeout(function () { fail('quá 20 giây không có dữ liệu video'); }, 20000);
+
+          if (Hls && Hls.isSupported()) {
+            hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+            hls.on(Hls.Events.FRAG_LOADED, ok);
+            hls.on(Hls.Events.ERROR, function (_e, data) {
+              if (!data || !data.fatal) return;
+              var code = data.response && data.response.code ? ' HTTP ' + data.response.code : '';
+              fail('HLS ' + data.type + '/' + data.details + code);
+            });
+            hls.loadSource(src);
+            hls.attachMedia(video);
+            video.play().catch(function () {});
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = src;
+            video.addEventListener('playing', ok, { once: true });
+            video.addEventListener('error', function () { fail('trình duyệt không phát được HLS'); }, { once: true });
+            video.play().catch(function () {});
+          } else {
+            fail('trình duyệt không hỗ trợ HLS');
+          }
+        });
+      });
+    }
+
+    function fetchSource(episodeData, provider, server) {
+      var path = '/stream/source?episodeData=' + encodeURIComponent(episodeData) +
+        '&provider=' + encodeURIComponent(provider) +
+        '&server=' + encodeURIComponent(server);
+      return api(path, 20000).then(function (d) {
+        var data = (d && (d.result || d.data)) || d || {};
+        var url = data.url || d.url;
+        if (!url) throw new Error('không trả URL');
+        return { url: url, type: String(data.type || d.type || '').toUpperCase(), server: data.server || server };
+      });
+    }
+
+    function orderedServers(preferred) {
+      var base = state.servers.length ? state.servers.slice() : DEFAULT_SERVERS.slice();
+      // Mặc định: DU (kiểm tra được lỗi) trước, HDX sau.
+      base.sort(function (a, b) { return (a === 'DU' ? 0 : 1) - (b === 'DU' ? 0 : 1); });
+      if (preferred) base = [preferred].concat(base.filter(function (x) { return x !== preferred; }));
+      return base;
+    }
+
+    function renderServerButtons() {
+      var box = document.getElementById('rf-am-servers');
+      var list = state.servers.length ? state.servers : DEFAULT_SERVERS;
+      box.hidden = false;
+      box.innerHTML = '<small>Server:</small>' + list.map(function (s) {
+        return '<button type="button" class="srv' + (state.server === s ? ' on' : '') + '" data-s="' + esc(s) + '">' +
+          esc(s === 'DU' ? 'DU (HLS)' : s === 'HDX' ? 'HDX (Embed)' : s) + '</button>';
+      }).join('');
+      box.querySelectorAll('.srv').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var ep = state.episodes[state.activeIndex];
+          if (ep) playEpisode(ep, btn.getAttribute('data-s'));
+        });
+      });
+    }
+
+    async function playEpisode(ep, forcedServer) {
+      var episodeData = ep.episodeId || ep.episodeData;
+      if (!episodeData) { showMessage('Tập lỗi', 'Không có mã tập (episodeId).'); return; }
+      var token = ++playToken;
+      var provider = state.provider || PROVIDERS[0];
+      var epNo = ep.episodeNumber || '';
+      showMessage('Đang lấy link...', 'Tập ' + epNo);
+
+      var candidates = forcedServer ? [forcedServer] : orderedServers();
+      var errors = [];
+      for (var i = 0; i < candidates.length; i++) {
+        var server = candidates[i];
+        if (token !== playToken) return;
+        try {
+          setSub(provider + ' · đang thử ' + server + '...');
+          var src = await fetchSource(episodeData, provider, server);
+          if (token !== playToken) return;
+          var type = src.type || (server === 'DU' ? 'HLS' : 'EMBED');
+          if (type === 'HLS') {
+            await playHls(src.url, token);
+          } else if (type === 'DIRECT') {
+            if (/\.m3u8(?:[?#]|$)/i.test(src.url)) await playHls(src.url, token);
+            else playEmbed(src.url);
+          } else {
+            playEmbed(src.url);
+          }
+          if (token !== playToken) return;
+          state.server = src.server || server;
+          renderServerButtons();
+          setSub(provider + ' · ' + state.server + ' · Tập ' + epNo);
+          return;
+        } catch (e) {
+          if (e && e.message === 'đã huỷ') return;
+          errors.push(server + ': ' + (e && e.message ? e.message : e));
+        }
+      }
+      if (token !== playToken) return;
+      showMessage('Chưa phát được tập này', errors.join(' | ') || 'Không có server khả dụng.');
+      setSub(errors[errors.length - 1] || 'Không có nguồn');
     }
 
     function renderEpisodes() {
       var box = document.getElementById('rf-am-eps');
       box.innerHTML = state.episodes.map(function (ep, i) {
-        return '<button type="button" class="ep" data-i="' + i + '">Tập ' + esc(ep.episodeNumber || (i + 1)) + '</button>';
+        return '<button type="button" class="ep' + (i === state.activeIndex ? ' on' : '') + '" data-i="' + i + '">Tập ' + esc(ep.episodeNumber || (i + 1)) + '</button>';
       }).join('');
       box.querySelectorAll('.ep').forEach(function (btn) {
         btn.addEventListener('click', function () {
+          state.activeIndex = Number(btn.getAttribute('data-i'));
           box.querySelectorAll('.ep').forEach(function (x) { x.classList.remove('on'); });
           btn.classList.add('on');
-          playEpisode(state.episodes[Number(btn.getAttribute('data-i'))], btn);
+          playEpisode(state.episodes[state.activeIndex]);
         });
       });
       document.getElementById('rf-am-more').hidden = !state.hasNext;
     }
 
-    async function playEpisode(ep) {
-      var episodeData = ep.episodeId || ep.episodeData;
-      if (!episodeData) { showMessage('Tập lỗi', 'Không có mã tập'); return; }
-
-      showMessage('Đang lấy link...', 'Đang kiểm tra server AniMapper');
-      var provider = state.provider || 'ANIMEVIETSUB';
-      var last = 'Không có nguồn';
-
-      async function sourceForProvider(providerName, episodeId, preferred) {
-        var servers = [];
-        try {
-          var sd = await api('/stream/episodes/servers?id=' + encodeURIComponent(state.item.id) +
-            '&provider=' + encodeURIComponent(providerName), 6000);
-          if (Array.isArray(sd.servers)) servers = sd.servers.map(function (x) { return String(x).toUpperCase(); });
-        } catch (_) {}
-
-        // Prefer browser-safe embeds. If the API does not advertise servers,
-        // still try HDX because AnimeVietSub documents it as the embed server.
-        var ordered = [];
-        if (preferred) ordered.push(String(preferred).toUpperCase());
-        ['HDX'].forEach(function (x) { if (ordered.indexOf(x) < 0) ordered.push(x); });
-        servers.forEach(function (x) { if (ordered.indexOf(x) < 0) ordered.push(x); });
-
-        // DU is HLS and may require Referer/CORS proxy. Do not block the UI on it.
-        ordered = ordered.filter(function (x) { return x !== 'DU'; });
-
-        for (var i = 0; i < ordered.length; i++) {
-          var server = ordered[i];
-          try {
-            var path = '/stream/source?episodeData=' + encodeURIComponent(episodeId) +
-              '&provider=' + encodeURIComponent(providerName) +
-              '&server=' + encodeURIComponent(server) +
-              '&_rf=' + Date.now();
-            var data = await api(path, 7000);
-            var url = data.url || (data.result && data.result.url) || (data.data && data.data.url);
-            var type = String(data.type || (data.result && data.result.type) || (data.data && data.data.type) || '').toUpperCase();
-            if (data.corsProxyRequired && type === 'HLS') {
-              last = providerName + '/' + server + ' cần CORS proxy';
-              continue;
-            }
-            if (url) return { url: url, type: type, server: data.server || server, provider: providerName };
-            last = providerName + '/' + server + ' không trả URL';
-          } catch (e) {
-            last = providerName + '/' + server + ': ' + (e.message || String(e));
-          }
-        }
-        return null;
-      }
-
-      // First, use the selected provider's exact episodeId.
-      var result = await sourceForProvider(provider, episodeData, ep.server);
-      if (result) {
-        showFrame(result.url);
-        setSub(result.provider + ' · ' + result.server + ' · Tập ' + (ep.episodeNumber || ''));
-        return;
-      }
-
-
-      showMessage('Chưa phát được tập này', last + '. AniMapper hiện không cung cấp embed khả dụng cho tập này.');
-      setSub(last);
-    }
-
     async function loadShow(item, reset) {
       state.item = item;
-      if (reset) { state.episodes = []; state.offset = 0; state.provider = ''; }
+      if (reset) { state.episodes = []; state.offset = 0; state.provider = ''; state.activeIndex = -1; state.server = ''; state.servers = []; }
       document.getElementById('rf-am-title').textContent = titleOf(item);
       setSub('Đang lấy danh sách tập...');
       showMessage(titleOf(item), 'Đang tìm nguồn phát');
       var providers = state.provider ? [state.provider] : PROVIDERS;
       var found = null;
+      var lastErr = '';
       for (var p = 0; p < providers.length && !found; p++) {
         try {
-          var data = await api('/stream/episodes?id=' + encodeURIComponent(item.id) + '&provider=' + encodeURIComponent(providers[p]) + '&limit=60&offset=' + state.offset, 12000);
+          var data = await api('/stream/episodes?id=' + encodeURIComponent(item.id) + '&provider=' + encodeURIComponent(providers[p]) + '&limit=60&offset=' + state.offset, 15000);
           if (data.episodes && data.episodes.length) found = { provider: providers[p], data: data };
-        } catch (e) { setSub(providers[p] + ': ' + e.message); }
+          else lastErr = providers[p] + ': không có tập';
+        } catch (e) { lastErr = providers[p] + ': ' + e.message; setSub(lastErr); }
       }
       if (!found) {
-        showMessage('Không có tập', 'AniMapper không map được phim này.');
+        showMessage('Không có tập', (lastErr || 'AniMapper không map được phim này') + '. Thử anime khác hoặc báo mapping trên Discord AniMapper.');
         return;
       }
       state.provider = found.provider;
@@ -241,19 +351,23 @@
       state.offset = (found.data.offset || 0) + (found.data.episodes.length || 0);
       state.episodes = state.episodes.concat(found.data.episodes);
       setSub(found.provider + ' · ' + (found.data.total || state.episodes.length) + ' tập');
-      renderEpisodes();
-      if (reset && state.episodes[0]) {
-        var first = document.querySelector('#rf-am-eps .ep');
-        if (first) first.classList.add('on');
-        playEpisode(state.episodes[0]);
+      if (reset) {
+        try {
+          var sd = await api('/stream/episodes/servers?id=' + encodeURIComponent(item.id) + '&provider=' + encodeURIComponent(found.provider), 10000);
+          if (sd && Array.isArray(sd.servers)) state.servers = sd.servers.map(function (x) { return String(x).toUpperCase(); });
+        } catch (_) { state.servers = []; }
+        renderServerButtons();
+        if (state.episodes[0]) state.activeIndex = 0;
       }
+      renderEpisodes();
+      if (reset && state.episodes[0]) playEpisode(state.episodes[0]);
     }
 
     async function search(q) {
       var list = document.getElementById('rf-am-list');
       list.innerHTML = '<div style="color:#9ca3af;padding:8px">Đang tìm...</div>';
       try {
-        var data = await api('/search?title=' + encodeURIComponent(q) + '&mediaType=ANIME&limit=20', 12000);
+        var data = await api('/search?title=' + encodeURIComponent(q) + '&mediaType=ANIME&limit=20', 15000);
         var items = data.results || [];
         if (!items.length) { list.innerHTML = '<div style="color:#9ca3af;padding:8px">Không thấy.</div>'; return; }
         list.innerHTML = items.map(function (item, i) {
@@ -276,13 +390,14 @@
 
     document.getElementById('rf-am-back').onclick = closePage;
     document.getElementById('rf-am-fs').onclick = function () {
-      var stage = root.querySelector('.stage');
-      if (stage.requestFullscreen) stage.requestFullscreen();
-      else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+      var st = stage();
+      if (st.requestFullscreen) st.requestFullscreen();
+      else if (st.webkitRequestFullscreen) st.webkitRequestFullscreen();
     };
     document.getElementById('rf-am-form').addEventListener('submit', function (ev) {
       ev.preventDefault();
-      search(document.getElementById('rf-am-q').value.trim());
+      var q = document.getElementById('rf-am-q').value.trim();
+      if (q) search(q);
     });
     document.getElementById('rf-am-more').onclick = function () {
       if (state.item) loadShow(state.item, false);
