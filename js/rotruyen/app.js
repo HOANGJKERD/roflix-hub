@@ -191,5 +191,14 @@
     $('#security-dismiss')?.addEventListener('click',()=>{const el=$('#devtools-block');if(el)el.style.display='none';});
     document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.modal:not([hidden])').forEach(m=>closeModal(m.id));if(e.key==='/'&&!/input|textarea|select/i.test(document.activeElement.tagName)){e.preventDefault();$('#story-search').focus();}});
   }
+  const THEME_KEY='rohub-theme';
+  function rtGetTheme(){try{return localStorage.getItem(THEME_KEY)==='light'?'light':'dark'}catch(_){return 'dark'}}
+  function rtSetTheme(value){const t=value==='light'?'light':'dark';document.documentElement.dataset.theme=t;document.body.dataset.theme=t;try{localStorage.setItem(THEME_KEY,t)}catch(_){}const b=$('#theme-toggle');if(b){const i=b.querySelector('i');if(i)i.className='fa-solid '+(t==='dark'?'fa-sun':'fa-moon');b.title=t==='dark'?'Chuyển sang giao diện sáng':'Chuyển sang giao diện tối';b.setAttribute('aria-label',b.title)}const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='dark'?'#090909':'#f3f4f6'}
+  rtSetTheme(rtGetTheme());
+  $('#theme-toggle')?.addEventListener('click',()=>rtSetTheme(rtGetTheme()==='dark'?'light':'dark'));
+  window.addEventListener('storage',e=>{if(e.key===THEME_KEY)rtSetTheme(e.newValue)});
+  async function rtRenderAccountLink(){const link=$('#rt-account-link'),label=$('#rt-account-label'),sb=window.rfSupabase;if(!link||!sb)return;try{const {data}=await sb.auth.getUser();const user=data?.user;if(user){const p=memory.read('profile:v1',{});link.href='rotruyen-account.html';if(label)label.textContent=(user.user_metadata?.display_name||p.name||user.email?.split('@')[0]||'Tài khoản').slice(0,24);link.title='Tài khoản '+(user.email||'')}else{link.href='rotruyen-account.html';if(label)label.textContent='Đăng nhập'}}catch(_){if(label)label.textContent='Tài khoản'}}
+  rtRenderAccountLink();
+  if(window.rfSupabase){window.rfSupabase.auth.onAuthStateChange(()=>{setTimeout(rtRenderAccountLink,0)})}
   bind();state.items=DEMOS;render();
 })();
