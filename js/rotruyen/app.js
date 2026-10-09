@@ -105,13 +105,20 @@
     const s=state.items.find(x=>x.id===id)||DEMOS.find(x=>x.id===id);if(!s)return;state.selected=s;
     $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&s.source==='mangadex'?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     $('#detail-meta').textContent=(s.kind||'Truyện')+' · '+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':'Bản demo');
-    const read=$('#detail-read');read.disabled=s.source!=='mangadex';read.textContent=s.source==='mangadex'?'Xem chương có sẵn':'Bản demo chưa có nội dung chương';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');
+    const read=$('#detail-read');read.disabled=!['mangadex','database'].includes(s.source);read.textContent=s.source==='mangadex'?'Xem chương có sẵn':s.source==='database'?'Xem chương đã xuất bản':'Bản demo chưa có nội dung chương';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');
   }
   function closeModal(id){const m=$('#'+id);if(m)m.hidden=true;if(!$$('.modal:not([hidden])').length)document.body.classList.remove('modal-open');}
   async function loadChapters() {
-    const s=state.selected;if(!s||s.source!=='mangadex')return;
+    const s=state.selected;if(!s||!['mangadex','database'].includes(s.source))return;
     const list=$('#chapter-list');list.innerHTML='<p>Đang tải danh sách chương…</p>';
     try {
+      if(s.source==='database'){
+        const sb=window.rfSupabase;if(!sb)throw new Error('Supabase chưa sẵn sàng.');
+        const {data,error}=await sb.from('rotruyen_chapters').select('id,series_id,chapter_number,title,external_url,page_manifest,is_published,published_at').eq('series_id',s.id).eq('is_published',true).order('chapter_number',{ascending:true}).limit(500);
+        if(error)throw error;state.chapters=data||[];
+        if(!state.chapters.length){list.innerHTML='<p>Tác phẩm này chưa có chương được xuất bản.</p>';return;}
+        list.innerHTML=state.chapters.map((c,i)=>'<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.chapter_number)+' '+esc(c.title||'')+'</span><small>Đọc</small></button>').join('');return;
+      }
       const p=new URLSearchParams({limit:'100',translatedLanguage:'vi',order:'chapter.asc'});p.append('contentRating[]','safe');p.append('contentRating[]','suggestive');
       const data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+p.toString());
       state.chapters=(data.data||[]).filter(c=>c.attributes?.pages>0);
@@ -121,10 +128,16 @@
   }
   async function openReader(index) {
     const chapter=state.chapters[index];if(!chapter)return;
-    state.chapterIndex=index;const title=chapter.attributes.chapter||'?';
+    state.chapterIndex=index;const title=chapter.attributes?.chapter||chapter.chapter_number||'?';
     $('#reader-title').textContent=(state.selected?.title||'RoTruyện')+' · Chương '+title;
     $('#reader-content').innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải trang đọc…</p></div>';closeModal('detail-modal');$('#reader-modal').hidden=false;document.body.classList.add('modal-open');
     try {
+      if(state.selected?.source==='database'){
+        const pages=Array.isArray(chapter.page_manifest)?chapter.page_manifest:[];
+        if(pages.length){const urls=pages.map(p=>typeof p==='string'?p:p?.url).filter(u=>{try{return new URL(u).protocol==='https:'}catch(_){return false}});if(urls.length){$('#reader-content').innerHTML=urls.map((url,i)=>'<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(url)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">').join('');return;}}
+        if(chapter.external_url&&/^https:\/\//i.test(chapter.external_url)){ $('#reader-content').innerHTML='<div class="reader-error"><h3>Chương nằm ở nguồn ngoài</h3><p>Để tôn trọng cách phân phối của nguồn, chương này sẽ mở trong tab riêng.</p><a class="btn" href="'+esc(chapter.external_url)+'" target="_blank" rel="noopener noreferrer">Mở chương ↗</a></div>';return; }
+        throw new Error('Chương chưa có danh sách trang HTTPS hoặc URL nguồn hợp lệ.');
+      }
       const data=await fetchJSON(API+'/at-home/server/'+encodeURIComponent(chapter.id));
       const base=data.baseUrl, hash=data.chapter?.hash, files=data.chapter?.data;
       if(!base||!hash||!Array.isArray(files)||!files.length)throw new Error('Nguồn không cung cấp ảnh chương.');
