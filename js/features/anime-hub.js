@@ -438,7 +438,7 @@
           <div class="card-badges"><span class="src-chip">ANILIST</span><span class="badge" style="background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff">ANIME</span><span class="badge eps">${item.episode_total ? esc(item.episode_total + ' Tập') : 'ON AIR'}</span></div>
         </div>
         <div class="card-info"><div class="card-title">${esc(item.name)}</div><div class="card-meta"><span class="rating"><i class="fa-solid fa-star"></i> ${esc(item.rating || 'N/A')}</span><span>${esc(item.year || '')}</span></div></div>
-      </div>`;
+      </div>`
     ).join('');
 
     host.appendChild(grid);
