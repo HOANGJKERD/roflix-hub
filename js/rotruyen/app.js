@@ -139,7 +139,7 @@
         if(!state.chapters.length){list.innerHTML='<p>Tác phẩm này chưa có chương được xuất bản.</p>';return;}
         list.innerHTML=state.chapters.map((c,i)=>'<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.chapter_number)+' '+esc(c.title||'')+'</span><small>Đọc</small></button>').join('');return;
       }
-      const p=new URLSearchParams({limit:'100',translatedLanguage:'vi',order:'chapter.asc'});p.append('contentRating[]','safe');p.append('contentRating[]','suggestive');
+      const p=new URLSearchParams({limit:'100','order[chapter]':'asc'});p.append('translatedLanguage[]','vi');p.append('contentRating[]','safe');p.append('contentRating[]','suggestive');
       const data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+p.toString());
       state.chapters=(data.data||[]).filter(c=>c.attributes?.pages>0);
       if(!state.chapters.length){list.innerHTML='<p>Nguồn chưa có chương tiếng Việt công khai cho truyện này.</p>';return;}
