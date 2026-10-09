@@ -9,7 +9,7 @@
   var HLS_PROXY = '/api/hls?u=';
   var HLS_LIB = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';
   var PROVIDERS = ['ANIMEVIETSUB'];
-  var DEFAULT_SERVERS = ['DU', 'HDX'];
+  var DEFAULT_SERVERS = ['AnimeVsub'];
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -271,8 +271,9 @@
 
     function orderedServers(preferred) {
       var base = state.servers.length ? state.servers.slice() : DEFAULT_SERVERS.slice();
-      // Mặc định: DU (kiểm tra được lỗi) trước, HDX sau.
-      base.sort(function (a, b) { return (a === 'DU' ? 0 : 1) - (b === 'DU' ? 0 : 1); });
+      // AniMapper provider extensions expose AnimeVsub as the selectable server;
+      // the source response's `type` decides whether playback is HLS, EMBED, or DIRECT.
+      if (!base.length) base = DEFAULT_SERVERS.slice();
       if (preferred) base = [preferred].concat(base.filter(function (x) { return x !== preferred; }));
       return base;
     }
@@ -283,7 +284,7 @@
       box.hidden = false;
       box.innerHTML = '<small>Server:</small>' + list.map(function (s) {
         return '<button type="button" class="srv' + (state.server === s ? ' on' : '') + '" data-s="' + esc(s) + '">' +
-          esc(s === 'DU' ? 'DU (HLS)' : s === 'HDX' ? 'HDX (Embed)' : s) + '</button>';
+          esc(s) + '</button>';
       }).join('');
       box.querySelectorAll('.srv').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -310,7 +311,7 @@
           setSub(provider + ' · đang thử ' + server + '...');
           var src = await fetchSource(episodeData, provider, server);
           if (token !== playToken) return;
-          var type = src.type || (server === 'DU' ? 'HLS' : 'EMBED');
+          var type = src.type || (/\.m3u8(?:[?#]|$)/i.test(src.url) ? 'HLS' : 'EMBED');
           if (type === 'HLS') {
             await playHls(src.url, token);
           } else if (type === 'DIRECT') {
@@ -418,9 +419,10 @@
         try {
           var sd = await api('/stream/episodes/servers?id=' + encodeURIComponent(item.id) + '&provider=' + encodeURIComponent(found.provider), 10000);
           if (sd && Array.isArray(sd.servers)) {
-            // AniMapper có thể trả nhãn provider như ANIMEVSUB; chỉ chấp nhận server phát thực tế.
-            state.servers = sd.servers.map(function (x) { return String(x).trim().toUpperCase(); })
-              .filter(function (x, i, arr) { return (x === 'DU' || x === 'HDX') && arr.indexOf(x) === i; });
+            // AniMapper extensions use the provider-specific server label (e.g. AnimeVsub).
+            // Keep the API's server identifiers; source.type determines the actual player.
+            state.servers = sd.servers.map(function (x) { return String(x).trim(); })
+              .filter(function (x, i, arr) { return !!x && arr.indexOf(x) === i; });
           }
           if (!state.servers.length) state.servers = DEFAULT_SERVERS.slice();
           serverCache.set(String(item.id), state.servers.slice());
