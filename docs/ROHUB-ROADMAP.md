@@ -20,7 +20,14 @@ README tren nhanh develop cho biet phat trien chinh thuc da dung, website Truyen
 https://github.com/ALPhaHoai/LongBookApi
 README mo ta REST API Java Jersey/MySQL, GET danh sach/chi tiet va CRUD can authentication. Metadata khong khai bao license; can kiem tra kha nang chay, schema va xac thuc truoc khi su dung. Khong goi ghi du lieu tu client trong MVP.
 
-## Da trien khai trong nhanh foundation\n- Cong RoHub: `index.html` la gateway; `roflix.html` giu ban sao entry point RoFlix; `rohub.html` la route gateway thay the.\n- RoTruyen co trang catalog, tim kiem/loc, dialog chi tiet, MangaDex public API, danh sach chuong/doc anh, lich su va bookmark local.\n- Adapter catalog Supabase doc tac pham da xuat ban; LongBook co adapter co the cau hinh nhung can endpoint live va schema phu hop.\n- Trang admin rieng voi login Supabase, kiem tra role profiles, CRUD catalog/chapter, settings va audit log.\n- Migration RLS va service worker duoc cap nhat de cache dung route, khong cache trang admin.\n\n## Cac giai doan
+## Da trien khai trong nhanh foundation
+- Cong RoHub: `index.html` la gateway; `roflix.html` giu ban sao entry point RoFlix; `rohub.html` la route gateway thay the.
+- RoTruyen co trang catalog, tim kiem/loc, dialog chi tiet, MangaDex public API, danh sach chuong/doc anh, lich su va bookmark local.
+- Adapter catalog Supabase doc tac pham da xuat ban; LongBook co adapter co the cau hinh nhung can endpoint live va schema phu hop.
+- Trang admin rieng voi login Supabase, kiem tra role profiles, CRUD catalog/chapter, settings va audit log.
+- Migration RLS va service worker duoc cap nhat de cache dung route, khong cache trang admin.
+
+## Cac giai doan
 1. Foundation: HTML/CSS/JS rieng, catalog UI, tim kiem/loc phia client voi du lieu minh hoa co ghi ro.
 2. Data adapters: chon nguon sau khi xac minh license, dieu khoan, API contract va gioi han toc do.
 3. Detail + reader: chi tiet, danh sach chuong, doc responsive, dieu huong va lich su doc.
