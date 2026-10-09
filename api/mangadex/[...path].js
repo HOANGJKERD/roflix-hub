@@ -20,7 +20,7 @@ module.exports = async function handler(req, res) {
 
   if (!allowed) return res.status(404).json({ error: "MangaDex endpoint not allowed" });
 
-  const target = "https://api.mangadex.org" + apiPath + incoming.search;
+  // Vercel adds ___path for catch-all routing; never forward this internal parameter upstream.\n  incoming.searchParams.delete("___path");\n  const target = "https://api.mangadex.org" + apiPath + (incoming.searchParams.toString() ? "?" + incoming.searchParams.toString() : "");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
