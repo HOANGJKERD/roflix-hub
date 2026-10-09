@@ -417,7 +417,12 @@
       if (reset) {
         try {
           var sd = await api('/stream/episodes/servers?id=' + encodeURIComponent(item.id) + '&provider=' + encodeURIComponent(found.provider), 10000);
-          if (sd && Array.isArray(sd.servers)) state.servers = sd.servers.map(function (x) { return String(x).toUpperCase(); });
+          if (sd && Array.isArray(sd.servers)) {
+            // AniMapper có thể trả nhãn provider như ANIMEVSUB; chỉ chấp nhận server phát thực tế.
+            state.servers = sd.servers.map(function (x) { return String(x).trim().toUpperCase(); })
+              .filter(function (x, i, arr) { return (x === 'DU' || x === 'HDX') && arr.indexOf(x) === i; });
+          }
+          if (!state.servers.length) state.servers = DEFAULT_SERVERS.slice();
           serverCache.set(String(item.id), state.servers.slice());
         } catch (_) { state.servers = []; }
         renderServerButtons();
