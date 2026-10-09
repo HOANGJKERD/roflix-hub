@@ -85,5 +85,5 @@ grant usage,select on sequence public.rotruyen_audit_logs_id_seq to authenticate
 insert into public.rotruyen_settings(key,value) values
 ('public.branding','{"title":"RoTruyện","accent":"#a78bfa","showRanking":true,"cardsPerRow":6}'::jsonb),
 ('public.reader','{"maxWidth":900,"background":"#0b0d13","fit":"width","showChapterTitle":true}'::jsonb),
-('sources','{"mangadex":{"enabled":true,"priority":1},"longbook":{"enabled":false,"baseUrl":""}}'::jsonb)
+('public.sources','{"mangadex":{"enabled":true,"priority":1},"longbook":{"enabled":false,"baseUrl":""}}'::jsonb)
 on conflict(key) do nothing;
