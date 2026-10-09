@@ -39,7 +39,7 @@ function updateStats(){
  $('stat-series').textContent=state.series.length;
  $('stat-published').textContent=state.series.filter(x=>x.is_published).length;
  $('stat-chapters').textContent=state.chapters.length;
- const settings=state.settings.get('sources')||{};
+ const settings=state.settings.get('public.sources')||{};
  $('stat-sources').textContent=Number(!!settings.mangadex?.enabled)+Number(!!settings.longbook?.enabled);
 }
 function fillSeriesSelect(){
@@ -117,7 +117,7 @@ async function loadSetting(){
  const key=$('setting-key').value;const {data,error}=await sb.from('rotruyen_settings').select('key,value').eq('key',key).maybeSingle();
  if(error){toast('Không tải được cấu hình: '+error.message);return;}
  const value=data?.value||{};state.settings.set(key,value);$('setting-value').value=JSON.stringify(value,null,2);
- if(key==='sources')renderSourceForm(value);updateStats();
+ if(key==='public.sources')renderSourceForm(value);updateStats();
 }
 async function saveSetting(key,value){
  const {error}=await sb.from('rotruyen_settings').upsert({key,value,updated_by:state.user.id},{onConflict:'key'});
@@ -129,7 +129,7 @@ async function saveSources(){
  const v={mangadex:{enabled:$('source-mangadex').checked,priority:Math.max(1,Math.min(99,Number($('priority-mangadex').value)||1))},longbook:{enabled:$('source-longbook').checked,baseUrl:$('longbook-url').value.trim()}};
  if(v.longbook.enabled&&!/^https:\/\/[^/]+/i.test(v.longbook.baseUrl)){toast('LongBook cần URL HTTPS hợp lệ trước khi bật.');return;}
  if(v.longbook.enabled) {if(!confirm('Bạn đã triển khai và kiểm tra bảo mật LongBook API chưa? Chỉ bật khi có quyền sử dụng nguồn này.'))return;}
- await saveSetting('sources',v);$('setting-key').value='sources';$('setting-value').value=JSON.stringify(v,null,2);
+ await saveSetting('public.sources',v);$('setting-key').value='public.sources';$('setting-value').value=JSON.stringify(v,null,2);
 }
 async function loadAudit(){
  const {data,error}=await sb.from('rotruyen_audit_logs').select('*').order('created_at',{ascending:false}).limit(150);
@@ -139,13 +139,13 @@ async function loadAudit(){
 function switchTab(name){
  document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
  document.querySelectorAll('.tab-page').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
- if(name==='chapters')loadChapters();if(name==='settings')loadSetting();if(name==='sources')loadSettingByKey('sources');if(name==='audit')loadAudit();
+ if(name==='chapters')loadChapters();if(name==='settings')loadSetting();if(name==='public.sources')loadSettingByKey('public.sources');if(name==='audit')loadAudit();
 }
 async function loadSettingByKey(key){$('setting-key').value=key;await loadSetting();}
 function bind(){
  $('login-form').addEventListener('submit',async e=>{e.preventDefault();$('login-error').textContent='';if(!sb){showLogin('Supabase client chưa sẵn sàng.');return;}
  const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){showLogin(error.message);return;}
- if(await requireAdmin()){await loadSeries();await loadSettingByKey('sources');await loadAudit();}});
+ if(await requireAdmin()){await loadSeries();await loadSettingByKey('public.sources');await loadAudit();}});
  $('logout').addEventListener('click',async()=>{await sb?.auth.signOut();state.user=null;showLogin('Bạn đã đăng xuất.');});
  $('new-series').addEventListener('click',()=>openEditor());$('editor-close').addEventListener('click',closeEditor);$('cancel-editor').addEventListener('click',closeEditor);$('editor').addEventListener('click',e=>{if(e.target===$('editor'))closeEditor();});
  $('series-form').addEventListener('submit',saveSeries);$('series-search').addEventListener('input',renderSeries);$('series-status').addEventListener('change',renderSeries);$('series-source').addEventListener('change',renderSeries);$('refresh-series').addEventListener('click',loadSeries);
@@ -153,10 +153,10 @@ function bind(){
  $('new-chapter').addEventListener('click',()=>editChapter());$('refresh-chapters').addEventListener('click',loadChapters);$('chapter-series-filter').addEventListener('change',loadChapters);
  $('chapters-body').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.chapterEdit)editChapter(b.dataset.chapterEdit);if(b.dataset.chapterToggle)toggleChapter(b.dataset.chapterToggle);if(b.dataset.chapterDelete)deleteChapter(b.dataset.chapterDelete);});
  $('setting-key').addEventListener('change',loadSetting);$('load-setting').addEventListener('click',loadSetting);
- $('settings-form').addEventListener('submit',async e=>{e.preventDefault();let value;try{value=JSON.parse($('setting-value').value);}catch(_){toast('JSON không hợp lệ.');return;}if(!value||Array.isArray(value)||typeof value!=='object'){toast('Cấu hình phải là một JSON object.');return;}await saveSetting($('setting-key').value,value);if($('setting-key').value==='sources')renderSourceForm(value);});
+ $('settings-form').addEventListener('submit',async e=>{e.preventDefault();let value;try{value=JSON.parse($('setting-value').value);}catch(_){toast('JSON không hợp lệ.');return;}if(!value||Array.isArray(value)||typeof value!=='object'){toast('Cấu hình phải là một JSON object.');return;}await saveSetting($('setting-key').value,value);if($('setting-key').value==='public.sources')renderSourceForm(value);});
  $('save-sources').addEventListener('click',saveSources);$('refresh-audit').addEventListener('click',loadAudit);
  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 }
 bind();
-(async()=>{if(await requireAdmin()){await loadSeries();await loadSettingByKey('sources');await loadAudit();}})();
+(async()=>{if(await requireAdmin()){await loadSeries();await loadSettingByKey('public.sources');await loadAudit();}})();
 })();
