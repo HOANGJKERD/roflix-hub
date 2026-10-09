@@ -12,7 +12,7 @@ const crypto = require('crypto');
 const net = require('net');
 const { Readable } = require('stream');
 
-const REFERER = 'https://animevietsub.page';
+const REFERER = 'https://animevietsub.nl/';
 const FIRST_HOP_HOST = 'api.animapper.net';
 const FIRST_HOP_PREFIX = '/api/v1/stream/source/m3u8/';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
