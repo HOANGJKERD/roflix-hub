@@ -20,6 +20,63 @@
   };
   state.saved = new Set(memory.read('saved:v1', []));
   state.history = memory.read('history:v1', []);
+  let cloudUserId=null, libraryChannel=null, cloudSyncBusy=false, cloudSyncTimer=null;
+  async function syncCloudLibrary(){
+    const sb=window.rfSupabase;if(!sb||cloudSyncBusy)return;
+    cloudSyncBusy=true;
+    try{
+      const {data:authData}=await sb.auth.getUser(), user=authData?.user;
+      if(!user){cloudUserId=null;return;}
+      const changedUser=cloudUserId!==user.id;cloudUserId=user.id;
+      const {data:remote,error}=await sb.from('rotruyen_user_library').select('*').eq('user_id',user.id);
+      if(error)throw error;
+      const rows=remote||[], byId=new Map(rows.map(row=>[row.item_id,row]));
+      const localSaved=[...state.saved];
+      const writes=[];
+      for(const id of localSaved){
+        const old=byId.get(String(id));
+        if(!old?.is_saved){
+          const item=state.items.find(x=>String(x.id)===String(id));
+          writes.push({user_id:user.id,item_id:String(id),item_source:item?.source||'unknown',title:item?.title||old?.title||'',is_saved:true});
+        }
+      }
+      for(const h of state.history){
+        const id=String(h.mangaId||'');if(!id)continue;
+        const old=byId.get(id);
+        if(!old||Number(new Date(h.updatedAt||0))>Number(new Date(old.progress_updated_at||0))){
+          const item=state.items.find(x=>String(x.id)===id);
+          writes.push({user_id:user.id,item_id:id,item_source:item?.source||'unknown',title:h.title||item?.title||old?.title||'',is_saved:state.saved.has(id)||(old?.is_saved||false),last_chapter_id:String(h.chapterId||''),last_chapter_label:String(h.chapter||''),progress_updated_at:new Date(h.updatedAt||Date.now()).toISOString()});
+        }
+      }
+      if(writes.length){
+        const merged=new Map();
+        writes.forEach(row=>{const prev=merged.get(row.item_id);merged.set(row.item_id,{...(prev||{}),...row,is_saved:!!(row.is_saved||prev?.is_saved)});});
+        const {error:writeError}=await sb.from('rotruyen_user_library').upsert([...merged.values()],{onConflict:'user_id,item_id'});
+        if(writeError)throw writeError;
+      }
+      const {data:latest,error:latestError}=await sb.from('rotruyen_user_library').select('*').eq('user_id',user.id);
+      if(latestError)throw latestError;
+      const cloudRows=latest||[];
+      state.saved=new Set(cloudRows.filter(x=>x.is_saved).map(x=>x.item_id));
+      const cloudHistory=cloudRows.filter(x=>x.last_chapter_id).map(x=>({mangaId:x.item_id,title:x.title,chapterId:x.last_chapter_id,chapter:x.last_chapter_label,updatedAt:x.progress_updated_at?new Date(x.progress_updated_at).getTime():0}));
+      const historyMap=new Map();
+      [...state.history,...cloudHistory].forEach(h=>{const k=String(h.mangaId);const old=historyMap.get(k);if(!old||Number(h.updatedAt||0)>Number(old.updatedAt||0))historyMap.set(k,h);});
+      state.history=[...historyMap.values()].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).slice(0,100);
+      memory.write('saved:v1',[...state.saved]);memory.write('history:v1',state.history);
+      if(changedUser)renderSavedCount();
+    }catch(e){console.warn('[RoTruyen cloud sync]',e.message||e);}
+    finally{cloudSyncBusy=false;}
+  }
+  function scheduleCloudSync(){clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>syncCloudLibrary(),250);}
+  function connectRealtime(){
+    const sb=window.rfSupabase;if(!sb)return;
+    if(libraryChannel){sb.removeChannel(libraryChannel);libraryChannel=null;}
+    libraryChannel=sb.channel('rotruyen-live-catalog')
+      .on('postgres_changes',{event:'*',schema:'public',table:'rotruyen_series'},()=>loadOwnCatalog())
+      .on('postgres_changes',{event:'*',schema:'public',table:'rotruyen_chapters'},()=>{if(state.selected?.source==='database')loadChapters();})
+      .subscribe();
+    sb.auth.onAuthStateChange(()=>{setTimeout(()=>{syncCloudLibrary();rtRenderAccountLink();},0);});
+  }
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function notify(message) {
     const toast=$('#toast'); if(!toast)return;
@@ -195,7 +252,7 @@
       const base=data.baseUrl, hash=data.chapter?.hash, files=data.chapter?.data;
       if(!base||!hash||!Array.isArray(files)||!files.length)throw new Error('Nguồn không cung cấp ảnh chương.');
       const container=$('#reader-content');container.innerHTML=files.map((file,i)=>{const pagePath='/api/mangadex-image/data/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file);return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pagePath)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
-      const saved={mangaId:state.selected.id,title:state.selected.title,chapterId:chapter.id,chapter:title,updatedAt:Date.now()};state.history=[saved,...state.history.filter(x=>x.mangaId!==saved.mangaId)].slice(0,100);memory.write('history:v1',state.history);
+      const saved={mangaId:state.selected.id,title:state.selected.title,chapterId:chapter.id,chapter:title,updatedAt:Date.now()};state.history=[saved,...state.history.filter(x=>x.mangaId!==saved.mangaId)].slice(0,100);memory.write('history:v1',state.history);scheduleCloudSync();
     }catch(e){$('#reader-content').innerHTML='<div class="reader-error"><h3>Không thể tải chương</h3><p>'+esc(e.message)+'</p><p>Thử lại sau hoặc chọn chương khác.</p><button class="btn" id="retry-chapter">Thử lại</button></div>';$('#retry-chapter')?.addEventListener('click',()=>openReader(index));}
   }
   function showSaved() {
@@ -274,7 +331,7 @@
     $('#genre-filter').addEventListener('change',e=>{state.genre=e.target.value;render();});
     $('#reset-filters').addEventListener('click',resetFilters);$('#empty-reset').addEventListener('click',resetFilters);
     $$('[data-sort]').forEach(b=>b.addEventListener('click',()=>{state.sort=b.dataset.sort;$$('[data-sort]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b));});render();}));
-    $('#story-grid').addEventListener('click',e=>{const save=e.target.closest('[data-save]');if(save){e.preventDefault();e.stopPropagation();const id=save.dataset.save;state.saved.has(id)?state.saved.delete(id):state.saved.add(id);memory.write('saved:v1',[...state.saved]);render();notify(state.saved.has(id)?'Đã lưu truyện vào tủ.':'Đã bỏ lưu truyện.');return;}const open=e.target.closest('[data-open]');if(open){openDetail(open.dataset.open);}});
+    $('#story-grid').addEventListener('click',e=>{const save=e.target.closest('[data-save]');if(save){e.preventDefault();e.stopPropagation();const id=save.dataset.save;state.saved.has(id)?state.saved.delete(id):state.saved.add(id);memory.write('saved:v1',[...state.saved]);render();scheduleCloudSync();notify(state.saved.has(id)?'Đã lưu truyện vào tủ.':'Đã bỏ lưu truyện.');return;}const open=e.target.closest('[data-open]');if(open){openDetail(open.dataset.open);}});
     $('#show-saved').addEventListener('click',showSaved);\n    $('#open-submit-story')?.addEventListener('click',openSubmitStory);\n    $('#submit-story-close')?.addEventListener('click',()=>closeModal('submit-story-modal'));\n    $('#submit-story-form')?.addEventListener('submit',submitStory);
     $('#focus-search').addEventListener('click',()=>{$('#story-search').focus();$('#stories').scrollIntoView({behavior:'smooth'});});
     $('#load-source')?.addEventListener('click',()=>{state.source='mangadex';loadCatalog();});
@@ -298,5 +355,5 @@
   async function rtRenderAccountLink(){const link=$('#rt-account-link'),label=$('#rt-account-label'),sb=window.rfSupabase;if(!link||!sb)return;try{const {data}=await sb.auth.getUser();const user=data?.user;if(user){let p={};try{p=JSON.parse(localStorage.getItem('roflix-profile')||'{}')}catch(_){}link.href='rotruyen-account.html';if(label)label.textContent=(user.user_metadata?.display_name||p.name||user.email?.split('@')[0]||'Tài khoản').slice(0,24);link.title='Tài khoản '+(user.email||'')}else{link.href='rotruyen-account.html';if(label)label.textContent='Đăng nhập'}}catch(_){if(label)label.textContent='Tài khoản'}}
   rtRenderAccountLink();
   if(window.rfSupabase){window.rfSupabase.auth.onAuthStateChange(()=>{setTimeout(rtRenderAccountLink,0)})}
-  bind();state.items=DEMOS;render();state.source='mangadex';loadCatalog();
+  bind();state.items=DEMOS;render();connectRealtime();syncCloudLibrary();state.source='mangadex';loadCatalog();
 })();
