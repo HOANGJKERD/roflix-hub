@@ -89,3 +89,26 @@ body[data-theme="light"] .tabs button.active{color:#167ac1;border-bottom-color:#
 @media(max-width:980px){.story-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:650px){.rt-site-header nav a{border:0;padding:8px}.story-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 10px}.hero{min-height:auto}.art{min-height:220px}}
 @media(max-width:390px){.story-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Community story submission */
+.section-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.section-actions .btn{white-space:nowrap}
+.submit-story-card{width:min(760px,calc(100vw - 28px));max-height:90vh;overflow:auto;padding:28px}
+.submit-story-heading{padding-right:26px;margin-bottom:20px}
+.submit-story-heading h2{margin:7px 0;font-size:27px}
+.submit-story-heading p,.submit-chapter-box>p{color:var(--rt-muted,#a1a1aa);font-size:13px;line-height:1.65}
+.submit-story-form{display:grid;gap:14px}
+.submit-story-form label{display:grid;gap:7px;color:var(--rt-text,#f5f5f5);font-size:13px;font-weight:650}
+.submit-story-form input,.submit-story-form select,.submit-story-form textarea{width:100%;min-width:0;border:1px solid #ffffff24;border-radius:9px;background:#101011;color:#f5f5f5;padding:11px 12px;font:inherit;font-weight:400;outline:none}
+.submit-story-form input:focus,.submit-story-form select:focus,.submit-story-form textarea:focus{border-color:#60a5fa;box-shadow:0 0 0 3px #60a5fa20}
+.submit-story-form select option{background:#151516}
+.submit-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.submit-chapter-box{display:grid;gap:13px;padding:16px;border:1px solid #ffffff1c;border-radius:12px;background:#ffffff04}
+.submit-chapter-box h3{font-size:15px;margin:0}
+.submit-story-message{font-size:13px;line-height:1.6;color:#93c5fd;margin:0;overflow-wrap:anywhere}
+.submit-story-save{width:100%;padding:13px}
+.submit-story-save:disabled{opacity:.6;cursor:wait}
+body[data-theme="light"] .submit-story-form input,body[data-theme="light"] .submit-story-form select,body[data-theme="light"] .submit-story-form textarea{background:#fff;color:#171717;border-color:#11182724}
+body[data-theme="light"] .submit-chapter-box{background:#f8fafc;border-color:#11182720}
+@media(max-width:560px){.submit-story-card{padding:22px 16px}.submit-two{grid-template-columns:1fr}.section-actions{align-items:flex-start}.section-actions .count{align-self:center}}
