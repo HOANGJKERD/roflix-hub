@@ -45,6 +45,12 @@ TruyenDex được xem là tham khảo về trải nghiệm MangaDex tiếng Vi�
 
 Đây là nhánh triển khai và chưa tự động có nghĩa schema đã được áp dụng lên Supabase. Chưa xác nhận được API LongBook live, chưa có test trình duyệt end-to-end, và chưa nên merge/production cho tới khi hoàn tất các kiểm tra trên.
 
+## Quyền Admin RoHub dùng chung
+
+- Chốt mô hình: tài khoản đang có `public.profiles.role = 'admin'` và `account_status = 'active'` trên RoFlix tự động được coi là **Admin RoHub**, có quyền quản trị cả RoFlix và RoTruyện. Không tạo tài khoản admin thứ hai, không lưu mật khẩu riêng và không cần thêm role mới vì schema hiện dùng chung role `admin`.
+- RoTruyện Admin kiểm tra phiên Supabase Auth, sau đó xác minh `profiles.role = 'admin'` và trạng thái tài khoản còn hoạt động. Các thao tác dữ liệu được bảo vệ thêm bởi Row Level Security (RLS), không chỉ bởi giao diện.
+- Migration `20261009000000_rotruyen_admin.sql` đã được áp dụng vào dự án Supabase RoHub/RoFlix được kết nối. Sau khi deploy bản frontend tương ứng, đăng nhập bằng tài khoản admin RoFlix hiện có tại `/rotruyen-admin.html` để kiểm tra quyền thực tế.
+
 ## Tài khoản dùng chung RoFlix / RoTruyện
 
 - Mở `/rotruyen-account.html` để đăng nhập, tạo tài khoản, sửa tên hiển thị/giới thiệu, đổi giao diện sáng/tối và đăng xuất.
