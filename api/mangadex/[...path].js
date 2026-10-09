@@ -48,7 +48,7 @@ module.exports = async function handler(req, res) {
           },
           signal: controller.signal
         });
-        if (upstream.ok || upstream.status < 500) break;
+        if (upstream.ok || (upstream.status < 500 && !url.startsWith("https://services.f-ck.me/"))) break;
       } catch (error) {
         lastError = error;
         if (controller.signal.aborted) throw error;
