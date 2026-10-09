@@ -93,6 +93,7 @@
     }catch(e){state.items=DEMOS;state.source='demo';render();notify('Catalog chưa sẵn sàng: '+e.message+'. Đang dùng dữ liệu mẫu.');}
   }
   async function loadCatalog() {
+    try{const sb=window.rfSupabase;if(sb){const {data:cfg}=await sb.from('rotruyen_settings').select('value').eq('key','public.sources').maybeSingle();if(cfg?.value?.mangadex?.enabled===false){notify('MangaDex đã bị tắt trong RoTruyện Admin.');return;}}}catch(_){}
     if(state.source==='demo'){state.items=DEMOS;render();return;}
     state.apiBusy=true; const btn=$('#load-source');if(btn){btn.disabled=true;btn.textContent='Đang kết nối…';}
     const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải danh mục từ MangaDex…</p></div>';
