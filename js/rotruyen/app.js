@@ -48,7 +48,7 @@
     } finally { clearTimeout(timer); }
   }
   async function searchMangaDex() {
-    const params=new URLSearchParams({limit:'24',offset:'0',order:'followedCount.desc',contentRating:['safe','suggestive'].join(','),includes:['cover_art','author'],hasAvailableChapters:'true'});
+    const params=new URLSearchParams({limit:'24',offset:'0',order:'followedCount.desc',includes:'cover_art,author',hasAvailableChapters:'true'}); params.append('contentRating[]','safe'); params.append('contentRating[]','suggestive');
     if(state.query) params.set('title',state.query);
     params.set('availableTranslatedLanguage[]','vi');
     if(state.genre!=='all') {
@@ -66,13 +66,13 @@
     return items;
   }
   function coverMarkup(s) {
-    const style='--cover:'+esc(s.coverColor||s.cover||'#282449')+';--glow:'+esc(s.glow||'#8c6ce0')+';--accent:'+esc(s.accent||'#d3b9ff');
+    const style='--cover:'+esc(s.coverColor||'#282449')+';--glow:'+esc(s.glow||'#8c6ce0')+';--accent:'+esc(s.accent||'#d3b9ff');
     const visual=s.cover && s.source==='mangadex' ? '<img loading="lazy" src="'+esc(s.cover)+'" alt="" onerror="this.style.display=\\'none\\'">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     return '<div class="cover" style="'+style+'">'+visual+'<small>'+esc(s.kind||'Truyện')+'</small><button data-save="'+esc(s.id)+'" class="'+(state.saved.has(s.id)?'saved':'')+'" aria-label="'+(state.saved.has(s.id)?'Bỏ lưu':'Lưu truyện')+'"><i class="fa-'+(state.saved.has(s.id)?'solid':'regular')+' fa-bookmark"></i></button></div>';
   }
   function render() {
     const items=activeItems(), grid=$('#story-grid'); if(!grid)return;
-    grid.innerHTML=items.map(s=>'<article class="story"><button class="story-open" data-open="'+esc(s.id)+'" aria-label="Xem chi tiết '+esc(s.title)+'">'+coverMarkup(s)+'<h3 title="'+esc(s.title)+'">'+esc(s.title)+'</h3></button><p>'+esc(s.author||'Đang cập nhật')+'</p><div class="meta"><span>'+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':'Bản mẫu')+'</span><span class="rating">'+(s.rating?'★ '+s.rating.toFixed(1):s.source==='mangadex'?'Nguồn ngoài':'★ Demo')+'</span></div></article>').join('');
+    grid.innerHTML=items.map(s=>'<article class="story"><div class="story-open" data-open="'+esc(s.id)+'" role="button" tabindex="0" aria-label="Xem chi tiết '+esc(s.title)+'">'+coverMarkup(s)+'<h3 title="'+esc(s.title)+'">'+esc(s.title)+'</h3></div><p>'+esc(s.author||'Đang cập nhật')+'</p><div class="meta"><span>'+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':'Bản mẫu')+'</span><span class="rating">'+(s.rating?'★ '+s.rating.toFixed(1):s.source==='mangadex'?'Nguồn ngoài':'★ Demo')+'</span></div></article>').join('');
     const count=$('#result-count'); if(count)count.textContent=items.length+' kết quả'+(state.source==='demo'?' mẫu':'');
     const empty=$('#empty-state'); if(empty)empty.hidden=!!items.length;
     const rank=$('#ranking-list'); if(rank)rank.innerHTML=[...state.items].sort((a,b)=>(b.pop||0)-(a.pop||0)).slice(0,4).map((s,i)=>'<div class="ranking"><span class="rank">0'+(i+1)+'</span><span class="rank-info"><b>'+esc(s.title)+'</b><small>'+esc(s.kind||'Truyện')+'</small></span><span>'+(s.rating?'★ '+s.rating.toFixed(1):'↗')+'</span></div>').join('')||'<p class="muted">Chưa có dữ liệu xếp hạng từ nguồn này.</p>';
@@ -122,7 +122,7 @@
   function showSaved() {
     const items=state.items.filter(s=>state.saved.has(s.id));
     if(!items.length){notify('Tủ truyện đang trống.');return;}
-    const grid=$('#story-grid');grid.innerHTML=items.map(s=>'<article class="story"><button class="story-open" data-open="'+esc(s.id)+'">'+coverMarkup(s)+'<h3>'+esc(s.title)+'</h3></button><p>'+esc(s.author||'')+'</p></article>').join('');
+    const grid=$('#story-grid');grid.innerHTML=items.map(s=>'<article class="story"><div class="story-open" data-open="'+esc(s.id)+'" role="button" tabindex="0">'+coverMarkup(s)+'<h3>'+esc(s.title)+'</h3></div><p>'+esc(s.author||'')+'</p></article>').join('');
     $('#result-count').textContent=items.length+' truyện đã lưu';$('#empty-state').hidden=true;$('#stories').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   }
   function bind() {
