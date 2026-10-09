@@ -1,7 +1,7 @@
 const CACHE_NAME = 'roflix-app-shell-v7';
 const APP_SHELL = [
   '/', '/index.html', '/manifest.webmanifest', '/icons/roflix-icon.svg',
-  '/rohub.html', '/rotruyen.html', '/css/rohub.css', '/js/rohub.js',
+  '/rohub.html', '/roflix.html', '/rotruyen.html', '/css/rohub.css', '/js/rohub.js',
   '/css/rotruyen/main.css', '/js/rotruyen/app.js'
 ];
 self.addEventListener('install', event => event.waitUntil(
