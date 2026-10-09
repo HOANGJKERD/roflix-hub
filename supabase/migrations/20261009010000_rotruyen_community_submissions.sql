@@ -32,7 +32,6 @@ on public.rotruyen_chapters for select to authenticated
 using (
   exists(select 1 from public.rotruyen_series s where s.id=series_id and s.created_by=auth.uid())
   or exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='admin' and coalesce(p.account_status,'active')='active')
-  or exists(select 1 from public.rotruyen_series s where s.id=series_id and s.is_published and public.rotruyen_chapters.is_published and (s.content_rating <> 'erotica' or auth.uid() is not null))
 );
 drop policy if exists "Members can submit chapters to own RoTruyen series" on public.rotruyen_chapters;
 create policy "Members can submit chapters to own RoTruyen series"
