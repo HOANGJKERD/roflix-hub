@@ -50,14 +50,36 @@
     } finally { clearTimeout(timer); }
   }
   async function searchMangaDex() {
-    const params=new URLSearchParams({limit:'24',offset:'0',hasAvailableChapters:'true'}); params.set('order[followedCount]','desc'); params.append('includes[]','cover_art'); params.append('includes[]','author'); params.append('contentRating[]','safe'); params.append('contentRating[]','suggestive');
-    if(state.query) params.set('title',state.query);
-    params.set('availableTranslatedLanguage[]','vi');
-    if(state.genre!=='all') {
-      const tagIds={action:'391b0423-d847-456f-aff0-8b0cfc03066b',romance:'423e2eae-a7a2-4a8b-ac03-a8351462d71d',drama:'b9af3a63-f058-46de-a9a0-e0c13906197a',adventure:'3b60b75c-a2d7-4860-ab56-05f391bb889c',fantasy:'cdc58593-87dd-415e-bbc0-2ec27bf404cc'};
-      if(tagIds[state.genre]) params.append('includedTags[]',tagIds[state.genre]);
+    const buildParams = (preferVietnamese) => {
+      const params=new URLSearchParams({limit:'24',offset:'0'});
+      params.set('order[followedCount]','desc');
+      params.append('includes[]','cover_art');
+      params.append('includes[]','author');
+      params.append('contentRating[]','safe');
+      params.append('contentRating[]','suggestive');
+      if(state.query.trim()) params.set('title',state.query.trim());
+      // Ưu tiên truyện có bản dịch tiếng Việt, nhưng đừng để bộ lọc này làm catalog trắng.
+      if(preferVietnamese) params.append('availableTranslatedLanguage[]','vi');
+      if(state.genre!=='all') {
+        const tagIds={action:'391b0423-d847-456f-aff0-8b0cfc03066b',romance:'423e2eae-a7a2-4a8b-ac03-a8351462d71d',drama:'b9af3a63-f058-46de-a9a0-e0c13906197a',adventure:'3b60b75c-a2d7-4860-ab56-05f391bb889c',fantasy:'cdc58593-87dd-415e-bbc0-2ec27bf404cc'};
+        if(tagIds[state.genre]) params.append('includedTags[]',tagIds[state.genre]);
+      }
+      return params;
+    };
+    let data;
+    try {
+      data=await fetchJSON(API+'/manga?'+buildParams(true).toString());
+      if(!(data.data||[]).length && !state.query.trim() && state.genre==='all') {
+        data=await fetchJSON(API+'/manga?'+buildParams(false).toString());
+      }
+    } catch(firstError) {
+      // Thử lại một lần với truy vấn rộng hơn để tránh bộ lọc ngôn ngữ làm hỏng việc tải catalog.
+      try {
+        data=await fetchJSON(API+'/manga?'+buildParams(false).toString());
+      } catch(secondError) {
+        throw new Error('Không kết nối được MangaDex API. '+secondError.message);
+      }
     }
-    const data=await fetchJSON(API+'/manga?'+params.toString());
     return (data.data||[]).map(mapManga);
   }
   function activeItems() {
