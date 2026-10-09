@@ -99,6 +99,7 @@
         return (a.dataset.rfTitle||'').localeCompare(b.dataset.rfTitle||'','vi');
       }).forEach(c=>host.appendChild(c));
     }
+    box.dataset.applied='1';
     const status=box.querySelector('#rf-filter-status');
     if(status)status.textContent='Hiển thị '+filtered.length+'/'+all.length+' phim trong trang hiện tại. Điểm là dữ liệu nguồn, có thể là TMDB hoặc IMDb.';
     const count=document.getElementById('movie-count');if(count)count.textContent=String(filtered.length);
