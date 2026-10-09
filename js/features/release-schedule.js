@@ -122,7 +122,7 @@
     const homeUpcoming = document.getElementById('public-upcoming-schedule');
     const broadcast = document.getElementById('rf-broadcast-tabs');
     if ((!boxes.length && !homeUpcoming && !broadcast) || !sb) return;
-    try { await sb.rpc('roflix_sync_release_schedule'); } catch (_) {}
+    // Public visitors can read published rows through RLS; only the admin UI runs the sync RPC.
     const res = await sb.from('roflix_release_schedule')
       .select('id,movie_slug,title,origin_name,source_id,poster_url,summary,release_at,status,featured')
       .in('status',['scheduled','released'])
