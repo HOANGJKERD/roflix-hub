@@ -3,6 +3,8 @@
   const $ = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
   const API = 'https://api.mangadex.org';
+  // TruyenDex is a MangaDex-powered frontend project, not a separate public REST API.
+  // RoTruyen integrates MangaDex's documented public API directly.
   const DEMOS = [
     {id:'demo-1',title:'Thành Phố Sau Hoàng Hôn',author:'RoTruyen Studio',genre:'fantasy',kind:'Fantasy',chapters:42,rating:9.2,pop:98,updated:6,icon:'fa-city',cover:'#282449',glow:'#8c6ce0',accent:'#d3b9ff',description:'Một thành phố nơi những vì sao chỉ xuất hiện sau hoàng hôn. Nhân vật chính bắt đầu hành trình tìm ra bí mật của bầu trời.'},
     {id:'demo-2',title:'Kiếm Sĩ Cuối Cùng',author:'RoTruyen Studio',genre:'action',kind:'Hành động',chapters:86,rating:9.5,pop:100,updated:1,icon:'fa-khanda',cover:'#402b38',glow:'#d66d70',accent:'#ffc1a7',description:'Truyện mẫu dùng để trình diễn giao diện danh mục và trang chi tiết.'},
@@ -139,17 +141,19 @@
         if(!state.chapters.length){list.innerHTML='<p>Tác phẩm này chưa có chương được xuất bản.</p>';return;}
         list.innerHTML=state.chapters.map((c,i)=>'<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.chapter_number)+' '+esc(c.title||'')+'</span><small>Đọc</small></button>').join('');return;
       }
-      const p=new URLSearchParams({limit:'100','order[chapter]':'asc'});p.append('translatedLanguage[]','vi');p.append('contentRating[]','safe');p.append('contentRating[]','suggestive');
+      const p=new URLSearchParams({limit:'100','order[chapter]':'asc'});p.append('translatedLanguage[]','vi');p.append('contentRating[]','safe');p.append('contentRating[]','suggestive');p.append('includes[]','scanlation_group');
       const data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+p.toString());
       state.chapters=(data.data||[]).filter(c=>c.attributes?.pages>0);
       if(!state.chapters.length){list.innerHTML='<p>Nguồn chưa có chương tiếng Việt công khai cho truyện này.</p>';return;}
-      list.innerHTML=state.chapters.map((c,i)=>'<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.attributes.chapter||'?')+' '+esc(c.attributes.title||'')+'</span><small>'+esc(c.attributes.translatedLanguage||'')+'</small></button>').join('');
+      list.innerHTML=state.chapters.map((c,i)=>{const group=(c.relationships||[]).find(r=>r.type==='scanlation_group')?.attributes?.name;return '<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.attributes.chapter||'?')+' '+esc(c.attributes.title||'')+(group?'<small>Nhóm dịch: '+esc(group)+'</small>':'')+'</span><small>'+esc(c.attributes.translatedLanguage||'')+'</small></button>';}).join('');
     } catch(e){list.innerHTML='<p>Không tải được chương. '+esc(e.message)+'</p>';}
   }
   async function openReader(index) {
     const chapter=state.chapters[index];if(!chapter)return;
     state.chapterIndex=index;const title=chapter.attributes?.chapter||chapter.chapter_number||'?';
     $('#reader-title').textContent=(state.selected?.title||'RoTruyện')+' · Chương '+title;
+    const chapterGroup=(chapter.relationships||[]).find(r=>r.type==='scanlation_group')?.attributes?.name;
+    const readerCredit=$('#reader-source-credit');if(readerCredit)readerCredit.textContent=chapterGroup?'Nguồn: MangaDex · Nhóm dịch: '+chapterGroup:'Nguồn chương: MangaDex';
     $('#reader-content').innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải trang đọc…</p></div>';closeModal('detail-modal');$('#reader-modal').hidden=false;document.body.classList.add('modal-open');
     try {
       if(state.selected?.source==='database'){
