@@ -8,7 +8,7 @@
   const state = {user:null,stats:null,users:[],audit:[],charts:{visitors:null,analytics:null},currentPage:'dashboard',refreshTimer:null,realtime:null,realtimeTimer:null};
 
   function showAccess(title,text,icon='🔐'){
-    $('access').innerHTML=`<div class="card access-card"><div style="font-size:46px">${icon}</div><h2>${esc(title)}</h2><p class="muted">${esc(text)}</p><p style="margin-top:16px"><a class="btn btn-primary" href="index.html">Về RoFlix</a></p></div>`;
+    $('access').innerHTML=`<div class="card access-card"><div style="font-size:46px">${icon}</div><h2>${esc(title)}</h2><p class="muted">${esc(text)}</p><p style="margin-top:16px"><a class="btn btn-primary" href="roflix.html">Về RoFlix</a></p></div>`;
     $('access').style.display='grid'; document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   }
   function hideAccess(){ $('access').style.display='none'; }
@@ -77,7 +77,7 @@
 
   document.querySelectorAll('#admin-nav button').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.page)));
   $('refresh-btn').addEventListener('click',loadAll);
-  $('logout-btn').addEventListener('click',async()=>{await sb.auth.signOut();location.href='index.html';});
+  $('logout-btn').addEventListener('click',async()=>{await sb.auth.signOut();location.href='roflix.html';});
   $('modal-close').addEventListener('click',window.rfCloseUser);$('user-modal').addEventListener('click',e=>{if(e.target.id==='user-modal')window.rfCloseUser();});
   $('user-search').addEventListener('input',renderUsers);$('user-role-filter').addEventListener('change',renderUsers);$('user-status-filter').addEventListener('change',renderUsers);
   sb?.auth.onAuthStateChange((event)=>{if(event==='SIGNED_IN')loadAll();if(event==='SIGNED_OUT')showAccess('Đã đăng xuất','Hãy đăng nhập lại bằng tài khoản admin.');});
