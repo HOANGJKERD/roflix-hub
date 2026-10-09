@@ -194,7 +194,7 @@
       const data=await fetchJSON(API+'/at-home/server/'+encodeURIComponent(chapter.id));
       const base=data.baseUrl, hash=data.chapter?.hash, files=data.chapter?.data;
       if(!base||!hash||!Array.isArray(files)||!files.length)throw new Error('Nguồn không cung cấp ảnh chương.');
-      const container=$('#reader-content');container.innerHTML=files.map((file,i)=>'<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(base+'/data/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file))+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">').join('');
+      const container=$('#reader-content');container.innerHTML=files.map((file,i)=>{const pagePath='/api/mangadex-image/data/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file);return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pagePath)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
       const saved={mangaId:state.selected.id,title:state.selected.title,chapterId:chapter.id,chapter:title,updatedAt:Date.now()};state.history=[saved,...state.history.filter(x=>x.mangaId!==saved.mangaId)].slice(0,100);memory.write('history:v1',state.history);
     }catch(e){$('#reader-content').innerHTML='<div class="reader-error"><h3>Không thể tải chương</h3><p>'+esc(e.message)+'</p><p>Thử lại sau hoặc chọn chương khác.</p><button class="btn" id="retry-chapter">Thử lại</button></div>';$('#retry-chapter')?.addEventListener('click',()=>openReader(index));}
   }
