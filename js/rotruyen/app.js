@@ -204,13 +204,78 @@
     const grid=$('#story-grid');grid.innerHTML=items.map(s=>'<article class="story"><div class="story-open" data-open="'+esc(s.id)+'" role="button" tabindex="0">'+coverMarkup(s)+'<h3>'+esc(s.title)+'</h3></div><p>'+esc(s.author||'')+'</p></article>').join('');
     $('#result-count').textContent=items.length+' truyện đã lưu';$('#empty-state').hidden=true;$('#stories').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   }
-  function bind() {
+
+  function safeHttps(value,label,optional=true){
+    const v=String(value||'').trim();if(!v&&optional)return '';
+    let u;try{u=new URL(v)}catch(_){throw new Error(label+' phải là URL hợp lệ.');}
+    if(u.protocol!=='https:')throw new Error(label+' phải dùng HTTPS.');
+    return u.href;
+  }
+  function slugify(value){
+    return String(value||'truyen-moi').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/đ/g,'d').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,100)||'truyen-moi';
+  }
+  async function submitStory(event){
+    event.preventDefault();
+    const sb=window.rfSupabase, message=$('#submit-story-message'), save=$('#submit-story-save');
+    const say=t=>{if(message)message.textContent=t;};
+    if(!sb){say('Dịch vụ tài khoản chưa sẵn sàng. Hãy tải lại trang.');return;}
+    save.disabled=true;say('Đang kiểm tra tài khoản và gửi truyện…');
+    try{
+      const {data:userResult,error:userError}=await sb.auth.getUser();
+      if(userError||!userResult?.user){say('Bạn cần đăng nhập tài khoản RoHub trước khi đăng truyện.');return;}
+      const user=userResult.user;
+      const {data:profile,error:profileError}=await sb.from('profiles').select('role,account_status').eq('id',user.id).maybeSingle();
+      if(profileError)throw profileError;
+      if(profile?.account_status&&profile.account_status!=='active')throw new Error('Tài khoản hiện không được phép đăng nội dung.');
+      const isAdmin=profile?.role==='admin';
+      const title=$('#submit-title').value.trim();
+      if(title.length<2)throw new Error('Tên truyện cần ít nhất 2 ký tự.');
+      const cover=safeHttps($('#submit-cover').value,'Link ảnh bìa');
+      const chapterUrl=safeHttps($('#submit-chapter-url').value,'Link chương');
+      const pageLines=$('#submit-chapter-pages').value.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean);
+      const pages=pageLines.map((url,i)=>({url:safeHttps(url,'Link ảnh trang '+(i+1),false)}));
+      if((chapterUrl||pages.length)===false)throw new Error(''); 
+      if((chapterUrl||pages.length>0)===false)throw new Error(''); 
+      if((chapterUrl||pages.length)&&!chapterUrl&&!pages.length)throw new Error('Hãy cung cấp link chương hoặc ít nhất một link ảnh.');
+      const baseSlug=slugify(title);
+      const seriesPayload={
+        title,slug:baseSlug+'-'+Date.now().toString(36).slice(-5),
+        synopsis:$('#submit-synopsis').value.trim(),cover_url:cover,
+        author:$('#submit-author').value.trim()||user.user_metadata?.display_name||user.email?.split('@')[0]||'Tác giả ẩn danh',
+        source_key:'manual',genres:$('#submit-genre').value==='other'?['Khác']:[$('#submit-genre').value],
+        content_rating:$('#submit-rating').value,status:$('#submit-status').value,
+        is_published:isAdmin,created_by:user.id,sort_order:0
+      };
+      const {data:series,error:seriesError}=await sb.from('rotruyen_series').insert(seriesPayload).select('id,title,is_published').single();
+      if(seriesError)throw seriesError;
+      const chapterNumber=Number($('#submit-chapter-number').value||1);
+      if(chapterUrl||pages.length){
+        const chapterPayload={series_id:series.id,chapter_number:chapterNumber,title:$('#submit-chapter-title').value.trim(),external_url:chapterUrl,page_manifest:pages,is_published:isAdmin,published_at:isAdmin?new Date().toISOString():null};
+        const {error:chapterError}=await sb.from('rotruyen_chapters').insert(chapterPayload);
+        if(chapterError)throw new Error('Đã tạo truyện nhưng chưa lưu được chương đầu: '+chapterError.message);
+      }
+      say(isAdmin?'Đã đăng và xuất bản truyện thành công!':'Đã gửi truyện thành công. Truyện đang chờ admin duyệt.');
+      notify(isAdmin?'Truyện đã được xuất bản.':'Đã gửi truyện, chờ duyệt.');
+      $('#submit-story-form').reset();
+      if(isAdmin){closeModal('submit-story-modal');await loadOwnCatalog();}
+    }catch(e){say('Chưa gửi được truyện: '+(e.message||'Vui lòng kiểm tra thông tin.'));}
+    finally{save.disabled=false;}
+  }
+  async function openSubmitStory(){
+    const sb=window.rfSupabase;
+    if(!sb){notify('Tài khoản RoHub chưa sẵn sàng.');return;}
+    try{const {data,error}=await sb.auth.getUser();if(error)throw error;if(!data?.user){notify('Hãy đăng nhập để đăng truyện.');location.href='rotruyen-account.html';return;}
+      $('#submit-story-message').textContent='';
+      $('#submit-story-modal').hidden=false;document.body.classList.add('modal-open');
+    }catch(e){notify('Không kiểm tra được phiên đăng nhập: '+e.message);}
+  }
+\n  function bind() {
     $('#story-search').addEventListener('input',e=>{state.query=e.target.value;render();});
     $('#genre-filter').addEventListener('change',e=>{state.genre=e.target.value;render();});
     $('#reset-filters').addEventListener('click',resetFilters);$('#empty-reset').addEventListener('click',resetFilters);
     $$('[data-sort]').forEach(b=>b.addEventListener('click',()=>{state.sort=b.dataset.sort;$$('[data-sort]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b));});render();}));
     $('#story-grid').addEventListener('click',e=>{const save=e.target.closest('[data-save]');if(save){e.preventDefault();e.stopPropagation();const id=save.dataset.save;state.saved.has(id)?state.saved.delete(id):state.saved.add(id);memory.write('saved:v1',[...state.saved]);render();notify(state.saved.has(id)?'Đã lưu truyện vào tủ.':'Đã bỏ lưu truyện.');return;}const open=e.target.closest('[data-open]');if(open){openDetail(open.dataset.open);}});
-    $('#show-saved').addEventListener('click',showSaved);
+    $('#show-saved').addEventListener('click',showSaved);\n    $('#open-submit-story')?.addEventListener('click',openSubmitStory);\n    $('#submit-story-close')?.addEventListener('click',()=>closeModal('submit-story-modal'));\n    $('#submit-story-form')?.addEventListener('submit',submitStory);
     $('#focus-search').addEventListener('click',()=>{$('#story-search').focus();$('#stories').scrollIntoView({behavior:'smooth'});});
     $('#load-source')?.addEventListener('click',()=>{state.source='mangadex';loadCatalog();});
     $('#source-demo')?.addEventListener('click',()=>{state.source='demo';state.items=DEMOS;render();});
