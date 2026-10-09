@@ -19,12 +19,20 @@
   let lastPageEvent = '';
   let lastMovieEvent = '';
 
+  let authenticated = false;
+  async function refreshAuth() {
+    try { const result = await sb.auth.getSession(); authenticated = !!result?.data?.session?.user; }
+    catch (_) { authenticated = false; }
+    return authenticated;
+  }
   async function track(eventType, extra = {}) {
-    try { await sb.rpc('roflix_track_event', { p_event_type: eventType, p_session_id: sessionId, p_page: extra.page ?? current.page, p_movie_slug: extra.movieSlug ?? current.movieSlug, p_movie_title: extra.movieTitle ?? current.movieTitle, p_metadata: extra.metadata || {} }); }
+    if (!(await refreshAuth())) return; // analytics RPCs are intentionally not exposed to anon
+    try { const { error } = await sb.rpc('roflix_track_event', { p_event_type: eventType, p_session_id: sessionId, p_page: extra.page ?? current.page, p_movie_slug: extra.movieSlug ?? current.movieSlug, p_movie_title: extra.movieTitle ?? current.movieTitle, p_metadata: extra.metadata || {} }); if (error && error.code !== 'PGRST301') console.debug('[RoFlix Analytics] track skipped:', error.message); }
     catch (error) { console.debug('[RoFlix Analytics] track skipped:', error?.message || error); }
   }
   async function heartbeat() {
-    try { await sb.rpc('roflix_heartbeat', { p_session_id: sessionId, p_page: current.page, p_movie_slug: current.movieSlug, p_movie_title: current.movieTitle }); }
+    if (!(await refreshAuth())) return; // avoid expected 401 for signed-out visitors
+    try { const { error } = await sb.rpc('roflix_heartbeat', { p_session_id: sessionId, p_page: current.page, p_movie_slug: current.movieSlug, p_movie_title: current.movieTitle }); if (error && error.code !== 'PGRST301') console.debug('[RoFlix Analytics] heartbeat skipped:', error.message); }
     catch (error) { console.debug('[RoFlix Analytics] heartbeat skipped:', error?.message || error); }
   }
   function trackPage(page) {
