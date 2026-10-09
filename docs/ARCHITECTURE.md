@@ -21,3 +21,11 @@ Local storage remains for client-side UX/game state such as watch history, favor
 
 ## Cloud data
 Community/Admin features use Supabase. RLS and database triggers are defined in `supabase/setup.sql` and the optional realtime upgrade migration.
+
+
+## RoHub / RoTruyen entry points
+- `/` and `/index.html`: RoHub gateway.
+- `/roflix.html`: preserved RoFlix application shell. Keep the original script loading order intact.
+- `/rotruyen.html`: independent RoTruyen UI and API adapters under `js/rotruyen/` and `css/rotruyen/`.
+- `/rotruyen-admin.html`: separate management UI; not cached by the service worker. Data writes are protected by Supabase RLS policies from `supabase/migrations/20261009000000_rotruyen_admin.sql`.
+- Apply the migration to the intended Supabase project before using the catalog/admin. The GitHub branch does not apply database changes automatically.
