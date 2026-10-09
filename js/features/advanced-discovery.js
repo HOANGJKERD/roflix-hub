@@ -55,7 +55,7 @@
     box.querySelector('#rf-advanced-toggle').addEventListener('click',()=>{const f=box.querySelector('#rf-advanced-fields');f.hidden=!f.hidden;box.querySelector('#rf-advanced-toggle').setAttribute('aria-expanded',String(!f.hidden))});
     box.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{box.querySelectorAll('[data-preset]').forEach(x=>x.classList.toggle('active',x===b));applyPreset(b.dataset.preset)}));
     box.querySelector('#rf-apply').addEventListener('click',applyFilters);
-    box.querySelector('#rf-reset').addEventListener('click',()=>{box.querySelectorAll('select,input').forEach(x=>x.value='');box.querySelector('#rf-rating-min').value='0';box.querySelector('#rf-sort').value='default';box.querySelectorAll('[data-preset]').forEach(x=>x.classList.toggle('active',x.dataset.preset==='all'));applyFilters()});
+    box.querySelector('#rf-reset').addEventListener('click',()=>{box.querySelectorAll('select,input').forEach(x=>x.value='');box.querySelector('#rf-rating-min').value='0';box.querySelector('#rf-sort').value='default';box.querySelectorAll('[data-preset]').forEach(x=>x.classList.toggle('active',x.dataset.preset==='all'));applyPreset('all')});
   }
   function cards(){return Array.from(document.querySelectorAll('#movie-grid-container .movie-card-premium'))}
   function applyPreset(p){
@@ -70,7 +70,21 @@
     if(p==='animation')box.querySelector('#rf-filter-genre').value='hoạt hình';
     box.querySelector('#rf-advanced-fields').hidden=false;
     box.querySelector('#rf-advanced-toggle').setAttribute('aria-expanded','true');
-    applyFilters();
+    // Thoát chế độ trang chủ chỉ tuyển phim Âu Mỹ/Hàn; chuyển sang danh sách catalog phân trang.
+    if(typeof homePriorityMode!=='undefined') homePriorityMode=false;
+    if(typeof currentCountrySlug!=='undefined') currentCountrySlug='';
+    if(typeof searchKeyword!=='undefined') searchKeyword='';
+    const g=box.querySelector('#rf-filter-genre').value;
+    if(typeof currentGenreSlug!=='undefined') currentGenreSlug=g?genreSlug(g):'';
+    if(typeof currentListEndpoint!=='undefined') currentListEndpoint='phim-moi-cap-nhat';
+    if(typeof renderMoviesFromAPI==='function') {
+      renderMoviesFromAPI(1);
+      setTimeout(applyFilters,1000);
+    } else applyFilters();
+  }
+  function genreSlug(value){
+    const aliases={'hành động':'hanh-dong','phiêu lưu':'phieu-luu','hoạt hình':'hoat-hinh','hài':'hai-huoc','hình sự':'hinh-su','tài liệu':'tai-lieu','chính kịch':'chinh-kich','gia đình':'gia-dinh','giả tưởng':'vien-tuong','lịch sử':'lich-su','kinh dị':'kinh-di','âm nhạc':'am-nhac','bí ẩn':'bi-an','lãng mạn':'lang-man','khoa học viễn tưởng':'khoa-hoc-vien-tuong','thể thao':'the-thao','chiến tranh':'chien-tranh','tâm lý':'tam-ly','tình cảm':'tinh-cam','cổ trang':'co-trang','võ thuật':'vo-thuat','học đường':'hoc-duong'};
+    return aliases[String(value||'').toLowerCase()]||'';
   }
   function applyFilters(){
     const box=document.getElementById('rf-discovery');if(!box)return;
@@ -80,6 +94,21 @@
     const rating=Number(box.querySelector('#rf-rating-min').value)||0;
     const kind=box.querySelector('#rf-kind').value;
     const sort=box.querySelector('#rf-sort').value;
+    // Bộ lọc thể loại phải truy vấn endpoint thể loại của nguồn, không chỉ ẩn các thẻ đang có.
+    const requestedGenre=genre;
+    const genreSlugValue=requestedGenre?genreSlug(requestedGenre):'';
+    if(typeof homePriorityMode!=='undefined') homePriorityMode=false;
+    if(typeof currentCountrySlug!=='undefined') currentCountrySlug='';
+    if(typeof searchKeyword!=='undefined') searchKeyword='';
+    if(typeof currentGenreSlug!=='undefined' && currentGenreSlug!==genreSlugValue){
+      currentGenreSlug=genreSlugValue;
+      if(typeof currentListEndpoint!=='undefined') currentListEndpoint='phim-moi-cap-nhat';
+      if(typeof renderMoviesFromAPI==='function'){
+        renderMoviesFromAPI(1);
+        setTimeout(applyFilters,1000);
+        return;
+      }
+    }
     const host=document.getElementById('movie-grid-container');if(!host)return;
     const all=cards();
     const filtered=all.filter(c=>{
