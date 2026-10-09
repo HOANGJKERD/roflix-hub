@@ -7,7 +7,6 @@ module.exports = async function handler(req, res) {
   }
 
   const incoming = new URL(req.url || "/", "https://roflix.local");
-  // Vercel rewrites the catch-all route to this function and retains the path.
   const marker = "/api/mangadex/";
   const markerIndex = incoming.pathname.indexOf(marker);
   if (markerIndex < 0) return res.status(404).json({ error: "Not found" });
@@ -20,18 +19,42 @@ module.exports = async function handler(req, res) {
 
   if (!allowed) return res.status(404).json({ error: "MangaDex endpoint not allowed" });
 
-  // Vercel adds ___path for catch-all routing; never forward this internal parameter upstream.\n  incoming.searchParams.delete("___path");\n  const target = "https://api.mangadex.org" + apiPath + (incoming.searchParams.toString() ? "?" + incoming.searchParams.toString() : "");
+  // Vercel may add ___path for catch-all routing. Never forward it upstream.
+  incoming.searchParams.delete("___path");
+  const query = incoming.searchParams.toString();
+  const querySuffix = query ? "?" + query : "";
+  const apiUrl = "https://api.mangadex.org" + apiPath + querySuffix;
+  const encoded = Buffer.from(apiUrl).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
+
   try {
-    const upstream = await fetch(target, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "User-Agent": "RoFlixHub-RoTruyen/1.0"
-      },
-      signal: controller.signal
-    });
+    let upstream;
+    let lastError;
+    // TruyenDex's public source documents this relay URL pattern.
+    const attempts = [
+      "https://services.f-ck.me/v1/cors/" + encoded,
+      apiUrl,
+      "https://api.mangadex.dev" + apiPath + querySuffix
+    ];
+    for (const url of attempts) {
+      try {
+        upstream = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "User-Agent": "RoFlixHub-RoTruyen/1.0",
+            "x-requested-with": "cubari"
+          },
+          signal: controller.signal
+        });
+        if (upstream.ok || upstream.status < 500) break;
+      } catch (error) {
+        lastError = error;
+        if (controller.signal.aborted) throw error;
+      }
+    }
+    if (!upstream) throw lastError || new Error("No MangaDex upstream available");
     const body = await upstream.text();
     res.status(upstream.status);
     res.setHeader("Content-Type", upstream.headers.get("content-type") || "application/json; charset=utf-8");
