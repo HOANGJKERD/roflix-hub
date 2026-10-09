@@ -1,6 +1,6 @@
 {
   "name": "RoFlix Pro",
-  "short_name": "RoFlix",
+  "short_name": "RoHub",
   "description": "RoFlix Pro, nền tảng xem phim trực tuyến.",
   "start_url": "/?source=pwa",
   "scope": "/",
