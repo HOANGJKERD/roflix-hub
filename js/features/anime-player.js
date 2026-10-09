@@ -63,7 +63,8 @@ function providerId(p){return val(p,['mediaId','id','providerId','slug'])||provi
 async function loadEpisodes(mediaId,provider){
   const pk=providerKey(provider)||text(provider);
   const key=mediaId+':'+pk;if(episodeCache.has(key))return episodeCache.get(key);
-  const id=providerId(provider)||mediaId;
+  // AniMapper expects the media ID returned by /search, not a provider object's internal ID.
+  const id=mediaId;
   const d=await api('/stream/episodes?id='+encodeURIComponent(id)+'&provider='+encodeURIComponent(pk));
   const es=arr(d,['episodes','results','items']);
   if(!es.length)throw Error('Provider '+pk+' không có tập');
