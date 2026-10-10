@@ -1,0 +1,57 @@
+/* RoHub Studio: uses the same charcoal + amber visual language as RoFlix Admin. */
+.rohub-studio-page{--rh-accent:#ffb20d;--rh-bg:#090a0f;--rh-panel:#15161d;--rh-radius:16px}
+.studio-welcome{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:clamp(22px,4vw,36px);overflow:hidden;background:radial-gradient(ellipse at 100% 0%,#ffb20d18,transparent 42%),linear-gradient(135deg,#171820,#0d0e13);border-color:#ffb20d2b}
+.studio-kicker{font-size:11px;font-weight:900;letter-spacing:2px;color:#ffb20d}
+.studio-welcome h2{font-size:clamp(24px,3vw,34px);margin:10px 0 6px;letter-spacing:-.8px}
+.studio-welcome p{max-width:620px;margin:0;line-height:1.7}
+.studio-mark{display:grid;place-items:center;width:92px;height:92px;flex:0 0 92px;border-radius:26px;background:linear-gradient(135deg,#ffb20d,#ff8a00 55%,#a855f7);color:white;font-size:38px;box-shadow:0 14px 35px #ffb20d20}
+.studio-section-head{display:flex;justify-content:space-between;align-items:end;gap:14px;margin:28px 0 14px}
+.studio-section-head h2{font-size:21px;margin:0 0 4px;letter-spacing:-.4px}
+.studio-section-head p{margin:0;font-size:13px}
+.studio-app-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.studio-app-card{display:flex;align-items:center;gap:15px;min-width:0;padding:20px;border:1px solid #ffffff18;border-radius:18px;background:linear-gradient(140deg,#171820,#101116);box-shadow:0 12px 30px #0002}
+.studio-app-icon{display:grid;place-items:center;flex:0 0 54px;width:54px;height:54px;border-radius:16px;color:white;font-size:22px}
+.roflix-icon{background:linear-gradient(135deg,#ffb20d,#ff8a00 55%,#a855f7)}
+.rotruyen-icon{background:linear-gradient(135deg,#ffb20d,#c97d09)}
+.studio-app-copy{flex:1;min-width:0}
+.studio-app-copy h3{margin:0 0 5px;font-size:18px}
+.studio-app-copy p{margin:0 0 9px;font-size:12px;color:#a1a1aa;line-height:1.6}
+.studio-tag,.studio-status{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 9px;background:#ffb20d12;border:1px solid #ffb20d2b;color:#ffd166;font-size:10px;font-weight:800}
+.studio-app-card>.btn{white-space:nowrap}
+.studio-customizer-grid{align-items:stretch}
+.studio-controls-card{padding:20px}
+.studio-control{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:17px;padding-bottom:14px;border-bottom:1px solid #ffffff12}
+.studio-control>label{font-size:13px;font-weight:700}
+.studio-color-field{display:flex;align-items:center;gap:10px}
+.studio-color-field input[type=color]{width:42px;height:34px;border:1px solid #ffffff2b;border-radius:9px;background:#111;padding:3px;cursor:pointer}
+.studio-color-field code{font-size:12px;color:#cbd5e1}
+.studio-control input[type=range]{max-width:160px;accent-color:#ffb20d}
+.studio-control select{max-width:160px}
+.studio-controls-card>.muted{font-size:12px;line-height:1.65}
+.studio-footnote{margin-top:16px}
+.studio-preview-card{padding:0;overflow:hidden;background:var(--rh-bg);border-radius:var(--rh-radius);border-color:#ffffff20}
+.studio-preview-top{display:flex;align-items:center;gap:10px;padding:17px 20px;border-bottom:1px solid #ffffff18;background:#090a0ff2}
+.studio-preview-brand{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:900}
+.studio-preview-brand>span{display:grid;place-items:center;width:31px;height:31px;border-radius:10px;background:linear-gradient(135deg,var(--rh-accent),#ff8a00 55%,#a855f7);color:white}
+.studio-preview-brand b{color:var(--rh-accent)}
+.studio-preview-badge{margin-left:auto;padding:4px 8px;border-radius:999px;background:#ffffff12;color:#d4d4d8;font-size:10px;font-weight:900}
+.studio-preview-body{padding:clamp(20px,4vw,34px);background:radial-gradient(ellipse at 100% 0%,color-mix(in srgb,var(--rh-accent) 12%,transparent),transparent 48%),var(--rh-bg)}
+.studio-preview-eyebrow{font-size:10px;letter-spacing:1.8px;color:var(--rh-accent);font-weight:900}
+.studio-preview-body h3{font-size:clamp(24px,3vw,34px);line-height:1.15;letter-spacing:-.9px;margin:12px 0}
+.studio-preview-body p{max-width:440px;color:#a1a1aa;font-size:13px;line-height:1.7}
+.studio-preview-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
+.studio-preview-actions button{border-radius:var(--rh-radius);padding:11px 15px;font-weight:850;cursor:pointer}
+.studio-preview-primary{background:var(--rh-accent);color:#17120a;border:1px solid transparent}
+.studio-preview-secondary{background:var(--rh-panel);color:#f4f4f5;border:1px solid #ffffff20}
+.studio-preview-stat-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:26px}
+.studio-preview-stat-row>div{padding:12px;border-radius:calc(var(--rh-radius) * .7);background:var(--rh-panel);border:1px solid #ffffff12}
+.studio-preview-stat-row small{display:block;font-size:10px;color:#a1a1aa}
+.studio-preview-stat-row strong{display:block;margin-top:5px;font-size:17px;color:var(--rh-accent)}
+.studio-feature-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.studio-feature{padding:19px;min-width:0}
+.studio-feature>i{font-size:21px;color:#ffb20d}
+.studio-feature h3{font-size:15px;margin:13px 0 7px}
+.studio-feature p{font-size:12px;line-height:1.7;color:#a1a1aa;min-height:62px}
+.studio-status{white-space:normal;border-radius:10px;line-height:1.45}
+@media(max-width:1100px){.studio-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-app-card{flex-wrap:wrap}.studio-app-card>.btn{margin-left:69px}}
+@media(max-width:720px){.studio-welcome{align-items:flex-start}.studio-mark{width:58px;height:58px;flex-basis:58px;border-radius:18px;font-size:24px}.studio-app-grid,.studio-customizer-grid,.studio-feature-grid{grid-template-columns:1fr}.studio-app-card{align-items:flex-start}.studio-app-card>.btn{margin-left:0}.studio-section-head{align-items:flex-start;flex-direction:column}.studio-control{align-items:flex-start;flex-direction:column}.studio-control input[type=range],.studio-control select{max-width:100%;width:100%}}
