@@ -122,6 +122,67 @@ function initVisual(){
  loadIntoForm=function(row){oldLoad(row);visualState.selectedId=null;visualState.sections=normalizeSections(row.config||{});renderVisual();renderInspector(null)};
  visualState.sections=normalizeSections(defaults);syncVisualToJson();renderVisual();
 }
+\n
+/* Safe release workflow: draft preview, immutable published snapshots, guarded rollback. */
+function openSafeModal(title,subtitle,content,footer){
+ $('rh-safe-modal-title').textContent=title;$('rh-safe-modal-subtitle').textContent=subtitle||'';$('rh-safe-modal-content').innerHTML=content||'';$('rh-safe-modal-footer').innerHTML=footer||'';$('rh-safe-modal').hidden=false;document.body.classList.add('rh-safe-modal-open');
+}
+function closeSafeModal(){$('rh-safe-modal').hidden=true;document.body.classList.remove('rh-safe-modal-open')}
+function readFormPayload(status){
+ const name=$('rh-template-name').value.trim(),slug=slugify($('rh-template-slug').value);
+ if(!name||!slug)throw new Error('Nhập tên template và slug hợp lệ trước.');
+ return {name,slug,target_app:$('rh-template-app').value,template_type:$('rh-template-type').value,description:$('rh-template-description').value.trim(),config:parseConfig(),status,updated_by:state.user.id};
+}
+function safePreviewMarkup(config){
+ const sections=normalizeSections(config||{});
+ return '<div class="rh-safe-preview-page"><div class="rh-safe-preview-label">PREVIEW ONLY · CHƯA PUBLIC</div>'+sections.map((s,i)=>previewBlock({...s,id:'safe-'+i},i).replace(/data-section-edit="[^"]*"/g,'').replace(/data-section-toggle="[^"]*"/g,'').replace(/data-section-delete="[^"]*"/g,'').replace('draggable="true"','draggable="false"')).join('')+'</div>';
+}
+async function openPreview(){
+ try{await currentAdmin();const config=parseConfig();openSafeModal('Preview template','Bản xem trước chỉ hiển thị cấu hình hiện tại. Chưa thay đổi nội dung công khai.',safePreviewMarkup(config),'<button type="button" class="btn" data-safe-close>Tiếp tục chỉnh sửa</button><button type="button" class="btn btn-primary" id="rh-preview-confirm-publish">Publish bản này</button>');$('rh-preview-confirm-publish').addEventListener('click',()=>{closeSafeModal();publishTemplate()})}
+ catch(e){message(e.message||'Không tạo được preview.',true)}
+}
+async function publishTemplate(){
+ if(!$('rh-template-id').value){message('Hãy lưu template thành bản nháp trước khi Publish.',true);return}
+ if(!confirm('Publish phiên bản này? Hệ thống sẽ lưu snapshot để có thể rollback.'))return;
+ try{
+ await currentAdmin();const id=$('rh-template-id').value;const existing=state.rows.find(r=>r.id===id);if(!existing)throw new Error('Không tìm thấy template trong danh sách đã tải.');
+ const payload=readFormPayload('published');
+ // Preserve the currently published configuration before replacing it.
+ if(existing.status==='published'){
+  const {error:se}=await sb.from('rohub_template_revisions').upsert({template_id:existing.id,version:Number(existing.version||1),name:existing.name,slug:existing.slug,target_app:existing.target_app,template_type:existing.template_type,description:existing.description||'',config:existing.config||{},status:'published',action:'snapshot',created_by:state.user.id},{onConflict:'template_id,version',ignoreDuplicates:true});
+  if(se)throw se;
+ }
+ const {data,error}=await sb.from('rohub_templates').update(payload).eq('id',id).select('*').single();if(error)throw error;
+ const {error:he}=await sb.from('rohub_template_revisions').upsert({template_id:data.id,version:Number(data.version||1),name:data.name,slug:data.slug,target_app:data.target_app,template_type:data.template_type,description:data.description||'',config:data.config||{},status:'published',action:'publish',created_by:state.user.id},{onConflict:'template_id,version'});
+ if(he)throw he;
+ await refresh(true);openSafeModal('Đã Publish phiên bản','Phiên bản đã được lưu trong database và lịch sử rollback. Chưa tự động thay đổi website công khai cho đến khi runtime consumer được kết nối.', '<div class="rh-safe-result"><span>✓</span><h3>'+esc(data.name)+'</h3><p>Phiên bản v'+Number(data.version||1)+' · '+esc(appLabel(data.target_app))+'</p><p>Snapshot được lưu để hỗ trợ rollback.</p></div>','<button type="button" class="btn btn-primary" data-safe-close>Đóng</button>');message('Đã publish và lưu snapshot phiên bản.')}
+ catch(e){message(e.message||'Publish thất bại.',true);alert('Không thể Publish: '+(e.message||e))}
+}
+async function openHistory(){
+ try{
+ await currentAdmin();const id=$('rh-template-id').value;if(!id)throw new Error('Hãy lưu và chọn một template trước khi xem lịch sử.');
+ const {data,error}=await sb.from('rohub_template_revisions').select('*').eq('template_id',id).order('version',{ascending:false});if(error)throw error;
+ const rows=data||[];
+ const content=rows.length?'<div class="rh-revision-list">'+rows.map(r=>'<article class="rh-revision-item"><div><b>v'+Number(r.version)+' · '+esc(r.name)+'</b><p>'+esc(r.action)+' · '+esc(r.status)+' · '+esc(new Date(r.created_at).toLocaleString())+'</p><small>'+esc(appLabel(r.target_app))+' / '+esc(typeLabel(r.template_type))+'</small></div><button type="button" class="btn" data-rollback-revision="'+esc(r.id)+'">Khôi phục bản này</button></article>').join('')+'</div>':'<div class="empty">Chưa có lịch sử. Publish một bản để tạo snapshot đầu tiên.</div>';
+ openSafeModal('Lịch sử phiên bản & Rollback','Chọn snapshot để khôi phục. Bản hiện tại sẽ được lưu lại trước khi rollback.',content,'<button type="button" class="btn" data-safe-close>Đóng</button>');
+ $('rh-safe-modal-content').querySelectorAll('[data-rollback-revision]').forEach(b=>b.addEventListener('click',()=>rollbackRevision(rows.find(r=>r.id===b.dataset.rollbackRevision))));
+ }catch(e){message(e.message||'Không tải được lịch sử.',true)}
+}
+async function rollbackRevision(revision){
+ if(!revision)return;if(!confirm('Khôi phục template về v'+revision.version+'? Phiên bản hiện tại sẽ được lưu vào lịch sử trước khi rollback.'))return;
+ try{
+ await currentAdmin();const id=$('rh-template-id').value;const current=state.rows.find(r=>r.id===id);if(!current)throw new Error('Không tìm thấy template hiện tại.');
+ const nextVersion=Number(current.version||1)+1;
+ // Save current state as a snapshot; revision version is unique per template.
+ const {error:se}=await sb.from('rohub_template_revisions').upsert({template_id:current.id,version:nextVersion,name:current.name,slug:current.slug,target_app:current.target_app,template_type:current.template_type,description:current.description||'',config:current.config||{},status:current.status,action:'snapshot',created_by:state.user.id},{onConflict:'template_id,version',ignoreDuplicates:true});
+ if(se)throw se;
+ const payload={name:revision.name,slug:revision.slug,target_app:revision.target_app,template_type:revision.template_type,description:revision.description||'',config:revision.config||{},status:'published',updated_by:state.user.id};
+ const {data,error}=await sb.from('rohub_templates').update(payload).eq('id',id).select('*').single();if(error)throw error;
+ const {error:he}=await sb.from('rohub_template_revisions').upsert({template_id:data.id,version:Number(data.version||nextVersion+1),name:data.name,slug:data.slug,target_app:data.target_app,template_type:data.template_type,description:data.description||'',config:data.config||{},status:'published',action:'rollback',created_by:state.user.id},{onConflict:'template_id,version'});
+ if(he)throw he;
+ closeSafeModal();await refresh(true);message('Đã rollback về cấu hình v'+revision.version+'. Bản trước đó vẫn được giữ trong lịch sử.');
+ }catch(e){message(e.message||'Rollback thất bại.',true);alert('Không thể rollback: '+(e.message||e))}
+}
 \nfunction init(){
  $('rh-template-new').addEventListener('click',resetForm);$('rh-template-form').addEventListener('submit',save);$('rh-template-delete').addEventListener('click',removeSelected);
  $('rh-template-search').addEventListener('input',renderList);$('rh-template-app-filter').addEventListener('change',renderList);
@@ -133,7 +194,7 @@ function initVisual(){
  $('rh-template-import').addEventListener('change',async e=>{const f=e.target.files?.[0];if(f)await importJson(f);e.target.value=''});
  $('rh-template-duplicate').addEventListener('click',()=>{const old=$('rh-template-name').value.trim();$('rh-template-id').value='';state.selected=null;$('rh-template-name').value=old?old+' (bản sao)':'';$('rh-template-slug').value=slugify($('rh-template-name').value)+'-'+Date.now().toString().slice(-5);$('rh-template-status').value='draft';$('rh-template-editor-title').textContent='Nhân bản template';$('rh-template-version').textContent='Bản nháp mới';$('rh-template-delete').disabled=true;message('Bản sao chưa được lưu. Nhấn Lưu vào Supabase để tạo bản ghi mới.')});
  $('rh-template-status').addEventListener('change',()=>{if($('rh-template-status').value==='published')message('Khi lưu, trạng thái sẽ chuyển thành Đã xuất bản trong database. Cần tích hợp runtime để áp dụng ra giao diện người dùng.')});
- initVisual();resetForm();refresh(false);
+ initVisual();resetForm();refresh(false);\n $('rh-template-preview-open')?.addEventListener('click',openPreview);$('rh-template-publish')?.addEventListener('click',publishTemplate);$('rh-template-history-open')?.addEventListener('click',openHistory);document.querySelectorAll('[data-safe-close]').forEach(el=>el.addEventListener('click',closeSafeModal));$('rh-safe-modal')?.addEventListener('click',e=>{if(e.target.dataset.safeClose!==undefined)closeSafeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('rh-safe-modal').hidden)closeSafeModal()});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
