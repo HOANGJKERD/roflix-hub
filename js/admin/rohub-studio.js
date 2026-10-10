@@ -55,7 +55,74 @@ async function removeSelected(){
 }
 function downloadJson(obj,name){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 async function importJson(file){try{const text=await file.text();const data=JSON.parse(text);if(data.template){const t=data.template;$('rh-template-name').value=t.name||'';$('rh-template-slug').value=t.slug||slugify(t.name);$('rh-template-app').value=t.target_app||'both';$('rh-template-type').value=t.template_type||'homepage';$('rh-template-description').value=t.description||'';$('rh-template-status').value=t.status||'draft';$('rh-template-config').value=JSON.stringify(t.config||{},null,2)}else $('rh-template-config').value=JSON.stringify(data,null,2);message('Đã nạp JSON vào form. Nhấn Lưu vào Supabase để lưu thật.')}catch(e){message('Không đọc được JSON: '+e.message,true)}}
-function init(){
+
+/* Visual editor: section-based drag/drop canvas backed by the same persisted JSON config. */
+const visualState={sections:[],selectedId:null,device:'desktop',dragId:null};
+const blockDefaults={
+ header:{type:'header',title:'RoTruyện',subtitle:'Khám phá thế giới truyện',enabled:true,showLogo:true,showSearch:true,showNavigation:true,background:'#090a0f',accent:'#ffb20d'},
+ banner:{type:'banner',title:'Thế giới truyện trong tầm tay',description:'Khám phá truyện mới, truyện nổi bật và những chương vừa cập nhật.',buttonText:'Khám phá ngay',enabled:true,background:'#15161d',accent:'#ffb20d'},
+ 'series-grid':{type:'series-grid',title:'Truyện nổi bật',description:'Những bộ truyện được cộng đồng quan tâm.',columns:4,cardStyle:'poster',limit:8,enabled:true,background:'#090a0f',accent:'#ffb20d'},
+ 'content-card':{type:'content-card',title:'Tiếp tục hành trình của bạn',description:'Khám phá những câu chuyện mới mỗi ngày.',buttonText:'Xem thêm',enabled:true,background:'#15161d',accent:'#ffb20d'},
+ footer:{type:'footer',title:'RoTruyện',description:'Không gian dành cho người yêu truyện.',copyright:'© 2026 RoTruyện',showLinks:true,enabled:true,background:'#090a0f',accent:'#ffb20d'}
+};
+function visualConfig(){
+ try{return parseConfig()}catch(e){return {}}
+}
+function normalizeSections(config){
+ let sections=Array.isArray(config.sections)?config.sections:null;
+ if(!sections){
+  const comps=config.components||{};
+  sections=['header','banner','series-grid','content-card','footer'].filter(t=>comps[t]?.enabled!==false).map((t,i)=>({...JSON.parse(JSON.stringify(blockDefaults[t])),...(comps[t]||{}),id:(comps[t]?.id||'section-'+(i+1))}));
+ }
+ return sections.map((s,i)=>({id:s.id||('section-'+(i+1)+'-'+Math.random().toString(36).slice(2,6)),...s,type:s.type||s.kind||'content-card'}));
+}
+function syncVisualToJson(){
+ const config=visualConfig();config.schemaVersion=config.schemaVersion||1;config.sections=visualState.sections.map(s=>({...s}));
+ config.components=config.components||{};
+ visualState.sections.forEach(s=>{config.components[s.type]={...(config.components[s.type]||{}),...s,enabled:s.enabled!==false}});
+ $('rh-template-config').value=JSON.stringify(config,null,2);
+}
+function safeColor(c,fallback){return /^#[0-9a-f]{3,8}$/i.test(c||'')?c:fallback}
+function previewBlock(s,index){
+ const accent=safeColor(s.accent,'#ffb20d'),bg=safeColor(s.background,s.type==='banner'||s.type==='content-card'?'#15161d':'#090a0f');
+ let body='';
+ if(s.type==='header')body='<div class="rh-live-brand"><span class="rh-live-logo">▶</span><strong>'+esc(s.title||'RoTruyện')+'</strong></div><div class="rh-live-nav">'+(s.showNavigation!==false?'<span>Trang chủ</span><span>Thể loại</span><span>BXH</span>':'')+(s.showSearch!==false?'<span class="rh-live-search">⌕ Tìm truyện...</span>':'')+'</div>';
+ else if(s.type==='banner')body='<div class="rh-live-banner-copy"><span class="rh-live-eyebrow">KHÁM PHÁ MỖI NGÀY</span><h2>'+esc(s.title||'Banner')+'</h2><p>'+esc(s.description||'')+'</p>'+(s.buttonText?'<span class="rh-live-cta">'+esc(s.buttonText)+' →</span>':'')+'</div><div class="rh-live-banner-art">漫</div>';
+ else if(s.type==='series-grid')body='<div class="rh-live-section-title"><div><h3>'+esc(s.title||'Danh sách truyện')+'</h3><p>'+esc(s.description||'')+'</p></div><span>Xem tất cả →</span></div><div class="rh-live-book-grid" style="--rh-live-cols:'+Math.max(2,Math.min(6,Number(s.columns)||4))+'">'+Array.from({length:Math.max(2,Math.min(8,Number(s.limit)||4))},(_,i)=>'<div class="rh-live-book"><div class="rh-live-cover" style="background:linear-gradient(145deg,'+accent+'55,#25243a,'+(i%2?'#7537a8':'#214a67')+')"><span>漫</span></div><b>'+esc(['Hành trình mới','Kiếm sĩ cuối cùng','Thành phố ánh trăng','Bí mật học viện','Vùng đất xa xăm','Ngày mai rực rỡ','Kẻ du hành','Mùa sao rơi'][i])+'</b><small>Chương '+(i+12)+'</small></div>').join('')+'</div>';
+ else if(s.type==='footer')body='<div class="rh-live-footer-brand"><strong>'+esc(s.title||'RoTruyện')+'</strong><p>'+esc(s.description||'')+'</p></div><div class="rh-live-footer-links">'+(s.showLinks!==false?'<span>Giới thiệu</span><span>Điều khoản</span><span>Liên hệ</span>':'')+'</div><small>'+esc(s.copyright||'© 2026')+'</small>';
+ else body='<div class="rh-live-content-card"><span class="rh-live-eyebrow">GỢI Ý DÀNH CHO BẠN</span><h3>'+esc(s.title||'Thẻ nội dung')+'</h3><p>'+esc(s.description||'')+'</p>'+(s.buttonText?'<span class="rh-live-cta">'+esc(s.buttonText)+' →</span>':'')+'</div>';
+ return '<section class="rh-live-section '+(s.enabled===false?'is-disabled':'')+(visualState.selectedId===s.id?' is-selected':'')+'" data-live-section="'+esc(s.id)+'" draggable="true" style="--rh-block-accent:'+accent+';--rh-block-bg:'+bg+'"><div class="rh-live-block-tools"><span><i class="fa-solid fa-grip-vertical"></i> '+esc(s.type)+'</span><span><button type="button" data-section-edit="'+esc(s.id)+'" title="Cấu hình"><i class="fa-solid fa-sliders"></i></button><button type="button" data-section-toggle="'+esc(s.id)+'" title="Ẩn/hiện"><i class="fa-solid '+(s.enabled===false?'fa-eye':'fa-eye-slash')+'"></i></button><button type="button" data-section-delete="'+esc(s.id)+'" title="Xóa khối"><i class="fa-solid fa-trash"></i></button></span></div><div class="rh-live-section-body">'+body+'</div></section>';
+}
+function renderVisual(){
+ const canvas=$('rh-template-preview');if(!canvas)return;
+ const width=visualState.device==='mobile'?'390px':visualState.device==='tablet'?'768px':'100%';
+ canvas.style.maxWidth=width;
+ canvas.innerHTML='<div class="rh-live-page-top"><span>◉ ROFLIX STYLE PREVIEW</span><span>✦</span></div>'+visualState.sections.map(previewBlock).join('')+'<div class="rh-live-preview-end">Cuối bản xem trước</div>';
+ canvas.querySelectorAll('[data-section-edit]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();selectVisualBlock(b.dataset.sectionEdit)}));
+ canvas.querySelectorAll('[data-live-section]').forEach(el=>{el.addEventListener('click',e=>{if(e.target.closest('button'))return;selectVisualBlock(el.dataset.liveSection)});el.addEventListener('dragstart',e=>{visualState.dragId=el.dataset.liveSection;e.dataTransfer.setData('text/plain',visualState.dragId);e.dataTransfer.effectAllowed='move';el.classList.add('is-dragging')});el.addEventListener('dragend',()=>el.classList.remove('is-dragging'));el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('is-drop-target')});el.addEventListener('dragleave',()=>el.classList.remove('is-drop-target'));el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('is-drop-target');const from=e.dataTransfer.getData('text/plain')||visualState.dragId,to=el.dataset.liveSection;if(!from||from===to)return;const a=visualState.sections.findIndex(s=>s.id===from),b=visualState.sections.findIndex(s=>s.id===to);if(a<0||b<0)return;const [item]=visualState.sections.splice(a,1);visualState.sections.splice(b,0,item);syncVisualToJson();renderVisual()})});
+ canvas.querySelectorAll('[data-section-toggle]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const s=visualState.sections.find(x=>x.id===b.dataset.sectionToggle);if(s){s.enabled=s.enabled===false;syncVisualToJson();renderVisual();selectVisualBlock(s.id)}}));
+ canvas.querySelectorAll('[data-section-delete]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const s=visualState.sections.find(x=>x.id===b.dataset.sectionDelete);if(!s)return;if(!confirm('Xóa khối '+(s.title||s.type)+' khỏi template?'))return;visualState.sections=visualState.sections.filter(x=>x.id!==s.id);visualState.selectedId=null;syncVisualToJson();renderVisual();renderInspector(null)}));
+}
+function selectVisualBlock(id){visualState.selectedId=id;renderVisual();renderInspector(visualState.sections.find(s=>s.id===id))}
+function renderInspector(s){
+ const root=$('rh-block-inspector-content');if(!root)return;if(!s){root.innerHTML='<div class="rh-inspector-empty">Chọn một khối trong bản xem trước để chỉnh sửa.</div>';return}
+ const fields=[['title','Tiêu đề','text'],['description','Mô tả','textarea'],['buttonText','Nhãn nút','text'],['columns','Số cột (2-6)','number'],['limit','Số thẻ (2-8)','number'],['copyright','Dòng bản quyền','text'],['background','Màu nền','color'],['accent','Màu nhấn','color']];
+ let allowed= s.type==='header'?['title','background','accent']:s.type==='banner'?['title','description','buttonText','background','accent']:s.type==='series-grid'?['title','description','columns','limit','background','accent']:s.type==='footer'?['title','description','copyright','background','accent']:['title','description','buttonText','background','accent'];
+ root.innerHTML='<div class="rh-inspector-type"><span class="rh-inspector-icon"><i class="fa-solid '+({header:'fa-bars',banner:'fa-panorama','series-grid':'fa-grip',footer:'fa-grip-lines','content-card':'fa-id-card'}[s.type]||'fa-cube')+'"></i></span><div><b>'+esc(s.type)+'</b><small>Kéo khối để sắp xếp</small></div></div>'+fields.filter(f=>allowed.includes(f[0])).map(f=>'<label class="rh-inspector-field"><span>'+f[1]+'</span>'+(f[2]==='textarea'?'<textarea data-inspect="'+f[0]+'" rows="3">'+esc(s[f[0]]||'')+'</textarea>':'<input data-inspect="'+f[0]+'" type="'+f[2]+'" value="'+esc(s[f[0]]??(f[2]==='color'?'#ffb20d':''))+'" '+(f[2]==='number'?'min="'+(f[0]==='columns'?2:2)+'" max="'+(f[0]==='columns'?6:8)+'"':'')+'>')+'</label>').join('')+'<label class="rh-inspector-check"><input type="checkbox" data-inspect="enabled" '+(s.enabled===false?'':'checked')+'> Hiển thị khối</label><button type="button" class="btn btn-primary" id="rh-inspector-apply">Áp dụng thay đổi</button><p class="muted">Thay đổi được đồng bộ vào cấu hình JSON. Nhấn “Lưu vào Supabase” để lưu vĩnh viễn.</p>';
+ $('rh-inspector-apply').addEventListener('click',()=>{root.querySelectorAll('[data-inspect]').forEach(input=>{const k=input.dataset.inspect;s[k]=input.type==='checkbox'?input.checked:input.type==='number'?Number(input.value):input.value});syncVisualToJson();renderVisual();renderInspector(s);message('Đã cập nhật bản xem trước. Nhấn Lưu vào Supabase để lưu dữ liệu.')});
+}
+function initVisual(){
+ if(!$('rh-template-preview'))return;
+ $('rh-template-config').addEventListener('input',()=>{try{visualState.sections=normalizeSections(parseConfig());renderVisual()}catch(e){}});
+ document.querySelectorAll('[data-add-block]').forEach(b=>b.addEventListener('click',()=>{const type=b.dataset.addBlock;const s={...JSON.parse(JSON.stringify(blockDefaults[type])),id:'section-'+Date.now().toString(36)};visualState.sections.push(s);visualState.selectedId=s.id;syncVisualToJson();renderVisual();renderInspector(s);message('Đã thêm khối '+type+'. Nhấn Lưu vào Supabase để lưu.')}));
+ document.querySelectorAll('[data-preview-width]').forEach(b=>b.addEventListener('click',()=>{visualState.device=b.dataset.previewWidth;document.querySelectorAll('[data-preview-width]').forEach(x=>x.classList.toggle('is-active',x===b));$('rh-preview-size-label').textContent=({desktop:'Desktop · 100%',tablet:'Tablet · 768px',mobile:'Mobile · 390px'})[visualState.device];renderVisual()}));
+ const oldReset=resetForm;
+ resetForm=function(){oldReset();visualState.selectedId=null;visualState.sections=normalizeSections(defaults);syncVisualToJson();renderVisual();renderInspector(null)};
+ const oldLoad=loadIntoForm;
+ loadIntoForm=function(row){oldLoad(row);visualState.selectedId=null;visualState.sections=normalizeSections(row.config||{});renderVisual();renderInspector(null)};
+ visualState.sections=normalizeSections(defaults);syncVisualToJson();renderVisual();
+}
+\nfunction init(){
  $('rh-template-new').addEventListener('click',resetForm);$('rh-template-form').addEventListener('submit',save);$('rh-template-delete').addEventListener('click',removeSelected);
  $('rh-template-search').addEventListener('input',renderList);$('rh-template-app-filter').addEventListener('change',renderList);
  $('rh-template-name').addEventListener('input',()=>{if(!$('rh-template-id').value&&!$('rh-template-slug').dataset.touched)$('rh-template-slug').value=slugify($('rh-template-name').value)});
@@ -66,7 +133,7 @@ function init(){
  $('rh-template-import').addEventListener('change',async e=>{const f=e.target.files?.[0];if(f)await importJson(f);e.target.value=''});
  $('rh-template-duplicate').addEventListener('click',()=>{const old=$('rh-template-name').value.trim();$('rh-template-id').value='';state.selected=null;$('rh-template-name').value=old?old+' (bản sao)':'';$('rh-template-slug').value=slugify($('rh-template-name').value)+'-'+Date.now().toString().slice(-5);$('rh-template-status').value='draft';$('rh-template-editor-title').textContent='Nhân bản template';$('rh-template-version').textContent='Bản nháp mới';$('rh-template-delete').disabled=true;message('Bản sao chưa được lưu. Nhấn Lưu vào Supabase để tạo bản ghi mới.')});
  $('rh-template-status').addEventListener('change',()=>{if($('rh-template-status').value==='published')message('Khi lưu, trạng thái sẽ chuyển thành Đã xuất bản trong database. Cần tích hợp runtime để áp dụng ra giao diện người dùng.')});
- resetForm();refresh(false);
+ initVisual();resetForm();refresh(false);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
