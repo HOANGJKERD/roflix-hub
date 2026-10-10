@@ -49,6 +49,33 @@
       <div class="studio-preview-body"><span class="studio-preview-eyebrow">ROHUB DESIGN SYSTEM</span><h3>Thiết kế thống nhất.</h3><p>Giữ trải nghiệm quen thuộc của RoFlix Admin trên cả RoFlix và RoTruyện.</p><div class="studio-preview-actions"><button class="studio-preview-primary" type="button">Lưu thay đổi</button><button class="studio-preview-secondary" type="button">Xem bản nháp</button></div><div class="studio-preview-stat-row"><div><small>Hệ thống</small><strong>02</strong></div><div><small>Theme</small><strong>Custom</strong></div><div><small>Trạng thái</small><strong>Preview</strong></div></div></div>
     </div>
   </div>
+
+  <div class="studio-section-head" id="rh-template-builder-head"><div><h2><i class="fa-solid fa-layer-group"></i> Template Builder · dữ liệu thật</h2><p class="muted">Lưu template, phiên bản và trạng thái vào Supabase. Chỉ tài khoản admin được phép truy cập.</p></div><button class="btn btn-primary" id="rh-template-new"><i class="fa-solid fa-plus"></i> Tạo template</button></div>
+  <div class="rh-template-layout">
+    <div class="card rh-template-list-card">
+      <div class="rh-template-list-toolbar"><input class="input" id="rh-template-search" placeholder="Tìm template..." aria-label="Tìm template"><select class="input" id="rh-template-app-filter"><option value="">Tất cả hệ thống</option><option value="roflix">RoFlix</option><option value="rotruyen">RoTruyện</option><option value="both">Dùng chung</option></select></div>
+      <div id="rh-template-list" class="rh-template-list"><div class="empty">Đang tải template từ Supabase...</div></div>
+    </div>
+    <div class="card rh-template-editor-card">
+      <div class="rh-template-editor-heading"><div><span class="studio-kicker">TEMPLATE EDITOR</span><h3 id="rh-template-editor-title">Tạo template mới</h3></div><span class="studio-preview-badge" id="rh-template-version">Bản nháp</span></div>
+      <form id="rh-template-form">
+        <input type="hidden" id="rh-template-id">
+        <div class="rh-template-form-grid">
+          <div class="studio-control"><label for="rh-template-name">Tên template</label><input class="input" id="rh-template-name" maxlength="120" required placeholder="Ví dụ: RoTruyện Home v1"></div>
+          <div class="studio-control"><label for="rh-template-slug">Slug (duy nhất)</label><input class="input" id="rh-template-slug" maxlength="120" pattern="[a-z0-9]+([_-][a-z0-9]+)*" required placeholder="rotruyen-home-v1"></div>
+          <div class="studio-control"><label for="rh-template-app">Áp dụng cho</label><select class="input" id="rh-template-app"><option value="both">RoFlix + RoTruyện</option><option value="roflix">RoFlix</option><option value="rotruyen">RoTruyện</option></select></div>
+          <div class="studio-control"><label for="rh-template-type">Loại template</label><select class="input" id="rh-template-type"><option value="homepage">Trang chủ</option><option value="header">Header</option><option value="footer">Footer</option><option value="page">Trang nội dung</option><option value="series">Chi tiết truyện/phim</option><option value="reader">Trình đọc chương</option><option value="login">Đăng nhập</option><option value="register">Đăng ký</option><option value="search">Tìm kiếm</option><option value="category">Danh mục</option><option value="tag">Thẻ</option><option value="author">Tác giả</option><option value="404">Trang 404</option></select></div>
+        </div>
+        <div class="studio-control"><label for="rh-template-description">Mô tả</label><textarea class="input" id="rh-template-description" rows="2" maxlength="1000" placeholder="Mục đích và ghi chú cho template"></textarea></div>
+        <div class="studio-control"><label for="rh-template-status">Trạng thái</label><select class="input" id="rh-template-status"><option value="draft">Bản nháp</option><option value="published">Đã xuất bản</option><option value="archived">Lưu trữ</option></select></div>
+        <div class="rh-template-json-head"><div><label for="rh-template-config">Cấu hình template (JSON)</label><p class="muted">Có thể lưu token màu, bố cục, header/footer và thông số thành phần.</p></div><button class="btn" type="button" id="rh-template-format">Định dạng JSON</button></div>
+        <textarea class="input rh-template-json" id="rh-template-config" spellcheck="false" rows="15" required></textarea>
+        <div class="rh-template-json-tools"><button type="button" class="btn" id="rh-template-insert-theme"><i class="fa-solid fa-palette"></i> Lấy theme preview</button><label class="btn" for="rh-template-import">Nhập JSON</label><input type="file" id="rh-template-import" accept="application/json,.json" hidden><button type="button" class="btn" id="rh-template-export">Xuất JSON</button></div>
+        <div class="rh-template-actions"><button type="submit" class="btn btn-primary" id="rh-template-save"><i class="fa-solid fa-cloud-arrow-up"></i> Lưu vào Supabase</button><button type="button" class="btn" id="rh-template-duplicate">Nhân bản</button><button type="button" class="btn btn-danger" id="rh-template-delete" disabled>Xóa</button><span id="rh-template-message" class="muted" aria-live="polite"></span></div>
+      </form>
+    </div>
+  </div>
+
   <div class="studio-section-head"><div><h2>Công cụ quản trị mở rộng</h2><p class="muted">Các khu vực sẽ được kết nối lần lượt với database và API thật, không dùng số liệu giả.</p></div></div>
   <div class="studio-feature-grid">
     <article class="card studio-feature"><i class="fa-solid fa-book-open"></i><h3>Catalog & chương truyện</h3><p>Kiểm tra metadata, trạng thái nguồn, chương lỗi và liên kết nguồn.</p><span class="studio-status">Cần tích hợp API quản trị</span></article>
