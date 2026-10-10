@@ -47,7 +47,7 @@ async function action(action,id){
  if(action==='chapters'){await loadChapters(s);return;}
  if(action==='publish'){
   const next=!s.is_published;if(!confirm((next?'Xuất bản':'Gỡ xuất bản')+' tác phẩm “'+s.title+'”?'))return;
-  const patch={is_published:next};if(next)patch.published_at=new Date().toISOString();
+  const patch={is_published:next};
   const {error}=await sb.from('rotruyen_series').update(patch).eq('id',s.id);if(error)throw error;
   message(next?'Đã gửi yêu cầu xuất bản tác phẩm.':'Đã gỡ xuất bản tác phẩm.');await loadSeries();if(state.selected?.id===s.id)await loadChapters(s);return;
  }
