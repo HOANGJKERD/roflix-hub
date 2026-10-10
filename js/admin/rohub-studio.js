@@ -149,11 +149,11 @@ async function publishTemplate(){
  const payload=readFormPayload('published');
  // Preserve the currently published configuration before replacing it.
  if(existing.status==='published'){
-  const {error:se}=await sb.from('rohub_template_revisions').upsert({template_id:existing.id,version:Number(existing.version||1),name:existing.name,slug:existing.slug,target_app:existing.target_app,template_type:existing.template_type,description:existing.description||'',config:existing.config||{},status:'published',action:'snapshot',created_by:state.user.id},{onConflict:'template_id,version',ignoreDuplicates:true});
+  const {error:se}=await sb.from('rohub_template_revisions').insert({template_id:existing.id,version:Number(existing.version||1),name:existing.name,slug:existing.slug,target_app:existing.target_app,template_type:existing.template_type,description:existing.description||'',config:existing.config||{},status:'published',action:'snapshot',created_by:state.user.id});
   if(se)throw se;
  }
  const {data,error}=await sb.from('rohub_templates').update(payload).eq('id',id).select('*').single();if(error)throw error;
- const {error:he}=await sb.from('rohub_template_revisions').upsert({template_id:data.id,version:Number(data.version||1),name:data.name,slug:data.slug,target_app:data.target_app,template_type:data.template_type,description:data.description||'',config:data.config||{},status:'published',action:'publish',created_by:state.user.id},{onConflict:'template_id,version'});
+ const {error:he}=await sb.from('rohub_template_revisions').insert({template_id:data.id,version:Number(data.version||1),name:data.name,slug:data.slug,target_app:data.target_app,template_type:data.template_type,description:data.description||'',config:data.config||{},status:'published',action:'publish',created_by:state.user.id});
  if(he)throw he;
  await refresh(true);openSafeModal('Đã Publish phiên bản','Phiên bản đã được lưu trong database và lịch sử rollback. Chưa tự động thay đổi website công khai cho đến khi runtime consumer được kết nối.', '<div class="rh-safe-result"><span>✓</span><h3>'+esc(data.name)+'</h3><p>Phiên bản v'+Number(data.version||1)+' · '+esc(appLabel(data.target_app))+'</p><p>Snapshot được lưu để hỗ trợ rollback.</p></div>','<button type="button" class="btn btn-primary" data-safe-close>Đóng</button>');message('Đã publish và lưu snapshot phiên bản.')}
  catch(e){message(e.message||'Publish thất bại.',true);alert('Không thể Publish: '+(e.message||e))}
@@ -174,11 +174,11 @@ async function rollbackRevision(revision){
  await currentAdmin();const id=$('rh-template-id').value;const current=state.rows.find(r=>r.id===id);if(!current)throw new Error('Không tìm thấy template hiện tại.');
  const nextVersion=Number(current.version||1)+1;
  // Save current state as a snapshot; revision version is unique per template.
- const {error:se}=await sb.from('rohub_template_revisions').upsert({template_id:current.id,version:nextVersion,name:current.name,slug:current.slug,target_app:current.target_app,template_type:current.template_type,description:current.description||'',config:current.config||{},status:current.status,action:'snapshot',created_by:state.user.id},{onConflict:'template_id,version',ignoreDuplicates:true});
+ const {error:se}=await sb.from('rohub_template_revisions').insert({template_id:current.id,version:nextVersion,name:current.name,slug:current.slug,target_app:current.target_app,template_type:current.template_type,description:current.description||'',config:current.config||{},status:current.status,action:'snapshot',created_by:state.user.id});
  if(se)throw se;
  const payload={name:revision.name,slug:revision.slug,target_app:revision.target_app,template_type:revision.template_type,description:revision.description||'',config:revision.config||{},status:'published',updated_by:state.user.id};
  const {data,error}=await sb.from('rohub_templates').update(payload).eq('id',id).select('*').single();if(error)throw error;
- const {error:he}=await sb.from('rohub_template_revisions').upsert({template_id:data.id,version:Number(data.version||nextVersion+1),name:data.name,slug:data.slug,target_app:data.target_app,template_type:data.template_type,description:data.description||'',config:data.config||{},status:'published',action:'rollback',created_by:state.user.id},{onConflict:'template_id,version'});
+ const {error:he}=await sb.from('rohub_template_revisions').insert({template_id:data.id,version:Number(data.version||nextVersion+1),name:data.name,slug:data.slug,target_app:data.target_app,template_type:data.template_type,description:data.description||'',config:data.config||{},status:'published',action:'rollback',created_by:state.user.id});
  if(he)throw he;
  closeSafeModal();await refresh(true);message('Đã rollback về cấu hình v'+revision.version+'. Bản trước đó vẫn được giữ trong lịch sử.');
  }catch(e){message(e.message||'Rollback thất bại.',true);alert('Không thể rollback: '+(e.message||e))}
