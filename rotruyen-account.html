@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b12">
+  <title>Tài khoản RoTruyện | RoHub</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root{color-scheme:dark;--bg:#090b12;--panel:#111522;--line:#ffffff1c;--text:#f4f7fb;--muted:#a3adbd;--blue:#76c8ff;--blue2:#4f8bff}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 12% 5%,#203d6650,transparent 40%),radial-gradient(ellipse at 90% 90%,#28304a40,transparent 35%),var(--bg);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text)}
+    a{color:inherit;text-decoration:none}.wrap{width:min(100%,460px)}.brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:24px;font-weight:900;font-size:25px;letter-spacing:-.6px}.mark{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,var(--blue),var(--blue2));color:#07111f;box-shadow:0 10px 32px #438cff35}.accent{color:var(--blue)}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:2px;margin-top:2px}
+    .card{border:1px solid var(--line);border-radius:24px;padding:clamp(22px,6vw,34px);background:linear-gradient(145deg,#131a2aef,#0e111bf5);box-shadow:0 24px 80px #0007;backdrop-filter:blur(20px)}.eyebrow{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--blue)}h1{font-size:29px;letter-spacing:-.8px;margin:9px 0} .intro{color:var(--muted);font-size:14px;line-height:1.65;margin:0 0 22px}.tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;border:1px solid var(--line);background:#090c14;border-radius:12px;margin-bottom:22px}.tabs button{border:0;border-radius:9px;padding:11px;background:transparent;color:var(--muted);font-weight:750;cursor:pointer}.tabs button[aria-selected=true]{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#07111f}
+    form{display:grid;gap:14px}label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#dbe5f1}.field{position:relative}.field i{position:absolute;left:13px;top:15px;color:#8190a6}.field input{width:100%;border:1px solid #ffffff24;border-radius:11px;background:#090c14;color:var(--text);padding:13px 14px 13px 40px;outline:none;font:inherit;font-size:14px}.field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #76c8ff18}.submit{margin-top:3px;border:0;border-radius:11px;padding:14px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#07111f;font-weight:900;font-size:14px;cursor:pointer;box-shadow:0 8px 24px #438cff25}.submit:disabled{opacity:.6;cursor:wait}.message{display:none;padding:11px 12px;border-radius:10px;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.message.show{display:block}.message.error{background:#7f1d1d30;border:1px solid #f871714d;color:#fca5a5}.message.success{background:#14532d30;border:1px solid #4ade804d;color:#86efac}.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:20px;color:var(--muted);font-size:12px}.foot a:hover{color:var(--blue)}.privacy{font-size:11px;line-height:1.6;color:#7f8ba0;margin:18px 0 0}.hidden{display:none!important}
+    @media(max-width:420px){body{padding:16px}.card{border-radius:19px}.brand{font-size:22px}h1{font-size:25px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <a class="brand" href="rotruyen.html" aria-label="Quay về RoTruyện"><span class="mark"><i class="fa-solid fa-book-open"></i></span><span>Ro<span class="accent">Truyện</span><small>BY ROHUB</small></span></a>
+    <section class="card">
+      <span class="eyebrow">TÀI KHOẢN ROHUB</span>
+      <h1 id="heading">Chào mừng trở lại</h1>
+      <p class="intro" id="intro">Đăng nhập để đồng bộ tủ truyện yêu thích và lịch sử đọc. Bạn vẫn có thể quay lại đọc truyện công khai mà không cần tài khoản.</p>
+      <div class="tabs" role="tablist" aria-label="Chọn hình thức tài khoản">
+        <button id="tab-login" type="button" role="tab" aria-selected="true">Đăng nhập</button>
+        <button id="tab-register" type="button" role="tab" aria-selected="false">Đăng ký</button>
+      </div>
+      <div id="auth-message" class="message" role="status" aria-live="polite"></div>
+      <form id="auth-form">
+        <label id="name-label" class="hidden">Tên hiển thị
+          <span class="field"><i class="fa-solid fa-user"></i><input id="display-name" type="text" maxlength="80" autocomplete="name" placeholder="Tên bạn muốn sử dụng"></span>
+        </label>
+        <label>Email
+          <span class="field"><i class="fa-solid fa-envelope"></i><input id="email" type="email" required autocomplete="email" placeholder="ban@example.com"></span>
+        </label>
+        <label>Mật khẩu
+          <span class="field"><i class="fa-solid fa-lock"></i><input id="password" type="password" minlength="6" required autocomplete="current-password" placeholder="Ít nhất 6 ký tự"></span>
+        </label>
+        <label id="confirm-label" class="hidden">Nhập lại mật khẩu
+          <span class="field"><i class="fa-solid fa-shield-halved"></i><input id="confirm-password" type="password" minlength="6" autocomplete="new-password" placeholder="Nhập lại mật khẩu"></span>
+        </label>
+        <button class="submit" id="submit-button" type="submit"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</button>
+      </form>
+      <p class="privacy">Thông tin xác thực được xử lý bởi Supabase Auth. Không lưu mật khẩu vào localStorage. Không chia sẻ mật khẩu của bạn với bất kỳ ai.</p>
+    </section>
+    <div class="foot"><a href="rotruyen.html"><i class="fa-solid fa-arrow-left"></i> Quay lại đọc truyện</a><a href="roflix.html">RoFlix <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config/supabase.config.js"></script>
+  <script src="js/core/supabase.js"></script>
+  <script>
+    (() => {
+      const $ = id => document.getElementById(id);
+      let mode = 'login';
+      const form = $('auth-form'), button = $('submit-button'), message = $('auth-message');
+      function showMessage(text, kind) { message.textContent = text; message.className = 'message show ' + kind; }
+      function setMode(next) {
+        mode = next;
+        const registering = mode === 'register';
+        $('tab-login').setAttribute('aria-selected', String(!registering));
+        $('tab-register').setAttribute('aria-selected', String(registering));
+        $('name-label').classList.toggle('hidden', !registering);
+        $('confirm-label').classList.toggle('hidden', !registering);
+        $('display-name').required = registering;
+        $('confirm-password').required = registering;
+        $('password').autocomplete = registering ? 'new-password' : 'current-password';
+        $('heading').textContent = registering ? 'Tạo tài khoản mới' : 'Chào mừng trở lại';
+        $('intro').textContent = registering
+          ? 'Tạo tài khoản RoHub để lưu truyện yêu thích và đồng bộ lịch sử đọc. Đọc truyện công khai vẫn không cần đăng nhập.'
+          : 'Đăng nhập để đồng bộ tủ truyện yêu thích và lịch sử đọc. Bạn vẫn có thể đọc truyện công khai mà không cần tài khoản.';
+        button.innerHTML = registering ? '<i class="fa-solid fa-user-plus"></i> Tạo tài khoản' : '<i class="fa-solid fa-right-to-bracket"></i> Đăng nhập';
+        message.className = 'message';
+      }
+      $('tab-login').addEventListener('click', () => setMode('login'));
+      $('tab-register').addEventListener('click', () => setMode('register'));
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const sb = window.rfSupabase;
+        if (!sb) { showMessage('Dịch vụ tài khoản chưa tải được. Hãy tải lại trang hoặc thử lại sau.', 'error'); return; }
+        const email = $('email').value.trim();
+        const password = $('password').value;
+        button.disabled = true;
+        button.textContent = mode === 'register' ? 'Đang tạo tài khoản…' : 'Đang đăng nhập…';
+        message.className = 'message';
+        try {
+          if (mode === 'register') {
+            const name = $('display-name').value.trim();
+            if (!name) throw new Error('Vui lòng nhập tên hiển thị.');
+            if (password.length < 6) throw new Error('Mật khẩu cần có ít nhất 6 ký tự.');
+            if (password !== $('confirm-password').value) throw new Error('Hai mật khẩu không khớp.');
+            const { data, error } = await sb.auth.signUp({
+              email, password,
+              options: {
+                data: { display_name: name },
+                emailRedirectTo: new URL('rotruyen.html', window.location.href).href
+              }
+            });
+            if (error) throw error;
+            if (data?.session) {
+              showMessage('Đăng ký thành công! Đang chuyển về RoTruyện…', 'success');
+              window.location.replace('rotruyen.html');
+              return;
+            }
+            showMessage('Đã tạo yêu cầu đăng ký. Hãy kiểm tra email để xác minh tài khoản, sau đó quay lại đăng nhập.', 'success');
+            setMode('login');
+          } else {
+            const { data, error } = await sb.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            if (!data?.user) throw new Error('Đăng nhập chưa hoàn tất. Vui lòng thử lại.');
+            showMessage('Đăng nhập thành công! Đang quay lại RoTruyện…', 'success');
+            window.location.replace('rotruyen.html');
+            return;
+          }
+        } catch (error) {
+          showMessage(error?.message || 'Không thể hoàn tất yêu cầu. Vui lòng thử lại.', 'error');
+        } finally {
+          button.disabled = false;
+          button.innerHTML = mode === 'register' ? '<i class="fa-solid fa-user-plus"></i> Tạo tài khoản' : '<i class="fa-solid fa-right-to-bracket"></i> Đăng nhập';
+        }
+      });
+      (async () => {
+        const sb = window.rfSupabase;
+        if (!sb) { showMessage('Không thể khởi tạo Supabase Auth. Kiểm tra kết nối mạng rồi tải lại trang.', 'error'); return; }
+        try {
+          const { data, error } = await sb.auth.getUser();
+          if (!error && data?.user) {
+            showMessage('Bạn đã đăng nhập. Đang quay lại RoTruyện…', 'success');
+            window.location.replace('rotruyen.html');
+          }
+        } catch (_) {}
+      })();
+    })();
+  </script>
+</body>
+</html>
