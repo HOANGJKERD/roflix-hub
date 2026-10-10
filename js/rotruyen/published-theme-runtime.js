@@ -5,9 +5,10 @@ const safeHex=v=>/^#[0-9a-f]{6}$/i.test(String(v||''))?v:null;
 async function applyPublishedTheme(){
  if(!sb)return;
  try{
-  const {data,error}=await sb.from('rohub_theme_versions').select('config,target,version_number,published_at').eq('status','published').in('target',['both','rotruyen']).order('version_number',{ascending:false}).limit(10);
+  const target=location.pathname.toLowerCase().includes('rotruyen')?'rotruyen':'roflix';
+  const {data,error}=await sb.from('rohub_theme_versions').select('config,target,version_number,published_at').eq('status','published').in('target',['both',target]).order('version_number',{ascending:false}).limit(20);
   if(error)throw error;
-  const row=(data||[]).find(x=>x.target==='rotruyen'||x.target==='both');
+  const row=(data||[]).find(x=>x.target===target||x.target==='both');
   if(!row||!row.config)return;
   const c=row.config,root=document.documentElement;
   const accent=safeHex(c.accent),bg=safeHex(c.background),card=safeHex(c.card);
