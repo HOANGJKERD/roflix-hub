@@ -51,6 +51,20 @@
   </div>
 
   <div class="studio-section-head" id="rh-template-builder-head"><div><h2><i class="fa-solid fa-layer-group"></i> Template Builder · dữ liệu thật</h2><p class="muted">Lưu template, phiên bản và trạng thái vào Supabase. Chỉ tài khoản admin được phép truy cập.</p></div><button class="btn btn-primary" id="rh-template-new"><i class="fa-solid fa-plus"></i> Tạo template</button></div>
+  <section class="card rh-visual-builder" id="rh-visual-builder">
+    <div class="rh-visual-heading"><div><span class="studio-kicker">VISUAL TEMPLATE EDITOR</span><h2>Trình dựng giao diện trực quan</h2><p class="muted">Kéo thả các khối, chọn từng khối để sửa nội dung và xem trước theo phong cách RoFlix.</p></div><div class="rh-visual-device"><button type="button" class="btn is-active" data-preview-width="desktop">Desktop</button><button type="button" class="btn" data-preview-width="tablet">Tablet</button><button type="button" class="btn" data-preview-width="mobile">Mobile</button></div></div>
+    <div class="rh-builder-grid">
+      <aside class="rh-builder-sidebar"><h3><i class="fa-solid fa-cubes"></i> Thành phần</h3><p class="muted">Nhấn để thêm vào trang.</p><div class="rh-block-palette">
+        <button type="button" data-add-block="header"><i class="fa-solid fa-bars"></i><span><b>Header</b><small>Logo, điều hướng</small></span><i class="fa-solid fa-plus"></i></button>
+        <button type="button" data-add-block="banner"><i class="fa-solid fa-panorama"></i><span><b>Banner / Hero</b><small>Tiêu đề, mô tả, CTA</small></span><i class="fa-solid fa-plus"></i></button>
+        <button type="button" data-add-block="series-grid"><i class="fa-solid fa-grip"></i><span><b>Danh sách truyện</b><small>Lưới thẻ truyện</small></span><i class="fa-solid fa-plus"></i></button>
+        <button type="button" data-add-block="content-card"><i class="fa-regular fa-id-card"></i><span><b>Thẻ nội dung</b><small>Tiêu đề, mô tả</small></span><i class="fa-solid fa-plus"></i></button>
+        <button type="button" data-add-block="footer"><i class="fa-solid fa-grip-lines"></i><span><b>Footer</b><small>Liên kết, bản quyền</small></span><i class="fa-solid fa-plus"></i></button>
+      </div><div class="rh-builder-hint"><i class="fa-solid fa-lightbulb"></i> Kéo các khối trong bản xem trước để đổi thứ tự.</div></aside>
+      <div class="rh-preview-stage"><div class="rh-preview-toolbar"><span><i class="fa-solid fa-eye"></i> LIVE PREVIEW</span><span id="rh-preview-size-label">Desktop · 100%</span></div><div class="rh-preview-viewport" id="rh-preview-viewport"><div id="rh-template-preview" class="rh-template-preview" aria-label="Bản xem trước template"></div></div></div>
+      <aside class="rh-block-inspector"><h3><i class="fa-solid fa-sliders"></i> Cấu hình khối</h3><div id="rh-block-inspector-content" class="rh-inspector-empty">Chọn một khối trong bản xem trước để chỉnh sửa.</div></aside>
+    </div>
+  </section>
   <div class="rh-template-layout">
     <div class="card rh-template-list-card">
       <div class="rh-template-list-toolbar"><input class="input" id="rh-template-search" placeholder="Tìm template..." aria-label="Tìm template"><select class="input" id="rh-template-app-filter"><option value="">Tất cả hệ thống</option><option value="roflix">RoFlix</option><option value="rotruyen">RoTruyện</option><option value="both">Dùng chung</option></select></div>
