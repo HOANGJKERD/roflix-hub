@@ -155,6 +155,8 @@ async function publishTemplate(){
  const {data,error}=await sb.from('rohub_templates').update(payload).eq('id',id).select('*').single();if(error)throw error;
  const {error:he}=await sb.from('rohub_template_revisions').insert({template_id:data.id,version:Number(data.version||1),name:data.name,slug:data.slug,target_app:data.target_app,template_type:data.template_type,description:data.description||'',config:data.config||{},status:'published',action:'publish',created_by:state.user.id});
  if(he)throw he;
+ const targets=data.target_app==='both'?['roflix','rotruyen']:[data.target_app];
+ if(targets.includes('rotruyen')&&data.template_type==='homepage'){const {error:pe}=await sb.from('rohub_published_themes').upsert({target_app:'rotruyen',template_type:'homepage',template_id:data.id,template_version:Number(data.version||1),name:data.name,slug:data.slug,config:data.config||{},published_by:state.user.id,published_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'target_app,template_type'});if(pe)throw pe;}
  await refresh(true);openSafeModal('Đã Publish phiên bản','Phiên bản đã được lưu trong database và lịch sử rollback. Chưa tự động thay đổi website công khai cho đến khi runtime consumer được kết nối.', '<div class="rh-safe-result"><span>✓</span><h3>'+esc(data.name)+'</h3><p>Phiên bản v'+Number(data.version||1)+' · '+esc(appLabel(data.target_app))+'</p><p>Snapshot được lưu để hỗ trợ rollback.</p></div>','<button type="button" class="btn btn-primary" data-safe-close>Đóng</button>');message('Đã publish và lưu snapshot phiên bản.')}
  catch(e){message(e.message||'Publish thất bại.',true);alert('Không thể Publish: '+(e.message||e))}
 }
@@ -180,10 +182,12 @@ async function rollbackRevision(revision){
  const {data,error}=await sb.from('rohub_templates').update(payload).eq('id',id).select('*').single();if(error)throw error;
  const {error:he}=await sb.from('rohub_template_revisions').insert({template_id:data.id,version:Number(data.version||nextVersion+1),name:data.name,slug:data.slug,target_app:data.target_app,template_type:data.template_type,description:data.description||'',config:data.config||{},status:'published',action:'rollback',created_by:state.user.id});
  if(he)throw he;
+ if(data.target_app==='rotruyen'||data.target_app==='both'){const {error:pe}=await sb.from('rohub_published_themes').upsert({target_app:'rotruyen',template_type:'homepage',template_id:data.id,template_version:Number(data.version||nextVersion+1),name:data.name,slug:data.slug,config:data.config||{},published_by:state.user.id,published_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'target_app,template_type'});if(pe)throw pe;}
  closeSafeModal();await refresh(true);message('Đã rollback về cấu hình v'+revision.version+'. Bản trước đó vẫn được giữ trong lịch sử.');
  }catch(e){message(e.message||'Rollback thất bại.',true);alert('Không thể rollback: '+(e.message||e))}
 }
-\nfunction init(){
+
+function init(){
  $('rh-template-new').addEventListener('click',resetForm);$('rh-template-form').addEventListener('submit',save);$('rh-template-delete').addEventListener('click',removeSelected);
  $('rh-template-search').addEventListener('input',renderList);$('rh-template-app-filter').addEventListener('change',renderList);
  $('rh-template-name').addEventListener('input',()=>{if(!$('rh-template-id').value&&!$('rh-template-slug').dataset.touched)$('rh-template-slug').value=slugify($('rh-template-name').value)});
@@ -194,7 +198,8 @@ async function rollbackRevision(revision){
  $('rh-template-import').addEventListener('change',async e=>{const f=e.target.files?.[0];if(f)await importJson(f);e.target.value=''});
  $('rh-template-duplicate').addEventListener('click',()=>{const old=$('rh-template-name').value.trim();$('rh-template-id').value='';state.selected=null;$('rh-template-name').value=old?old+' (bản sao)':'';$('rh-template-slug').value=slugify($('rh-template-name').value)+'-'+Date.now().toString().slice(-5);$('rh-template-status').value='draft';$('rh-template-editor-title').textContent='Nhân bản template';$('rh-template-version').textContent='Bản nháp mới';$('rh-template-delete').disabled=true;message('Bản sao chưa được lưu. Nhấn Lưu vào Supabase để tạo bản ghi mới.')});
  $('rh-template-status').addEventListener('change',()=>{if($('rh-template-status').value==='published')message('Khi lưu, trạng thái sẽ chuyển thành Đã xuất bản trong database. Cần tích hợp runtime để áp dụng ra giao diện người dùng.')});
- initVisual();resetForm();refresh(false);\n $('rh-template-preview-open')?.addEventListener('click',openPreview);$('rh-template-publish')?.addEventListener('click',publishTemplate);$('rh-template-history-open')?.addEventListener('click',openHistory);document.querySelectorAll('[data-safe-close]').forEach(el=>el.addEventListener('click',closeSafeModal));$('rh-safe-modal')?.addEventListener('click',e=>{if(e.target.dataset.safeClose!==undefined)closeSafeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('rh-safe-modal').hidden)closeSafeModal()});
+ initVisual();resetForm();refresh(false);
+ $('rh-template-preview-open')?.addEventListener('click',openPreview);$('rh-template-publish')?.addEventListener('click',publishTemplate);$('rh-template-history-open')?.addEventListener('click',openHistory);document.querySelectorAll('[data-safe-close]').forEach(el=>el.addEventListener('click',closeSafeModal));$('rh-safe-modal')?.addEventListener('click',e=>{if(e.target.dataset.safeClose!==undefined)closeSafeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('rh-safe-modal').hidden)closeSafeModal()});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
