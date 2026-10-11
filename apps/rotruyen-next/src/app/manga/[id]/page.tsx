@@ -1,34 +1,47 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { mapMangaDexItem, type MangaDexManga } from "@/lib/mangadex";
 
-type Detail = {
-  id: string;
-  title: string;
-  description: string;
-  author: string;
-  artist: string;
-  coverUrl: string | null;
-  tags: string[];
-  status: string;
-  contentRating: string;
-  year: number | null;
-};
+type Detail = ReturnType<typeof mapMangaDexItem> & { artist: string };
 type Chapter = { id: string; volume: string | null; chapter: string | null; title: string; pages: number; group: string; publishAt: string | null };
 type Feed = { items: Chapter[]; total: number };
 
 async function getStory(id: string): Promise<Detail | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/manga/${encodeURIComponent(id)}`, { next: { revalidate: 120 } });
+    const url = new URL(`https://api.mangadex.org/manga/${encodeURIComponent(id)}`);
+    ["cover_art", "author", "artist"].forEach((type) => url.searchParams.append("includes[]", type));
+    const response = await fetch(url, { headers: { Accept: "application/json" }, next: { revalidate: 120 } });
     if (!response.ok) return null;
-    return await response.json() as Detail;
+    const payload = await response.json() as { data?: MangaDexManga };
+    if (!payload.data) return null;
+    const item = mapMangaDexItem(payload.data);
+    return { ...item, artist: payload.data.relationships?.find((r) => r.type === "artist")?.attributes?.name || "" };
   } catch { return null; }
 }
 
 async function getChapters(id: string): Promise<Feed | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/manga/${encodeURIComponent(id)}/chapters?language=vi&limit=100`, { next: { revalidate: 60 } });
+    const url = new URL(`https://api.mangadex.org/manga/${encodeURIComponent(id)}/feed`);
+    url.searchParams.set("limit", "100");
+    url.searchParams.set("offset", "0");
+    url.searchParams.set("order[chapter]", "asc");
+    url.searchParams.set("order[volume]", "asc");
+    url.searchParams.append("translatedLanguage[]", "vi");
+    url.searchParams.append("contentRating[]", "safe");
+    url.searchParams.append("contentRating[]", "suggestive");
+    url.searchParams.append("includes[]", "scanlation_group");
+    const response = await fetch(url, { headers: { Accept: "application/json" }, next: { revalidate: 60 } });
     if (!response.ok) return null;
-    return await response.json() as Feed;
+    const payload = await response.json() as { data?: Array<{ id: string; attributes: { volume?: string | null; chapter?: string | null; title?: string | null; pages?: number; publishAt?: string }; relationships?: Array<{ id: string; type: string; attributes?: { name?: string } }> }>; total?: number };
+    return {
+      items: (payload.data || []).map((chapter) => ({
+        id: chapter.id, volume: chapter.attributes.volume || null, chapter: chapter.attributes.chapter || null,
+        title: chapter.attributes.title || "", pages: chapter.attributes.pages || 0,
+        group: chapter.relationships?.find((r) => r.type === "scanlation_group")?.attributes?.name || "Nhóm dịch chưa rõ",
+        publishAt: chapter.attributes.publishAt || null,
+      })),
+      total: payload.total || 0,
+    };
   } catch { return null; }
 }
 
