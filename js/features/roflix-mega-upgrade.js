@@ -117,12 +117,24 @@
     const box=$('watchlist-grid');if(!box)return;
     const u=await user();
     const rows=u&&sb?await getCloudWatchlist():getGuestWatchlist();
-    if(!rows.length){box.innerHTML='<div class="col-span-full empty-state" style="padding:40px"><div class="empty-icon">📚</div><h3>Watchlist đang trống</h3><p>Nhấn biểu tượng lưu trên phim để thêm vào danh sách yêu thích.</p></d    const u=await user();let saved=false;
-    if(u&&sb){const r=await sb.from('roflix_watchlist').select('id').eq('user_id',u.id).eq('movie_slug',slug).maybeSingle();saved=!!r.data?.id;}
-    else saved=getGuestWatchlist().some(x=>x.movie_slug===slug);
-    btn.textContent=saved?'✓ Đã lưu Watchlist':'＋ Thêm Watchlist';btn.onclick=()=>rfToggleWatchlist(slug,window.currentMovieData||{});s://placehold.co/300x450/10131d/f59e0b?text=RF')}" alt="" loading="lazy" onerror="this.src='https://placehold.co/300x450/10131d/f59e0b?text=RF'"></div><div class="rf-watchlist-body"><b>${esc(m.movie_title)}</b><small>${esc(m.origin_name||'')}</small><button onclick="event.stopPropagation();rfToggleWatchlist('${slug}')">✓ Đã lưu · Bỏ lưu</button></div></article>`;
+    if(!rows.length){box.innerHTML='<div class="col-span-full empty-state" style="padding:40px"><div class="empty-icon">📚</div><h3>Watchlist đang trống</h3><p>Nhấn biểu tượng lưu trên phim để thêm vào danh sách yêu thích.</p></div>';return;}
+    box.innerHTML=rows.map(m=>{
+      const slug=String(m.movie_slug||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return `<article class="rf-watchlist-card" onclick="viewMovieDetail('${slug}','${esc(m.source_id||'kkphim')}')"><div class="rf-watchlist-poster"><img src="${esc(m.poster_url||'https://placehold.co/300x450/10131d/f59e0b?text=RF')}" alt="" loading="lazy" onerror="this.src='https://placehold.co/300x450/10131d/f59e0b?text=RF'"></div><div class="rf-watchlist-body"><b>${esc(m.movie_title)}</b><small>${esc(m.origin_name||'')}</small><button onclick="event.stopPropagation();rfToggleWatchlist('${slug}')">✓ Đã lưu · Bỏ lưu</button></div></article>`;
     }).join('');
   }
+  async function renderDetailWatchlistButton(){
+    const container=$('detail-content-container');if(!container)return;
+    const slug=window.currentSlug||'';if(!slug)return;
+    let btn=document.getElementById('rf-detail-watchlist-btn');
+    if(!btn){const fav=container.querySelector('.rf-detail-watch-btn');const host=fav?.parentElement||container.querySelector('.md\\:col-span-3');if(!host)return;btn=document.createElement('button');btn.id='rf-detail-watchlist-btn';btn.className='rf-watchlist-detail-btn';(fav?fav.parentElement:host).appendChild(btn);}
+    const u=await user();let saved=false;
+    if(u&&sb){const r=await sb.from('roflix_watchlist').select('id').eq('user_id',u.id).eq('movie_slug',slug).maybeSingle();saved=!!r.data?.id;}
+    else saved=getGuestWatchlist().some(x=>x.movie_slug===slug);
+    btn.textContent=saved?'✓ Đã lưu Watchlist':'＋ Thêm Watchlist';
+    btn.onclick=()=>rfToggleWatchlist(slug,window.currentMovieData||{});
+  }
+
   /* ---------- Realtime movie comments ---------- */
   async function renderCloudComments(slug,title,targetId='comments-container'){
     const box=$(targetId);if(!box||!slug||!sb)return;
