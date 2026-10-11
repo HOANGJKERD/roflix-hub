@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { mapMangaDexItem, type MangaDexManga } from "@/lib/mangadex";
 
 type Detail = ReturnType<typeof mapMangaDexItem> & { artist: string };
-type Chapter = { id: string; volume: string | null; chapter: string | null; title: string; pages: number; group: string; publishAt: string | null };
+type Chapter = { id: string; volume: string | null; chapter: string | null; title: string; pages: number; group: string; publishAt: string | null; language: string };
 type Feed = { items: Chapter[]; total: number };
 
 async function getStory(id: string): Promise<Detail | null> {
@@ -39,6 +39,7 @@ async function getChapters(id: string): Promise<Feed | null> {
         title: chapter.attributes.title || "", pages: chapter.attributes.pages || 0,
         group: chapter.relationships?.find((r) => r.type === "scanlation_group")?.attributes?.name || "Nhóm dịch chưa rõ",
         publishAt: chapter.attributes.publishAt || null,
+        language: chapter.attributes.translatedLanguage || "vi",
       })),
       total: payload.total || 0,
     };
@@ -70,7 +71,7 @@ export default async function MangaDetailPage({ params }: { params: { id: string
       {!feed && <div className="notice error">Không tải được danh sách chương. Bạn có thể thử lại sau hoặc mở trang MangaDex.</div>}
       {feed && feed.items.length === 0 && <div className="notice">Chưa tìm thấy chương dịch tiếng Việt cho truyện này. Danh sách chương có thể thay đổi theo nhóm dịch và ngôn ngữ.</div>}
       {feed && feed.items.length > 0 && <div className="chapterList">{feed.items.map((chapter) => <article className="chapterRow" key={chapter.id}>
-        <div><strong>{chapter.chapter ? `Chương ${chapter.chapter}` : "Chương ngoại truyện"}{chapter.volume ? ` · Tập ${chapter.volume}` : ""}</strong><p>{chapter.title || "Không có tiêu đề"} · {chapter.pages} trang</p><small>{chapter.group}</small></div>
+        <div><strong>{chapter.chapter ? `Chương ${chapter.chapter}` : "Chương ngoại truyện"}{chapter.volume ? ` · Tập ${chapter.volume}` : ""}</strong><p>{chapter.title || "Không có tiêu đề"} · {chapter.pages} trang</p><small>{chapter.group} · {({vi:"Tiếng Việt",en:"English",ja:"日本語",ko:"한국어",zh:"中文","pt-br":"Português",es:"Español",id:"Bahasa Indonesia"} as Record<string,string>)[chapter.language] || chapter.language}</small></div>
         <a className="secondary" href={`/read/${encodeURIComponent(chapter.id)}`}>Đọc chương →</a>
       </article>)}</div>}
       <p className="sourceNote">Danh sách lấy từ MangaDex. Trình đọc nội bộ lấy trang ảnh từ MangaDex; nội dung gốc vẫn do nguồn cung cấp.</p>
