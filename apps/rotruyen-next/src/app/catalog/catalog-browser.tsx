@@ -69,7 +69,7 @@ export function CatalogBrowser() {
       <a className="cover" href={`https://mangadex.org/title/${encodeURIComponent(item.id)}`} target="_blank" rel="noreferrer" aria-label={`Xem ${item.title}`}>
         {item.coverUrl ? <img src={item.coverUrl} alt={`Bìa ${item.title}`} loading="lazy"/> : <span className="noCover">ROTRUYỆN</span>}
       </a>
-      <h3><a href={`/manga/${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
+      <h3><a href={`https://mangadex.org/title/${encodeURIComponent(item.id)}`} target="_blank" rel="noreferrer">{item.title}</a></h3>
       <p className="muted">{item.author}</p>
       <p className="tags">{item.tags.slice(0, 2).join(" · ") || "Manga"}</p>
     </article>)}</div>
