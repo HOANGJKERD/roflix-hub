@@ -14,7 +14,7 @@ export function CatalogBrowser() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const limit = 24;
-  const visibleItems = items.filter((item) => genre === "all" || item.tags.some((tag) => tag.toLocaleLowerCase("vi").includes(genre)));
+  const visibleItems = items.filter((item) => genre === "all" || item.genreKeys.some((tag) => tag.includes(genre)));
 
   const load = useCallback(async (search: string, nextOffset: number, signal?: AbortSignal) => {
     setLoading(true);
