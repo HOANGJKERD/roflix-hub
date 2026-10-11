@@ -254,19 +254,22 @@
             if (!slug || slug === 'unknown') return;
             const safeEpisode = Number.isFinite(Number(episode)) ? Math.max(0, Number(episode)) : 0;
             const safeProgress = Number.isFinite(Number(progress)) ? Math.max(0, Math.min(1, Number(progress))) : 0;
-            let history = getWatchHistory().filter(h => h.slug !== slug);
-            const previous = getWatchHistory().find(h => h.slug === slug) || {};
+            const existingHistory = getWatchHistory();
+            const previous = existingHistory.find(h => h.slug === slug) || {};
+            let history = existingHistory.filter(h => h.slug !== slug);
+            const movieData = (typeof currentMovieData !== 'undefined' && currentMovieData) || {};
             history.push({
                 ...previous,
-                ...extra,
+                ...Object.fromEntries(Object.entries(extra || {}).filter(([, value]) => value !== undefined && value !== null && value !== '')),
                 slug,
                 episode: safeEpisode,
                 episodeName: extra.episodeName || (currentEpisodeList[safeEpisode] && currentEpisodeList[safeEpisode].name) || previous.episodeName || '',
                 progress: safeProgress,
                 timestamp: Date.now(),
                 title: (typeof currentMovieTitle !== 'undefined' ? currentMovieTitle : '') || previous.title || slug,
-                sourceId: currentSourceId || previous.sourceId || 'vsmov',
-                genres: extra.genres || (typeof currentMovieData !== 'undefined' && currentMovieData && currentMovieData.genre) || previous.genres || []
+                poster: extra.poster || movieData.poster || movieData.poster_url || previous.poster || '',
+                sourceId: extra.sourceId || currentSourceId || previous.sourceId || 'vsmov',
+                genres: extra.genres || movieData.genre || previous.genres || []
             });
             history.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
             if (history.length > 50) history = history.slice(-50);
@@ -318,7 +321,7 @@
             const item = getWatchHistory().find(h => h.slug === slug);
             if (!item) return;
             try {
-                await viewMovieDetail(slug);
+                await viewMovieDetail(slug, item.sourceId || undefined);
                 let tries = 0;
                 while (!currentEpisodeList.length && tries < 25) {
                     await new Promise(resolve => setTimeout(resolve, 120));
