@@ -71,9 +71,9 @@ export default async function MangaDetailPage({ params }: { params: { id: string
       {feed && feed.items.length === 0 && <div className="notice">Chưa tìm thấy chương dịch tiếng Việt cho truyện này. Danh sách chương có thể thay đổi theo nhóm dịch và ngôn ngữ.</div>}
       {feed && feed.items.length > 0 && <div className="chapterList">{feed.items.map((chapter) => <article className="chapterRow" key={chapter.id}>
         <div><strong>{chapter.chapter ? `Chương ${chapter.chapter}` : "Chương ngoại truyện"}{chapter.volume ? ` · Tập ${chapter.volume}` : ""}</strong><p>{chapter.title || "Không có tiêu đề"} · {chapter.pages} trang</p><small>{chapter.group}</small></div>
-        <a className="secondary" href={`https://mangadex.org/chapter/${encodeURIComponent(chapter.id)}`} target="_blank" rel="noreferrer">Đọc ở nguồn ↗</a>
+        <a className="secondary" href={`/read/${encodeURIComponent(chapter.id)}`}>Đọc chương →</a>
       </article>)}</div>}
-      <p className="sourceNote">Danh sách lấy từ MangaDex. Ở giai đoạn này, nút đọc mở trình đọc của nguồn; trình đọc nội bộ sẽ được bổ sung tiếp theo.</p>
+      <p className="sourceNote">Danh sách lấy từ MangaDex. Trình đọc nội bộ lấy trang ảnh từ MangaDex; nội dung gốc vẫn do nguồn cung cấp.</p>
     </section>
     <footer>RoTruyện · RoHub <span>Thông tin truyện từ MangaDex</span></footer>
   </main>;
