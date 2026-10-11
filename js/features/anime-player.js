@@ -125,7 +125,7 @@ function fullscreen(){
   const target=videoElement||embedFrame||document.getElementById('movie-player');
   try{if(target?.requestFullscreen)return target.requestFullscreen();if(target?.webkitRequestFullscreen)return target.webkitRequestFullscreen();}catch(_){}
 }
-async function mount(url,title,type){
+async function mount(url,title,type,sourceMeta){
   const p=document.getElementById('movie-player');if(!p)throw Error('Không tìm thấy movie-player');cleanup();
   const upper=String(type||'').toUpperCase();
   const isHls=/\.m3u8(?:[?#]|$)/i.test(url)||upper==='HLS';
@@ -138,11 +138,28 @@ async function mount(url,title,type){
       if(!window.Hls||!window.Hls.isSupported())throw Error('Trình duyệt không hỗ trợ HLS');
       const playbackUrl=hlsPlaybackUrl(url);
       hlsInstance=new window.Hls({enableWorker:true,lowLatencyMode:false});
-      hlsInstance.on(window.Hls.Events.ERROR,(_event,data)=>{
-        if(data?.fatal){
-          console.error('[RoFlix Anime] HLS fatal error',data.type,data.details,data.response?.code);
-          if(typeof showToastPro==='function')showToastPro('error','Lỗi phát HLS','Nguồn HLS hoặc proxy không phản hồi đúng.');
+      let hlsFallbackTried=false;
+      hlsInstance.on(window.Hls.Events.ERROR,async (_event,data)=>{
+        if(!data?.fatal)return;
+        console.error('[RoFlix Anime] HLS fatal error',data.type,data.details,data.response?.code);
+        // If DU's HLS playlist/proxy fails, try AnimeVietSub's HDX embed once.
+        if(!hlsFallbackTried&&sourceMeta?.provider==='ANIMEVIETSUB'&&sourceMeta?.episodeData){
+          hlsFallbackTried=true;
+          try{
+            const d=await api('/stream/source?episodeData='+encodeURIComponent(sourceMeta.episodeData)+'&provider=ANIMEVIETSUB&server=HDX');
+            const fallbackUrl=sourceUrl(d);
+            if(fallbackUrl){
+              console.warn('[RoFlix Anime] HLS failed; switching to HDX embed fallback');
+              cleanup();
+              p.src=fallbackUrl;
+              p.allow='autoplay; fullscreen; picture-in-picture';
+              p.allowFullscreen=true;
+              if(typeof showToastPro==='function')showToastPro('info','Đổi nguồn phát','HLS gặp lỗi, đang chuyển sang HDX.');
+              return;
+            }
+          }catch(err){console.warn('[RoFlix Anime] HDX fallback failed',err);}
         }
+        if(typeof showToastPro==='function')showToastPro('error','Lỗi phát HLS','Nguồn HLS/proxy lỗi và không thể chuyển sang HDX.');
       });
       hlsInstance.loadSource(playbackUrl);hlsInstance.attachMedia(videoElement);
     }else{videoElement.src=isHls?hlsPlaybackUrl(url):url;}
