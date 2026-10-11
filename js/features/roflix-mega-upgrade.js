@@ -112,6 +112,7 @@
   }
   window.rfToggleWatchlist=rfToggleWatchlist;
   window.rfQuickToggleWatchlist=(slug,title,poster,source)=>rfToggleWatchlist(slug,{title,poster,_src:source});
+  window.rfQuickToggleWatchlistFromCard=(button,slug)=>{const card=button?.closest('.movie-card-premium');const title=card?.querySelector('.card-title')?.textContent?.trim()||slug;const poster=card?.querySelector('.card-poster img')?.src||'';const source=card?.querySelector('.src-chip')?.textContent?.trim()?.toLowerCase()||window.currentSourceId||'kkphim';return rfToggleWatchlist(slug,{title,poster,_src:source});};
   async function renderWatchlistTab(){
     const box=$('watchlist-grid');if(!box)return;
     const u=await user();
