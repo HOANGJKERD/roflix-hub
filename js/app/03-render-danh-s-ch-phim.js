@@ -73,8 +73,8 @@
                                 <button onclick="event.stopPropagation(); toggleFavorite('${m.slug}')" title="Yêu thích">
                                     <i class="fa-${isFavorite(m.slug) ? 'solid' : 'regular'} fa-heart"></i>
                                 </button>
-                                <button onclick="event.stopPropagation(); rfQuickToggleWatchlistFromCard(this, '${m.slug}')" title="Lưu vào Watchlist">
-                                    <i class="fa-solid fa-bookmark"></i>
+                                <button data-rf-watchlist-slug="${m.slug}" aria-pressed="false" onclick="event.stopPropagation(); rfQuickToggleWatchlistFromCard(this, '${m.slug}')" title="Lưu vào Watchlist">
+                                    <i class="fa-regular fa-bookmark"></i>
                                 </button>
                                 <button onclick="event.stopPropagation(); viewMovieDetail('${m.slug}')" title="Chi tiết">
                                     <i class="fa-solid fa-circle-info"></i>
@@ -100,5 +100,8 @@
             `).join('');
             
             document.getElementById('movie-count').textContent = mappedMovies.length;
+            if (typeof window.rfRefreshWatchlistCardButtons === 'function') {
+                window.rfRefreshWatchlistCardButtons(container);
+            }
             updatePagination();
         }
