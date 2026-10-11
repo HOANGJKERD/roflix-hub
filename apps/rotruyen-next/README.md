@@ -1,6 +1,6 @@
 # RoTruyện Next.js migration workspace
 
-This is an isolated migration workspace inside RoHub. It does **not** replace the current HTML/CSS/JavaScript RoTruyện entry point and is not production-ready yet.
+This is the Next.js/React/TypeScript RoTruyện application integrated into the RoHub navigation structure. The app root (`/`) is the RoHub gateway; `/rotruyen` is the new RoTruyện entry page. Existing static RoHub/RoFlix assets still need to be included in the deployment output or served by the main site for the RoFlix link to work in this preview.
 
 ## Stack
 
