@@ -1,21 +1,21 @@
 {
-  "name": "RoFlix Pro",
-  "short_name": "RoFlix",
-  "description": "RoFlix Pro, nền tảng xem phim trực tuyến.",
+  "id": "/",
+  "name": "RoHub",
+  "short_name": "RoHub",
+  "description": "RoHub: RoFlix và RoTruyện trong một ứng dụng.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#090a0f",
-  "theme_color": "#f59e0b",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#080b14",
+  "theme_color": "#080b14",
   "lang": "vi-VN",
-  "categories": ["entertainment", "video"],
+  "categories": ["entertainment", "books", "video"],
+  "prefer_related_applications": false,
   "icons": [
-    {
-      "src": "/icons/roflix-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    { "src": "/icons/rohub-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/icons/rohub-icon.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/icons/rohub-icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }
