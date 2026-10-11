@@ -50,7 +50,7 @@ async function getReaderData(id: string) {
       language,
       previousId,
       nextId,
-      pages: images.chapter.data.map((filename) => `${images.baseUrl}/data/${images.chapter.hash}/${encodeURIComponent(filename)}`),
+      pages: (images.chapter.data?.length ? images.chapter.data : images.chapter.dataSaver).map((filename) => `${images.baseUrl}/data/${images.chapter.hash}/${encodeURIComponent(filename)}`),
     };
   } catch { return null; }
 }
