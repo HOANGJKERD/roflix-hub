@@ -37,7 +37,7 @@ export function ReaderExperience(props: Props) {
     try {
       const saved = JSON.stringify({ chapterId, percent: next, updatedAt: Date.now() });\n      localStorage.setItem(progressKey, saved);\n      localStorage.setItem(latestKey, saved);
     } catch { /* Storage can be disabled by the browser. */ }
-  }, [chapterId, progressKey]);
+  }, [chapterId, latestKey, progressKey]);
 
   useEffect(() => {
     setFailed([]);
