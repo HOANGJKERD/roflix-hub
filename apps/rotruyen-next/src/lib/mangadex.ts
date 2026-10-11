@@ -18,6 +18,7 @@ export type CatalogItem = {
   author: string;
   coverUrl: string | null;
   tags: string[];
+  genreKeys: string[];
   status: string;
   contentRating: string;
   year: number | null;
@@ -38,9 +39,15 @@ function preferredText(value?: Record<string, string>): string {
 export function mapMangaDexItem(item: MangaDexManga): CatalogItem {
   const cover = item.relationships?.find((r) => r.type === "cover_art")?.attributes?.fileName;
   const author = item.relationships?.find((r) => r.type === "author")?.attributes?.name;
-  const tags = (item.attributes.tags || [])
+  const sourceTags = item.attributes.tags || [];
+  const tags = sourceTags
     .map((tag) => preferredText(tag.attributes?.name))
     .filter(Boolean);
+  // Keep stable English tag keys for filtering even when the visible label is localized.
+  const genreKeys = sourceTags.flatMap((tag) => {
+    const names = tag.attributes?.name;
+    return names ? Object.values(names).map((name) => name.toLocaleLowerCase("en")) : [];
+  });
   return {
     id: item.id,
     title: preferredText(item.attributes.title) || "Chưa có tiêu đề",
@@ -50,6 +57,7 @@ export function mapMangaDexItem(item: MangaDexManga): CatalogItem {
       ? `https://uploads.mangadex.org/covers/${encodeURIComponent(item.id)}/${encodeURIComponent(cover)}.256.jpg`
       : null,
     tags,
+    genreKeys,
     status: item.attributes.status || "unknown",
     contentRating: item.attributes.contentRating || "safe",
     year: item.attributes.year || null,
