@@ -90,6 +90,47 @@
     const m=movie||window.currentMovieData||{};
     return {movie_slug:String(slug||''),movie_title:m.title||m.name||window.currentMovieTitle||slug||'Phim',origin_name:m.origin_name||'',poster_url:m.poster||m.poster_url||m.thumb_url||'',source_id:m._src||window.currentSourceId||'kkphim',created_at:new Date().toISOString()};
   }
+  // Gộp Watchlist của khách vào tài khoản sau khi đăng nhập.
+  // Chỉ xóa dữ liệu khách sau khi mọi mục đều được xác nhận đã có trên cloud.
+  let guestWatchlistMergePromise=null;
+  async function mergeGuestWatchlistToCloud(){
+    if(guestWatchlistMergePromise)return guestWatchlistMergePromise;
+    guestWatchlistMergePromise=(async()=>{
+      const u=await user();if(!u||!sb)return false;
+      const guestRows=getGuestWatchlist();if(!guestRows.length)return true;
+      try{
+        const {data:existingRows,error:readError}=await sb.from('roflix_watchlist').select('movie_slug').eq('user_id',u.id);
+        if(readError)throw readError;
+        const existing=new Set((existingRows||[]).map(row=>String(row.movie_slug||'')));
+        for(const row of guestRows){
+          const slug=String(row?.movie_slug||'').trim();if(!slug||existing.has(slug))continue;
+          const {error}=await sb.from('roflix_watchlist').insert({
+            user_id:u.id,movie_slug:slug,movie_title:row.movie_title||row.title||slug,
+            origin_name:row.origin_name||'',poster_url:row.poster_url||row.poster||'',
+            source_id:row.source_id||row.sourceId||'kkphim'
+          });
+          if(error)throw error;
+          existing.add(slug);
+        }
+        // Không ghi đè danh sách khách nếu nó thay đổi trong lúc đồng bộ.
+        const latest=getGuestWatchlist();
+        const mergedSlugs=new Set(guestRows.map(row=>String(row?.movie_slug||'')).filter(Boolean));
+        if(latest.every(row=>mergedSlugs.has(String(row?.movie_slug||'')))){
+          localStorage.removeItem(GUEST_WATCHLIST_KEY);
+        }else{
+          write(GUEST_WATCHLIST_KEY,latest.filter(row=>!mergedSlugs.has(String(row?.movie_slug||''))));
+        }
+        toast('success','Watchlist','Đã đồng bộ danh sách xem sau từ thiết bị lên tài khoản.');
+        await renderWatchlistTab();await renderDetailWatchlistButton();await refreshWatchlistCardButtons();
+        return true;
+      }catch(error){
+        console.warn('[RoFlix Mega] guest watchlist merge failed; guest data retained',error);
+        toast('warning','Watchlist','Chưa đồng bộ hết được. Danh sách trên thiết bị vẫn được giữ nguyên, sẽ thử lại khi đăng nhập lại.');
+        return false;
+      }finally{guestWatchlistMergePromise=null;}
+    })();
+    return guestWatchlistMergePromise;
+  }
   async function rfToggleWatchlist(slug,movie){
     if(!slug)return false;
     const u=await user();
@@ -334,7 +375,7 @@
     hookGame();hookDetail();hookPlay();injectWatchlistTab();
     setTimeout(()=>{hookDetail();hookPlay();loadMegaHome();renderRealLeaderboard();renderCollection();},700);
     setTimeout(()=>{syncGameStats();renderWatchlistTab();},1800);
-    const auth=sb?.auth;if(auth)auth.onAuthStateChange((event)=>{if(event==='SIGNED_IN'||event==='SIGNED_OUT')setTimeout(()=>{syncGameStats();renderRealLeaderboard();renderWatchlistTab();},700)});
+    const auth=sb?.auth;if(auth)auth.onAuthStateChange((event)=>{if(event==='SIGNED_IN')setTimeout(async()=>{await mergeGuestWatchlistToCloud();syncGameStats();renderRealLeaderboard();renderWatchlistTab();},700);else if(event==='SIGNED_OUT')setTimeout(()=>{syncGameStats();renderRealLeaderboard();renderWatchlistTab();},700)});
     const observer=new MutationObserver(()=>{hookDetail();hookPlay();injectWatchlistTab();});observer.observe(document.body,{subtree:true,childList:true});
   }
   document.addEventListener('DOMContentLoaded',boot);
