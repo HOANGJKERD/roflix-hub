@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 type Props = {
@@ -26,7 +26,6 @@ export function ReaderExperience(props: Props) {
   const [progress, setProgress] = useState(0);
   const [switching, setSwitching] = useState(false);
   const [languageError, setLanguageError] = useState("");
-  const restored = useRef(false);
   const progressKey = `rotruyen:reader-progress:${mangaId || "unknown"}:${chapterId}`;
   const latestKey = `rotruyen:reader-latest:${mangaId || "unknown"}`;
 
@@ -45,7 +44,6 @@ export function ReaderExperience(props: Props) {
   useEffect(() => {
     setFailed([]);
     setProgress(0);
-    restored.current = false;
     try {
       const saved = localStorage.getItem(progressKey);
       if (saved) {
@@ -54,7 +52,6 @@ export function ReaderExperience(props: Props) {
           requestAnimationFrame(() => {
             const max = document.documentElement.scrollHeight - window.innerHeight;
             window.scrollTo({ top: Math.max(0, max * Math.min(100, Math.max(0, parsed.percent!)) / 100), behavior: "auto" });
-            restored.current = true;
             setProgress(Math.round(parsed.percent!));
           });
         }
