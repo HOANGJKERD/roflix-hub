@@ -1,0 +1,31 @@
+name: RoTruyen Next checks
+
+on:
+  pull_request:
+    paths:
+      - "apps/rotruyen-next/**"
+      - ".github/workflows/rotruyen-next-checks.yml"
+  push:
+    branches:
+      - "feat/rotruyen-nextjs-react-ts-20261011"
+    paths:
+      - "apps/rotruyen-next/**"
+      - ".github/workflows/rotruyen-next-checks.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/rotruyen-next
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/rotruyen-next/package.json
+      - run: npm install
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build
