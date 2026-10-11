@@ -73,6 +73,9 @@
                                 <button onclick="event.stopPropagation(); toggleFavorite('${m.slug}')" title="Yêu thích">
                                     <i class="fa-${isFavorite(m.slug) ? 'solid' : 'regular'} fa-heart"></i>
                                 </button>
+                                <button onclick="event.stopPropagation(); rfQuickToggleWatchlistFromCard(this, '${m.slug}')" title="Lưu vào Watchlist">
+                                    <i class="fa-solid fa-bookmark"></i>
+                                </button>
                                 <button onclick="event.stopPropagation(); viewMovieDetail('${m.slug}')" title="Chi tiết">
                                     <i class="fa-solid fa-circle-info"></i>
                                 </button>
