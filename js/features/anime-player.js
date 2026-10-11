@@ -1,6 +1,6 @@
 /* RoFlix Anime Player 2.0
  * AniMapper registry -> multiple providers -> playable source.
- * Uses provider/source URLs returned by the public API. No proxy/bypass layer.
+ * Uses AniMapper source URLs; AnimeVietSub HLS goes through the project's signed HLS proxy.
  */
 (function(){'use strict';
 if(window.__ROFLIX_ANIME_PLAYER__)return;window.__ROFLIX_ANIME_PLAYER__=true;
@@ -78,14 +78,16 @@ async function resolveEpisode(providerMediaId,provider,e,i){
   const ed=raw;
   const key=pk+':'+ed;if(sourceCache.has(key))return sourceCache.get(key);
 
-  // AnimeVietSub: DU = HLS cần CORS/Referer proxy; HDX = embed không cần proxy.
-  // Browser không thể tự thêm Referer tùy ý, vì vậy không chờ DU rồi mới thử HDX.
+  // AnimeVietSub: DU là luồng HLS (cần Referer/proxy), HDX là iframe.
+  // Thử DU trước theo yêu cầu, sau đó fallback HDX nếu nguồn HLS không lấy được.
   const reported=text(e?.server||e?.serverName||e?.sourceServer).toUpperCase();
-  const servers=['HDX'];
-  if(reported && reported!=='UNKNOWN' && reported!=='DU' && reported!=='HDX')servers.push(reported);
+  const servers=pk==='ANIMEVIETSUB'?['DU','HDX']:[reported].filter(Boolean);
+  if(pk!=='ANIMEVIETSUB' && !servers.length)servers.push('HDX');
+  if(reported && reported!=='UNKNOWN')servers.unshift(reported);
+  const ordered=[...new Set(servers)];
 
   let last=null;
-  for(const server of servers){
+  for(const server of ordered){
     try{
       const d=await api('/stream/source?episodeData='+encodeURIComponent(ed)+'&provider='+encodeURIComponent(pk)+'&server='+encodeURIComponent(server));
       const u=sourceUrl(d);
@@ -103,6 +105,17 @@ async function resolveEpisode(providerMediaId,provider,e,i){
   throw last||Error('Không tìm thấy nguồn phát khả dụng');
 }
 function cleanup(){if(hlsInstance){try{hlsInstance.destroy();}catch(_){}hlsInstance=null;}if(videoElement){try{videoElement.pause();videoElement.removeAttribute('src');videoElement.load();}catch(_){}videoElement.remove();videoElement=null;}if(embedFrame){embedFrame.remove();embedFrame=null;}const p=document.getElementById('movie-player');if(p){p.style.display='';p.src='';}}
+function hlsPlaybackUrl(url){
+  // api/hls.js only accepts this exact first-hop AniMapper playlist without a signature.
+  // Its playlist rewriting signs every child segment/key URL and prevents open-proxy use.
+  try{
+    const u=new URL(url,window.location.href);
+    if(u.protocol==='https:'&&u.hostname==='api.animapper.net'&&u.pathname.startsWith('/api/v1/stream/source/m3u8/')&&u.pathname.length>'/api/v1/stream/source/m3u8/'.length){
+      return '/api/hls?u='+encodeURIComponent(u.href);
+    }
+  }catch(_){}
+  return url;
+}
 function fullscreen(){
   const target=videoElement||embedFrame||document.getElementById('movie-player');
   try{if(target?.requestFullscreen)return target.requestFullscreen();if(target?.webkitRequestFullscreen)return target.webkitRequestFullscreen();}catch(_){}
@@ -118,8 +131,16 @@ async function mount(url,title,type){
     if(isHls&&!videoElement.canPlayType('application/vnd.apple.mpegurl')){
       if(!window.Hls){const hs=document.createElement('script');hs.id='rf-hls-js';hs.src='https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';await new Promise((resolve,reject)=>{hs.onload=resolve;hs.onerror=()=>reject(Error('Không tải được HLS player'));document.head.appendChild(hs);});}
       if(!window.Hls||!window.Hls.isSupported())throw Error('Trình duyệt không hỗ trợ HLS');
-      hlsInstance=new window.Hls({enableWorker:true,lowLatencyMode:false});hlsInstance.loadSource(url);hlsInstance.attachMedia(videoElement);
-    }else{videoElement.src=url;}
+      const playbackUrl=hlsPlaybackUrl(url);
+      hlsInstance=new window.Hls({enableWorker:true,lowLatencyMode:false});
+      hlsInstance.on(window.Hls.Events.ERROR,(_event,data)=>{
+        if(data?.fatal){
+          console.error('[RoFlix Anime] HLS fatal error',data.type,data.details,data.response?.code);
+          if(typeof showToastPro==='function')showToastPro('error','Lỗi phát HLS','Nguồn HLS hoặc proxy không phản hồi đúng.');
+        }
+      });
+      hlsInstance.loadSource(playbackUrl);hlsInstance.attachMedia(videoElement);
+    }else{videoElement.src=isHls?hlsPlaybackUrl(url):url;}
     try{await videoElement.play();}catch(_){}
     return;
   }
