@@ -45,10 +45,6 @@
 
         // ===== 2. XEM TIẾP (CONTINUE WATCHING) =====
         async function showContinueWatching() {
-            if (!getRoFlixCurrentUserId()) {
-                showToastPro('info', 'Đăng nhập để xem tiếp', 'Mỗi tài khoản có lịch sử xem riêng.');
-                return;
-            }
             const history = getWatchHistory().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             if (!history.length) {
                 showToastPro('info', 'Chưa có phim', 'Bạn chưa xem phim nào, hãy bắt đầu ngay!');
@@ -241,7 +237,8 @@
 
         function getWatchHistoryStorageKey() {
             const userId = getRoFlixCurrentUserId();
-            return userId ? ROFLIX_WATCH_HISTORY_PREFIX + userId : null;
+            // Khách xem miễn phí có lịch sử riêng trên thiết bị; tài khoản vẫn được tách theo user ID.
+            return userId ? ROFLIX_WATCH_HISTORY_PREFIX + userId : 'roflix-watch-history:guest';
         }
 
         function getWatchHistory() {
@@ -318,10 +315,6 @@
         }
 
         async function resumeWatchHistory(slug) {
-            if (!getRoFlixCurrentUserId()) {
-                if (typeof showToastPro === 'function') showToastPro('info', 'Đăng nhập để xem tiếp', 'Lịch sử xem được lưu riêng cho từng tài khoản.');
-                return;
-            }
             const item = getWatchHistory().find(h => h.slug === slug);
             if (!item) return;
             try {
