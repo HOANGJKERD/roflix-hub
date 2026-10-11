@@ -193,6 +193,7 @@ Mục tiêu của RoHub Admin là giúp quản trị viên quản lý RoFlix và
 Những nhóm công cụ được định hướng gồm:
 
 - Tổng quan hệ thống và dữ liệu.
+- **System Health Center:** kiểm tra phiên đăng nhập/quyền admin, truy vấn metadata các bảng Supabase, tải tài nguyên frontend, thăm dò phản hồi API bên ngoài và xuất báo cáo JSON.
 - Quản lý tài khoản, vai trò và trạng thái tài khoản.
 - Quản lý nội dung phim và truyện.
 - Kiểm duyệt và xử lý báo cáo.
@@ -287,6 +288,8 @@ RoHUB được xây dựng theo hướng học hỏi qua thực hành. Vì vậy
 ---
 
 ## 📌 Trạng thái dự án và tính minh bạch
+
+RoHub Admin hiện có trang **System Health Center** tại `admin.html` → `System Health`. Công cụ chạy chẩn đoán từ trình duyệt quản trị, phân loại kết quả thành đạt/cảnh báo/lỗi và cho phép xuất báo cáo JSON. Kết quả API bên ngoài có thể bị ảnh hưởng bởi CORS hoặc mạng; kiểm tra này không thay thế kiểm thử phát video, kiểm thử end-to-end, hoặc xác minh quyền RLS trên môi trường production. Việc thêm code vào repository cũng không chứng minh rằng deployment đã cập nhật.
 
 RoHUB đang trong quá trình phát triển. Một số trang và thành phần quản trị đã tồn tại trong repository; những phần khác vẫn là mục tiêu hoặc cần kiểm thử thêm.
 
