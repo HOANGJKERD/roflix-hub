@@ -37,7 +37,7 @@ Open `http://localhost:3000`.
 - [x] Manga detail page and Vietnamese chapter listing
 - [x] Initial internal vertical chapter reader using MangaDex at-home image metadata
 - [ ] Full parity with the old catalog sorting/ranking options
-- [ ] Reader navigation, progress/history, and robust source failure states
+- [x] Reader previous/next navigation, language selector, per-image retry/error states, and local reading-position persistence\n- [ ] Reader pagination beyond the first 500 chapters and stronger language matching for very long series
 - [ ] Favorites/history and cloud sync parity
 - [ ] Community submissions/admin/theme runtime parity
 - [ ] Automated checks and deployment review
