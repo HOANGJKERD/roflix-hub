@@ -52,7 +52,7 @@ export default async function MangaDetailPage({ params }: { params: { id: string
   const ratingLabels: Record<string, string> = { safe: "Phù hợp mọi lứa tuổi", suggestive: "Có nội dung gợi ý" };
 
   return <main className="shell">
-    <header className="topbar"><Link className="brand" href="/"><span className="brandMark">R</span><span>Ro<span className="accent">Truyện</span><small>BY ROHUB · NEXT</small></span></Link><Link className="secondary" href="/">← Thư viện</Link></header>
+    <header className="topbar"><Link className="brand" href="/rotruyen"><span className="brandMark">R</span><span>Ro<span className="accent">Truyện</span><small>BY ROHUB · NEXT</small></span></Link><Link className="secondary" href="/rotruyen">← Thư viện</Link></header>
     <section className="detailHero">
       <div className="detailCover">{story.coverUrl ? <img src={story.coverUrl} alt={`Bìa ${story.title}`} /> : <span className="noCover">ROTRUYỆN</span>}</div>
       <div className="detailCopy">
