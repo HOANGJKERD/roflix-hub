@@ -39,7 +39,7 @@
     if (document.getElementById('rf-anime-player-script')) return;
     const s = document.createElement('script');
     s.id = 'rf-anime-player-script';
-    s.src = 'js/features/anime-player.js?v=20261008-1';
+    s.src = 'js/features/anime-player.js?v=20261011-1';
     s.async = false;
     document.head.appendChild(s);
   }
