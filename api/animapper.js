@@ -3,6 +3,8 @@ const ORIGIN = 'https://api.animapper.net/api/v1';
 const ALLOWED = new Set(['/search', '/metadata', '/stream/episodes', '/stream/episodes/servers', '/stream/source']);
 const DROP_PARAMS = new Set(['path', '_rf']);
 const TIMEOUT_MS = 20000;
+// Source resolution may hang upstream; cap it so the player can try HDX/another provider quickly.
+const SOURCE_TIMEOUT_MS = 8000;
 const SOURCE_CACHE = 'public, s-maxage=3600, stale-while-revalidate=86400';
 const DEFAULT_CACHE = 'public, s-maxage=300, stale-while-revalidate=600';
 
@@ -57,7 +59,8 @@ module.exports = async function handler(req, res) {
   let attempt = 0;
   while (true) {
     const ctrl = new AbortController();
-    const timer = setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS);
+    const timeoutMs = path === '/stream/source' ? SOURCE_TIMEOUT_MS : TIMEOUT_MS;
+    const timer = setTimeout(function () { ctrl.abort(); }, timeoutMs);
     try {
       upstream = await fetchOnce(target, ctrl.signal);
       text = await upstream.text();
@@ -113,4 +116,4 @@ module.exports = async function handler(req, res) {
   return res.status(upstream.status).send(text);
 };
 
-module.exports._test = { cacheHeader, validSourceJson, ALLOWED, TIMEOUT_MS };
+module.exports._test = { cacheHeader, validSourceJson, ALLOWED, TIMEOUT_MS, SOURCE_TIMEOUT_MS };
