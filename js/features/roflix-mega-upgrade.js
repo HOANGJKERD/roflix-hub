@@ -110,9 +110,30 @@
     }
     renderWatchlistTab();renderDetailWatchlistButton();return true;
   }
+  async function refreshWatchlistCardButtons(root=document){
+    const buttons=[...root.querySelectorAll('[data-rf-watchlist-slug]')];
+    if(!buttons.length)return;
+    const u=await user();
+    let saved=new Set();
+    if(u&&sb){
+      const slugs=[...new Set(buttons.map(b=>b.dataset.rfWatchlistSlug).filter(Boolean))];
+      if(slugs.length){
+        try{const {data,error}=await sb.from('roflix_watchlist').select('movie_slug').eq('user_id',u.id).in('movie_slug',slugs);if(!error)saved=new Set((data||[]).map(x=>x.movie_slug));}catch(_){}
+      }
+    }else saved=new Set(getGuestWatchlist().map(x=>x.movie_slug));
+    buttons.forEach(btn=>{
+      const active=saved.has(btn.dataset.rfWatchlistSlug);
+      btn.classList.toggle('rf-watchlist-active',active);
+      btn.setAttribute('aria-pressed',active?'true':'false');
+      btn.title=active?'Đã lưu · Nhấn để bỏ lưu':'Lưu vào Watchlist';
+      const icon=btn.querySelector('i');
+      if(icon){icon.classList.toggle('fa-solid',active);icon.classList.toggle('fa-regular',!active);}
+    });
+  }
+  window.rfRefreshWatchlistCardButtons=refreshWatchlistCardButtons;
   window.rfToggleWatchlist=rfToggleWatchlist;
-  window.rfQuickToggleWatchlist=(slug,title,poster,source)=>rfToggleWatchlist(slug,{title,poster,_src:source});
-  window.rfQuickToggleWatchlistFromCard=(button,slug)=>{const card=button?.closest('.movie-card-premium');const title=card?.querySelector('.card-title')?.textContent?.trim()||slug;const poster=card?.querySelector('.card-poster img')?.src||'';const source=card?.querySelector('.src-chip')?.textContent?.trim()?.toLowerCase()||window.currentSourceId||'kkphim';return rfToggleWatchlist(slug,{title,poster,_src:source});};
+  window.rfQuickToggleWatchlist=async(slug,title,poster,source)=>{const ok=await rfToggleWatchlist(slug,{title,poster,_src:source});await refreshWatchlistCardButtons();return ok;};
+  window.rfQuickToggleWatchlistFromCard=async(button,slug)=>{const card=button?.closest('.movie-card-premium');const title=card?.querySelector('.card-title')?.textContent?.trim()||slug;const poster=card?.querySelector('.card-poster img')?.src||'';const source=card?.querySelector('.src-chip')?.textContent?.trim()?.toLowerCase()||window.currentSourceId||'kkphim';const ok=await rfToggleWatchlist(slug,{title,poster,_src:source});await refreshWatchlistCardButtons(card?.parentElement||document);return ok;};
   async function renderWatchlistTab(){
     const box=$('watchlist-grid');if(!box)return;
     const u=await user();
