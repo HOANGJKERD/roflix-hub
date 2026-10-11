@@ -54,7 +54,7 @@ export function mapMangaDexItem(item: MangaDexManga): CatalogItem {
     description: preferredText(item.attributes.description) || "Chưa có mô tả.",
     author: author || "Đang cập nhật",
     coverUrl: cover
-      ? `https://uploads.mangadex.org/covers/${encodeURIComponent(item.id)}/${encodeURIComponent(cover)}.256.jpg`
+      ? `/api/cover/${encodeURIComponent(item.id)}/${encodeURIComponent(`${cover}.256.jpg`)}`
       : null,
     tags,
     genreKeys,
