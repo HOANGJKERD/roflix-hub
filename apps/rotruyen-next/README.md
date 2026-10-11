@@ -34,8 +34,10 @@ Open `http://localhost:3000`.
 - [x] Vietnamese responsive migration landing page
 - [x] Typed MangaDex catalog adapter and server-side catalog endpoint
 - [x] Real-data catalog, title search, genre filter and pagination
+- [x] Manga detail page and Vietnamese chapter listing
+- [x] Initial internal vertical chapter reader using MangaDex at-home image metadata
 - [ ] Full parity with the old catalog sorting/ranking options
-- [ ] Detail/chapter reader parity
+- [ ] Reader navigation, progress/history, and robust source failure states
 - [ ] Favorites/history and cloud sync parity
 - [ ] Community submissions/admin/theme runtime parity
 - [ ] Automated checks and deployment review
