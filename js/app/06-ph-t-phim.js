@@ -154,7 +154,7 @@ async function playMovieByIndex(index, options = {}) {
     // Mặc định: link KKPhim/VSMOV (không auto VidSrc)
     if (ep.__rfAniMapper && window.roflixAnimePlayer?.mount) {
         try {
-            await window.roflixAnimePlayer.mount(ep.link, `${title} - ${ep.name}`, ep.__rfAniSource?.type);
+            await window.roflixAnimePlayer.mount(ep.link, `${title} - ${ep.name}`, ep.__rfAniSource?.type, ep.__rfAniSource);
         } catch (error) {
             console.warn('[RoFlix Anime] custom mount failed', error);
             showToast('error', 'Lỗi phát Anime', 'Nguồn phát không mở được.');
