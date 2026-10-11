@@ -81,10 +81,15 @@ async function resolveEpisode(providerMediaId,provider,e,i){
   // AnimeVietSub: DU là luồng HLS (cần Referer/proxy), HDX là iframe.
   // Thử DU trước theo yêu cầu, sau đó fallback HDX nếu nguồn HLS không lấy được.
   const reported=text(e?.server||e?.serverName||e?.sourceServer).toUpperCase();
-  const servers=pk==='ANIMEVIETSUB'?['DU','HDX']:[reported].filter(Boolean);
-  if(pk!=='ANIMEVIETSUB' && !servers.length)servers.push('HDX');
-  if(reported && reported!=='UNKNOWN')servers.unshift(reported);
-  const ordered=[...new Set(servers)];
+  let ordered;
+  if(pk==='ANIMEVIETSUB'){
+    ordered=['DU'];
+    if(reported && !['UNKNOWN','DU','HDX'].includes(reported))ordered.push(reported);
+    ordered.push('HDX');
+  }else{
+    ordered=reported && reported!=='UNKNOWN'?[reported,'HDX']:[ 'HDX' ];
+  }
+  ordered=[...new Set(ordered)];
 
   let last=null;
   for(const server of ordered){
