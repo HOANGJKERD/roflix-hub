@@ -27,7 +27,7 @@ export function ReaderExperience(props: Props) {
   const [switching, setSwitching] = useState(false);
   const [languageError, setLanguageError] = useState("");
   const restored = useRef(false);
-  const progressKey = `rotruyen:reader-progress:${mangaId || "unknown"}`;
+  const progressKey = `rotruyen:reader-progress:${mangaId || "unknown"}:${chapterId}`;\n  const latestKey = `rotruyen:reader-latest:${mangaId || "unknown"}`;
 
   const updateProgress = useCallback(() => {
     const root = document.documentElement;
@@ -35,7 +35,7 @@ export function ReaderExperience(props: Props) {
     const next = max > 0 ? Math.min(100, Math.max(0, Math.round((window.scrollY / max) * 100))) : 100;
     setProgress(next);
     try {
-      localStorage.setItem(progressKey, JSON.stringify({ chapterId, percent: next, updatedAt: Date.now() }));
+      const saved = JSON.stringify({ chapterId, percent: next, updatedAt: Date.now() });\n      localStorage.setItem(progressKey, saved);\n      localStorage.setItem(latestKey, saved);
     } catch { /* Storage can be disabled by the browser. */ }
   }, [chapterId, progressKey]);
 
