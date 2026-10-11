@@ -32,8 +32,9 @@ Open `http://localhost:3000`.
 
 - [x] Isolated Next.js/React/TypeScript scaffold
 - [x] Vietnamese responsive migration landing page
-- [ ] Catalog API adapter parity
-- [ ] Catalog/search/filter/sort parity
+- [x] Typed MangaDex catalog adapter and server-side catalog endpoint
+- [x] Real-data catalog, title search, genre filter and pagination
+- [ ] Full parity with the old catalog sorting/ranking options
 - [ ] Detail/chapter reader parity
 - [ ] Favorites/history and cloud sync parity
 - [ ] Community submissions/admin/theme runtime parity
