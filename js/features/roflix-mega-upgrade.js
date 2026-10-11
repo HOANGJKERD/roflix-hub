@@ -84,35 +84,44 @@
     const u=await user(); if(!u||!sb)return [];
     try{const {data,error}=await sb.from('roflix_watchlist').select('*').eq('user_id',u.id).order('created_at',{ascending:false});if(error)throw error;return data||[]}catch(e){console.debug('[RoFlix Mega] watchlist read',e.message);return []}
   }
+  const GUEST_WATCHLIST_KEY='roflix-watchlist:guest';
+  function getGuestWatchlist(){const rows=read(GUEST_WATCHLIST_KEY,[]);return Array.isArray(rows)?rows:[];}
+  function movieRecord(slug,movie){
+    const m=movie||window.currentMovieData||{};
+    return {movie_slug:String(slug||''),movie_title:m.title||m.name||window.currentMovieTitle||slug||'Phim',origin_name:m.origin_name||'',poster_url:m.poster||m.poster_url||m.thumb_url||'',source_id:m._src||window.currentSourceId||'kkphim',created_at:new Date().toISOString()};
+  }
   async function rfToggleWatchlist(slug,movie){
+    if(!slug)return false;
     const u=await user();
-    if(!u){toast('warning','Watchlist','Đăng nhập để lưu danh sách xem sau.');return false;}
+    if(!u||!sb){
+      const rows=getGuestWatchlist(),idx=rows.findIndex(x=>x.movie_slug===slug);
+      if(idx>=0){rows.splice(idx,1);write(GUEST_WATCHLIST_KEY,rows);toast('info','Watchlist','Đã bỏ khỏi danh sách xem sau.');}
+      else{rows.unshift(movieRecord(slug,movie));write(GUEST_WATCHLIST_KEY,rows);toast('success','Watchlist','Đã lưu trên thiết bị ❤️');}
+      renderWatchlistTab();renderDetailWatchlistButton();return true;
+    }
     const existing=await sb.from('roflix_watchlist').select('id').eq('user_id',u.id).eq('movie_slug',slug).maybeSingle();
-    if(existing.data?.id){await sb.from('roflix_watchlist').delete().eq('id',existing.data.id);toast('info','Watchlist','Đã bỏ khỏi danh sách xem sau.');}
+    if(existing.error){toast('error','Watchlist',existing.error.message);return false;}
+    if(existing.data?.id){const del=await sb.from('roflix_watchlist').delete().eq('id',existing.data.id);if(del.error){toast('error','Watchlist',del.error.message);return false;}toast('info','Watchlist','Đã bỏ khỏi danh sách xem sau.');}
     else{
-      const m=movie||window.currentMovieData||{};
-      const {error}=await sb.from('roflix_watchlist').insert({user_id:u.id,movie_slug:slug,movie_title:m.title||m.name||window.currentMovieTitle||slug,origin_name:m.origin_name||'',poster_url:m.poster||m.poster_url||m.thumb_url||'',source_id:m._src||window.currentSourceId||'kkphim'});
+      const m=movieRecord(slug,movie);
+      const {error}=await sb.from('roflix_watchlist').insert({user_id:u.id,movie_slug:slug,movie_title:m.movie_title,origin_name:m.origin_name,poster_url:m.poster_url,source_id:m.source_id});
       if(error){toast('error','Watchlist',error.message);return false;}
       toast('success','Watchlist','Đã thêm vào Xem sau ❤️');
     }
-    renderWatchlistTab(); renderDetailWatchlistButton(); return true;
+    renderWatchlistTab();renderDetailWatchlistButton();return true;
   }
+  window.rfToggleWatchlist=rfToggleWatchlist;
+  window.rfQuickToggleWatchlist=(slug,title,poster,source)=>rfToggleWatchlist(slug,{title,poster,_src:source});
   async function renderWatchlistTab(){
     const box=$('watchlist-grid');if(!box)return;
-    const rows=await getCloudWatchlist();
-    if(!rows.length){box.innerHTML='<div class="col-span-full empty-state" style="padding:40px"><div class="empty-icon">📚</div><h3>Watchlist đang trống</h3><p>Thêm phim vào Xem sau để quay lại bất cứ lúc nào.</p></div>';return;}
-    box.innerHTML=rows.map(m=>`<article class="rf-watchlist-card" onclick="viewMovieDetail('${String(m.movie_slug).replace(/'/g,"\\'")}','${esc(m.source_id||'kkphim')}')"><div class="rf-watchlist-poster"><img src="${esc(m.poster_url||'https://placehold.co/300x450/10131d/f59e0b?text=RF')}" alt="" loading="lazy"></div><div class="rf-watchlist-body"><b>${esc(m.movie_title)}</b><small>${esc(m.origin_name||'')}</small><button onclick="event.stopPropagation();rfToggleWatchlist('${String(m.movie_slug).replace(/'/g,"\\'")}')">✓ Đã lưu</button></div></article>`).join('');
+    const u=await user();
+    const rows=u&&sb?await getCloudWatchlist():getGuestWatchlist();
+    if(!rows.length){box.innerHTML='<div class="col-span-full empty-state" style="padding:40px"><div class="empty-icon">📚</div><h3>Watchlist đang trống</h3><p>Nhấn biểu tượng lưu trên phim để thêm vào danh sách yêu thích.</p></d    const u=await user();let saved=false;
+    if(u&&sb){const r=await sb.from('roflix_watchlist').select('id').eq('user_id',u.id).eq('movie_slug',slug).maybeSingle();saved=!!r.data?.id;}
+    else saved=getGuestWatchlist().some(x=>x.movie_slug===slug);
+    btn.textContent=saved?'✓ Đã lưu Watchlist':'＋ Thêm Watchlist';btn.onclick=()=>rfToggleWatchlist(slug,window.currentMovieData||{});s://placehold.co/300x450/10131d/f59e0b?text=RF')}" alt="" loading="lazy" onerror="this.src='https://placehold.co/300x450/10131d/f59e0b?text=RF'"></div><div class="rf-watchlist-body"><b>${esc(m.movie_title)}</b><small>${esc(m.origin_name||'')}</small><button onclick="event.stopPropagation();rfToggleWatchlist('${slug}')">✓ Đã lưu · Bỏ lưu</button></div></article>`;
+    }).join('');
   }
-  async function renderDetailWatchlistButton(){
-    const container=$('detail-content-container');if(!container)return;
-    const title=container.querySelector('h1');const slug=window.currentSlug||'';if(!slug)return;
-    let btn=document.getElementById('rf-detail-watchlist-btn');
-    if(!btn){const fav=container.querySelector('.rf-detail-watch-btn');const host=fav?.parentElement||container.querySelector('.md\\:col-span-3');if(!host)return;btn=document.createElement('button');btn.id='rf-detail-watchlist-btn';btn.className='rf-watchlist-detail-btn';(fav?fav.parentElement:host).appendChild(btn);}
-    const u=await user();let saved=false;
-    if(u){const r=await sb.from('roflix_watchlist').select('id').eq('user_id',u.id).eq('movie_slug',slug).maybeSingle();saved=!!r.data?.id;}
-    btn.textContent=saved?'✓ Đã lưu Watchlist':'＋ Thêm Watchlist';btn.onclick=()=>rfToggleWatchlist(slug,window.currentMovieData||{});
-  }
-
   /* ---------- Realtime movie comments ---------- */
   async function renderCloudComments(slug,title,targetId='comments-container'){
     const box=$(targetId);if(!box||!slug||!sb)return;
