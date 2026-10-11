@@ -2,7 +2,8 @@
   'use strict';
   const $ = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
-  const API = 'https://api.mangadex.org';
+  const API = '/api/mangadex';
+  const apiUrl = (path, params) => API + '?path=' + encodeURIComponent(path + (params ? '?' + params.toString() : ''));
   // TruyenDex is a MangaDex-powered frontend project, not a separate public REST API.
   // RoTruyen integrates MangaDex's documented public API directly.
   const DEMOS = [];
@@ -118,14 +119,14 @@
     };
     let data;
     try {
-      data=await fetchJSON(API+'/manga?'+buildParams(true).toString());
+      data=await fetchJSON(apiUrl('/manga',buildParams(true)));
       if(!(data.data||[]).length && !state.query.trim() && state.genre==='all') {
-        data=await fetchJSON(API+'/manga?'+buildParams(false).toString());
+        data=await fetchJSON(apiUrl('/manga',buildParams(false)));
       }
     } catch(firstError) {
       // Thử lại một lần với truy vấn rộng hơn để tránh bộ lọc ngôn ngữ làm hỏng việc tải catalog.
       try {
-        data=await fetchJSON(API+'/manga?'+buildParams(false).toString());
+        data=await fetchJSON(apiUrl('/manga',buildParams(false)));
       } catch(secondError) {
         throw new Error('Không kết nối được MangaDex API. '+secondError.message);
       }
@@ -167,7 +168,7 @@
     }catch(e){state.items=[];state.source='database';render();notify('Catalog chưa sẵn sàng: '+e.message);}
   }
   async function loadCatalog() {
-    try{const sb=window.rfSupabase;if(sb){const {data:cfg}=await sb.from('rotruyen_settings').select('value').eq('key','public.sources').maybeSingle();if(cfg?.value?.mangadex?.enabled===false){notify('MangaDex đã bị tắt trong RoTruyện Admin.');return;}}}catch(_){}
+    // Catalog công khai tải MangaDex độc lập với cấu hình nguồn cũ trong Supabase.
     state.apiBusy=true; const btn=$('#load-source');if(btn){btn.disabled=true;btn.textContent='Đang kết nối…';}
     const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải danh mục từ MangaDex…</p></div>';
     try {state.items=await searchMangaDex();render();if(!state.items.length)notify('Nguồn đã phản hồi nhưng chưa có kết quả phù hợp.');}
@@ -215,10 +216,10 @@
       const buildChapterParams=(preferVietnamese)=>{const p=new URLSearchParams({limit:'100','order[chapter]':'asc'});if(preferVietnamese)p.append('translatedLanguage[]','vi');p.append('contentRating[]','safe');p.append('contentRating[]','suggestive');p.append('includes[]','scanlation_group');return p;};
       let data;
       try {
-        data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+buildChapterParams(true).toString());
-        if(!(data.data||[]).length)data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+buildChapterParams(false).toString());
+        data=await fetchJSON(apiUrl('/manga/'+encodeURIComponent(s.id)+'/feed',buildChapterParams(true)));
+        if(!(data.data||[]).length)data=await fetchJSON(apiUrl('/manga/'+encodeURIComponent(s.id)+'/feed',buildChapterParams(false)));
       } catch(firstError) {
-        try { data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+buildChapterParams(false).toString()); }
+        try { data=await fetchJSON(apiUrl('/manga/'+encodeURIComponent(s.id)+'/feed',buildChapterParams(false))); }
         catch(secondError) { throw new Error('Không tải được feed MangaDex. '+secondError.message); }
       }
       state.chapters=(data.data||[]).filter(c=>c.attributes?.pages>0);
@@ -240,7 +241,7 @@
         if(chapter.external_url&&/^https:\/\//i.test(chapter.external_url)){ $('#reader-content').innerHTML='<div class="reader-error"><h3>Chương nằm ở nguồn ngoài</h3><p>Để tôn trọng cách phân phối của nguồn, chương này sẽ mở trong tab riêng.</p><a class="btn" href="'+esc(chapter.external_url)+'" target="_blank" rel="noopener noreferrer">Mở chương ↗</a></div>';return; }
         throw new Error('Chương chưa có danh sách trang HTTPS hoặc URL nguồn hợp lệ.');
       }
-      const data=await fetchJSON(API+'/at-home/server/'+encodeURIComponent(chapter.id));
+      const data=await fetchJSON(apiUrl('/at-home/server/'+encodeURIComponent(chapter.id)));
       const base=data.baseUrl, hash=data.chapter?.hash, files=data.chapter?.data;
       if(!base||!hash||!Array.isArray(files)||!files.length)throw new Error('Nguồn không cung cấp ảnh chương.');
       const container=$('#reader-content');container.innerHTML=files.map((file,i)=>{const pagePath='/api/mangadex-image/data/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file);return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pagePath)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
