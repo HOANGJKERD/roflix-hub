@@ -3,16 +3,10 @@
   const $ = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
   const API = '/api/mangadex';
+  const apiUrl = (path, params) => API + '?path=' + encodeURIComponent(path + (params ? '?' + params.toString() : ''));
   // TruyenDex is a MangaDex-powered frontend project, not a separate public REST API.
   // RoTruyen integrates MangaDex's documented public API directly.
-  const DEMOS = [
-    {id:'demo-1',title:'Thành Phố Sau Hoàng Hôn',author:'RoTruyen Studio',genre:'fantasy',kind:'Fantasy',chapters:42,rating:9.2,pop:98,updated:6,icon:'fa-city',cover:'#282449',glow:'#8c6ce0',accent:'#d3b9ff',description:'Một thành phố nơi những vì sao chỉ xuất hiện sau hoàng hôn. Nhân vật chính bắt đầu hành trình tìm ra bí mật của bầu trời.'},
-    {id:'demo-2',title:'Kiếm Sĩ Cuối Cùng',author:'RoTruyen Studio',genre:'action',kind:'Hành động',chapters:86,rating:9.5,pop:100,updated:1,icon:'fa-khanda',cover:'#402b38',glow:'#d66d70',accent:'#ffc1a7',description:'Truyện mẫu dùng để trình diễn giao diện danh mục và trang chi tiết.'},
-    {id:'demo-3',title:'Khu Vườn Của Những Vì Sao',author:'RoTruyen Studio',genre:'romance',kind:'Lãng mạn',chapters:24,rating:8.9,pop:82,updated:2,icon:'fa-star',cover:'#243b4b',glow:'#58a9d4',accent:'#a5e4ff',description:'Một câu chuyện nhẹ nhàng về những lời hứa, ký ức và một khu vườn nhỏ.'},
-    {id:'demo-4',title:'Biên Niên Sử Lục Địa',author:'RoTruyen Studio',genre:'adventure',kind:'Phiêu lưu',chapters:112,rating:9.4,pop:95,updated:3,icon:'fa-mountain-sun',cover:'#423521',glow:'#d9a64b',accent:'#f9d58b',description:'Hành trình phiêu lưu qua những vùng đất chưa được vẽ lên bản đồ.'},
-    {id:'demo-5',title:'Ngày Mai Không Có Mưa',author:'RoTruyen Studio',genre:'drama',kind:'Chính kịch',chapters:18,rating:8.7,pop:73,updated:4,icon:'fa-cloud-moon',cover:'#293447',glow:'#7c91bd',accent:'#c9d7ff',description:'Truyện minh họa cho bản giao diện đầu tiên của RoTruyện.'},
-    {id:'demo-6',title:'Pháp Sư Và Chiếc Đồng Hồ',author:'RoTruyen Studio',genre:'fantasy',kind:'Fantasy',chapters:57,rating:9.1,pop:89,updated:0,icon:'fa-hourglass-half',cover:'#362943',glow:'#a56cce',accent:'#e9c7ff',description:'Một chiếc đồng hồ cổ có thể mở ra cánh cửa đến những thời điểm đã mất.'}
-  ];
+  const DEMOS = [];
   const state = {source:'demo',query:'',genre:'all',sort:'featured',items:[],saved:new Set(),history:[],selected:null,chapters:[],chapterIndex:0,chapterPages:[],apiBusy:false,readerBusy:false};
   const memory = {
     read(key, fallback) { try { const v=JSON.parse(localStorage.getItem('rotruyen:'+key)); return v ?? fallback; } catch (_) { return fallback; } },
@@ -125,14 +119,14 @@
     };
     let data;
     try {
-      data=await fetchJSON(API+'/manga?'+buildParams(true).toString());
+      data=await fetchJSON(apiUrl('/manga',buildParams(true)));
       if(!(data.data||[]).length && !state.query.trim() && state.genre==='all') {
-        data=await fetchJSON(API+'/manga?'+buildParams(false).toString());
+        data=await fetchJSON(apiUrl('/manga',buildParams(false)));
       }
     } catch(firstError) {
       // Thử lại một lần với truy vấn rộng hơn để tránh bộ lọc ngôn ngữ làm hỏng việc tải catalog.
       try {
-        data=await fetchJSON(API+'/manga?'+buildParams(false).toString());
+        data=await fetchJSON(apiUrl('/manga',buildParams(false)));
       } catch(secondError) {
         throw new Error('Không kết nối được MangaDex API. '+secondError.message);
       }
@@ -162,24 +156,23 @@
   function renderSavedCount(){const el=$('#saved-count');if(el)el.textContent=state.saved.size;}
   async function loadOwnCatalog() {
     const sb=window.rfSupabase;
-    if(!sb){state.source='demo';state.items=DEMOS;render();notify('Supabase chưa sẵn sàng, đang hiển thị dữ liệu mẫu.');return;}
+    if(!sb){state.source='database';state.items=[];render();notify('Catalog RoTruyện chưa kết nối được cơ sở dữ liệu.');return;}
     const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải catalog RoTruyện…</p></div>';
     try{
       const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,source_id,genres,content_rating,status,is_published,sort_order').eq('is_published',true).order('sort_order',{ascending:true}).limit(100);
       if(error)throw error;
       state.items=(data||[]).map(s=>({id:s.id,source:'database',title:s.title,author:s.author,genre:(s.genres||[])[0]||'all',kind:(s.genres||[]).join(' · ')||'Truyện',chapters:null,rating:null,pop:0,updated:0,cover:s.cover_url,description:s.synopsis,status:s.status,contentRating:s.content_rating,sourceId:s.source_id}));
       state.source='database';
-      if(!state.items.length){state.items=DEMOS;state.source='demo';notify('Catalog chưa có tác phẩm đã xuất bản. Đang hiển thị dữ liệu mẫu.');}
+      if(!state.items.length){notify('Catalog RoTruyện chưa có tác phẩm đã xuất bản.');}
       render();
-    }catch(e){state.items=DEMOS;state.source='demo';render();notify('Catalog chưa sẵn sàng: '+e.message+'. Đang dùng dữ liệu mẫu.');}
+    }catch(e){state.items=[];state.source='database';render();notify('Catalog chưa sẵn sàng: '+e.message);}
   }
   async function loadCatalog() {
-    try{const sb=window.rfSupabase;if(sb){const {data:cfg}=await sb.from('rotruyen_settings').select('value').eq('key','public.sources').maybeSingle();if(cfg?.value?.mangadex?.enabled===false){notify('MangaDex đã bị tắt trong RoTruyện Admin.');return;}}}catch(_){}
-    if(state.source==='demo'){state.items=DEMOS;render();return;}
+    // Catalog công khai tải MangaDex độc lập với cấu hình nguồn cũ trong Supabase.
     state.apiBusy=true; const btn=$('#load-source');if(btn){btn.disabled=true;btn.textContent='Đang kết nối…';}
     const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải danh mục từ MangaDex…</p></div>';
     try {state.items=await searchMangaDex();render();if(!state.items.length)notify('Nguồn đã phản hồi nhưng chưa có kết quả phù hợp.');}
-    catch(e){state.items=DEMOS;state.source='demo';render();notify('MangaDex chưa tải được: '+(e.name==='AbortError'?'hết thời gian chờ':e.message)+'. Đang hiển thị truyện mẫu, hãy thử lại.');}
+    catch(e){state.items=[];state.source='mangadex';render();notify('MangaDex chưa tải được: '+(e.name==='AbortError'?'hết thời gian chờ':e.message)+'. Hãy thử lại.');}
     finally{state.apiBusy=false;if(btn){btn.disabled=false;btn.textContent='Tải truyện từ MangaDex';}}
   }
 
@@ -223,10 +216,10 @@
       const buildChapterParams=(preferVietnamese)=>{const p=new URLSearchParams({limit:'100','order[chapter]':'asc'});if(preferVietnamese)p.append('translatedLanguage[]','vi');p.append('contentRating[]','safe');p.append('contentRating[]','suggestive');p.append('includes[]','scanlation_group');return p;};
       let data;
       try {
-        data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+buildChapterParams(true).toString());
-        if(!(data.data||[]).length)data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+buildChapterParams(false).toString());
+        data=await fetchJSON(apiUrl('/manga/'+encodeURIComponent(s.id)+'/feed',buildChapterParams(true)));
+        if(!(data.data||[]).length)data=await fetchJSON(apiUrl('/manga/'+encodeURIComponent(s.id)+'/feed',buildChapterParams(false)));
       } catch(firstError) {
-        try { data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+buildChapterParams(false).toString()); }
+        try { data=await fetchJSON(apiUrl('/manga/'+encodeURIComponent(s.id)+'/feed',buildChapterParams(false))); }
         catch(secondError) { throw new Error('Không tải được feed MangaDex. '+secondError.message); }
       }
       state.chapters=(data.data||[]).filter(c=>c.attributes?.pages>0);
@@ -248,7 +241,7 @@
         if(chapter.external_url&&/^https:\/\//i.test(chapter.external_url)){ $('#reader-content').innerHTML='<div class="reader-error"><h3>Chương nằm ở nguồn ngoài</h3><p>Để tôn trọng cách phân phối của nguồn, chương này sẽ mở trong tab riêng.</p><a class="btn" href="'+esc(chapter.external_url)+'" target="_blank" rel="noopener noreferrer">Mở chương ↗</a></div>';return; }
         throw new Error('Chương chưa có danh sách trang HTTPS hoặc URL nguồn hợp lệ.');
       }
-      const data=await fetchJSON(API+'/at-home/server/'+encodeURIComponent(chapter.id));
+      const data=await fetchJSON(apiUrl('/at-home/server/'+encodeURIComponent(chapter.id)));
       const base=data.baseUrl, hash=data.chapter?.hash, files=data.chapter?.data;
       if(!base||!hash||!Array.isArray(files)||!files.length)throw new Error('Nguồn không cung cấp ảnh chương.');
       const container=$('#reader-content');container.innerHTML=files.map((file,i)=>{const pagePath='/api/mangadex-image/data/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file);return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pagePath)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
@@ -362,5 +355,5 @@
   async function rtRenderAccountLink(){const link=$('#rt-account-link'),label=$('#rt-account-label'),sb=window.rfSupabase;if(!link||!sb)return;try{const {data}=await sb.auth.getUser();const user=data?.user;if(user){let p={};try{p=JSON.parse(localStorage.getItem('roflix-profile')||'{}')}catch(_){}link.href='rotruyen-account.html';if(label)label.textContent=(user.user_metadata?.display_name||p.name||user.email?.split('@')[0]||'Tài khoản').slice(0,24);link.title='Tài khoản '+(user.email||'')}else{link.href='rotruyen-account.html';if(label)label.textContent='Đăng nhập'}}catch(_){if(label)label.textContent='Tài khoản'}}
   rtRenderAccountLink();
   if(window.rfSupabase){window.rfSupabase.auth.onAuthStateChange(()=>{setTimeout(rtRenderAccountLink,0)})}
-  bind();state.items=DEMOS;render();connectRealtime();syncCloudLibrary();state.source='mangadex';loadCatalog();
+  bind();state.items=[];render();connectRealtime();syncCloudLibrary();state.source='mangadex';loadCatalog();
 })();

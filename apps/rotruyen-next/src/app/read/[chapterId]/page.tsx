@@ -50,7 +50,7 @@ async function getReaderData(id: string) {
       language,
       previousId,
       nextId,
-      pages: images.chapter.data.map((filename) => `${images.baseUrl}/data/${images.chapter.hash}/${encodeURIComponent(filename)}`),
+      pages: (images.chapter.data?.length ? images.chapter.data : images.chapter.dataSaver).map((filename) => `${images.baseUrl}/data/${images.chapter.hash}/${encodeURIComponent(filename)}`),
     };
   } catch { return null; }
 }
@@ -59,11 +59,11 @@ export default async function ChapterReaderPage({ params }: { params: { chapterI
   if (!/^[0-9a-f-]{36}$/i.test(params.chapterId)) notFound();
   const data = await getReaderData(params.chapterId);
   if (!data) {
-    return <main className="shell readerShell"><header className="topbar"><Link className="brand" href="/"><span className="brandMark">R</span><span>Ro<span className="accent">Truyện</span><small>BY ROHUB · READER</small></span></Link></header><div className="notice error">Không tải được chương hoặc dữ liệu ảnh từ MangaDex. Chương có thể không khả dụng hoặc nguồn đang gặp sự cố.</div><Link className="secondary" href="/">← Về thư viện</Link></main>;
+    return <main className="shell readerShell"><header className="topbar"><Link className="brand" href="/rotruyen"><span className="brandMark">R</span><span>Ro<span className="accent">Truyện</span><small>BY ROHUB · READER</small></span></Link></header><div className="notice error">Không tải được chương hoặc dữ liệu ảnh từ MangaDex. Chương có thể không khả dụng hoặc nguồn đang gặp sự cố.</div><Link className="secondary" href="/rotruyen">← Về thư viện</Link></main>;
   }
   const chapter = data.chapter.attributes || {};
   return <main className="shell readerShell">
-    <header className="topbar"><Link className="brand" href={data.mangaId ? `/manga/${encodeURIComponent(data.mangaId)}` : "/"}><span className="brandMark">R</span><span>Ro<span className="accent">Truyện</span><small>BY ROHUB · READER</small></span></Link><span className="status">ĐANG ĐỌC</span></header>
+    <header className="topbar"><Link className="brand" href={data.mangaId ? `/manga/${encodeURIComponent(data.mangaId)}` : "/rotruyen"}><span className="brandMark">R</span><span>Ro<span className="accent">Truyện</span><small>BY ROHUB · READER</small></span></Link><span className="status">ĐANG ĐỌC</span></header>
     <ReaderExperience chapterId={params.chapterId} mangaId={data.mangaId} chapterNumber={chapter.chapter || null} chapterTitle={chapter.title || ""} volume={chapter.volume || null} pages={data.pages} language={data.language} previousId={data.previousId} nextId={data.nextId}/>
     <footer>RoTruyện · Ảnh chương được cung cấp bởi MangaDex At-Home.</footer>
   </main>;
