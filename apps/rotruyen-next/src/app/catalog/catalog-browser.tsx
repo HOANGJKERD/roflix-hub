@@ -66,7 +66,7 @@ export function CatalogBrowser() {
     {loading && <div className="notice" role="status">Đang tải dữ liệu thật từ MangaDex…</div>}
     {!loading && !error && visibleItems.length === 0 && <div className="notice">Không tìm thấy truyện phù hợp. Hãy thử từ khóa hoặc thể loại khác.</div>}
     <div className="storyGrid">{[...visibleItems].sort((a, b) => sort === "title" ? a.title.localeCompare(b.title, "vi") : 0).map((item) => <article className="storyCard" key={item.id}>
-      <a className="cover" href={`/manga/${encodeURIComponent(item.id)}`} aria-label={`Xem ${item.title}`}>
+      <a className="cover" href={`https://mangadex.org/title/${encodeURIComponent(item.id)}`} target="_blank" rel="noreferrer" aria-label={`Xem ${item.title}`}>
         {item.coverUrl ? <img src={item.coverUrl} alt={`Bìa ${item.title}`} loading="lazy"/> : <span className="noCover">ROTRUYỆN</span>}
       </a>
       <h3><a href={`/manga/${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
