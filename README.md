@@ -46,15 +46,9 @@ Mình không xem việc làm ra một trang web có thể mở được là đí
 - 🎨 **Chăm chút giao diện:** giao diện cần có cá tính, nhưng cũng phải dễ hiểu, nhất quán và sử dụng thuận tiện.
 - 🛠️ **Xây tính năng thật:** hướng tới dữ liệu thật, phân quyền rõ ràng và những thao tác thực sự có tác dụng.
 - 🌱 **Phát triển lâu dài:** ưu tiên nền móng có thể mở rộng thay vì chỉ tạo một bản demo bắt mắt.
-
-RoHUB vẫn đang phát triển. Mình muốn repository này phản ánh đúng quá trình đó: có những phần đã được viết, có những phần đang thử nghiệm và có những mục tiêu vẫn còn ở phía trước.
-
 ---
-
 ## 🌐 RoHUB là gì?
-
 **RoHUB** là tên gọi chung của hệ sinh thái gồm các website và công cụ quản trị được phát triển trong repository này.
-
 | Thành phần | Vai trò |
 |---|---|
 | **RoFlix** | Trải nghiệm khám phá và xem nội dung phim |
