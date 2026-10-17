@@ -211,7 +211,7 @@
     }
 
     // Trả về Promise: resolve khi đã thực sự có hình/segment, reject khi lỗi nặng hoặc quá 20s.
-    function playHls(sourceUrl, token) {
+    function playHls(sourceUrl, token, sourceMeta) {
       return loadHlsLib().then(function (Hls) {
         if (token !== playToken) throw new Error('đã huỷ');
         stopPlayer();
@@ -223,7 +223,9 @@
         video.playsInline = true;
         stage().appendChild(video);
         var viaProxy = /^https:\/\/api\.animapper\.net\/api\/v1\/stream\/source\/m3u8\//.test(sourceUrl);
-        var src = viaProxy ? HLS_PROXY + encodeURIComponent(sourceUrl) : sourceUrl;
+        var referer = sourceMeta && sourceMeta.proxyHeaders && (sourceMeta.proxyHeaders.Referer || sourceMeta.proxyHeaders.referer);
+        var src = viaProxy ? HLS_PROXY + encodeURIComponent(sourceUrl) +
+          (referer ? '&referer=' + encodeURIComponent(referer) : '') : sourceUrl;
 
         return new Promise(function (resolve, reject) {
           var settled = false;
@@ -265,7 +267,7 @@
         var data = (d && (d.result || d.data)) || d || {};
         var url = data.url || d.url;
         if (!url) throw new Error('không trả URL');
-        return { url: url, type: String(data.type || d.type || '').toUpperCase(), server: data.server || server };
+        return { url: url, type: String(data.type || d.type || '').toUpperCase(), server: data.server || server, corsProxyRequired: Boolean(data.corsProxyRequired || d.corsProxyRequired), proxyHeaders: data.proxyHeaders || d.proxyHeaders || {} };
       });
     }
 
@@ -313,9 +315,9 @@
           if (token !== playToken) return;
           var type = src.type || (/\.m3u8(?:[?#]|$)/i.test(src.url) ? 'HLS' : 'EMBED');
           if (type === 'HLS') {
-            await playHls(src.url, token);
+            await playHls(src.url, token, src);
           } else if (type === 'DIRECT') {
-            if (/\.m3u8(?:[?#]|$)/i.test(src.url)) await playHls(src.url, token);
+            if (/\.m3u8(?:[?#]|$)/i.test(src.url)) await playHls(src.url, token, src);
             else playEmbed(src.url);
           } else {
             playEmbed(src.url);
