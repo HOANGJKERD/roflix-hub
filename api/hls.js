@@ -17,8 +17,11 @@ const TRUSTED_REFERER_HOSTS = new Set(['animevietsub.nl', 'animevietsub.page']);
 function trustedReferer(value) {
   try {
     const url = new URL(String(value || DEFAULT_REFERER));
-    if (url.protocol !== 'https:' || !TRUSTED_REFERER_HOSTS.has(url.hostname.toLowerCase())) return DEFAULT_REFERER;
-    return url.origin + '/';
+    if (url.protocol !== 'https:' || url.username || url.password ||
+        !TRUSTED_REFERER_HOSTS.has(url.hostname.toLowerCase())) return DEFAULT_REFERER;
+    // Preserve the allowed site's path/query because some providers validate the page Referer.
+    url.hash = '';
+    return url.href;
   } catch (_) { return DEFAULT_REFERER; }
 }
 const FIRST_HOP_HOST = 'api.animapper.net';
