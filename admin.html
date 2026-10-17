@@ -38,6 +38,29 @@
 <div class="form-row" style="grid-column:1/-1"><label for="rt-new-synopsis">Giới thiệu / tóm tắt</label><textarea class="input" id="rt-new-synopsis" rows="4" maxlength="5000" placeholder="Giới thiệu nội dung truyện..."></textarea></div>
 <div class="form-actions" style="grid-column:1/-1"><button class="btn btn-primary" type="submit" id="rt-new-save">Tạo bản nháp truyện</button></div>
 </form></div>
+<div class="card" style="margin-top:16px">
+<div class="page-title"><div><h2>📦 Nhập truyện tranh hàng loạt</h2><p>Thả ZIP hoặc ảnh vào đây. Hệ thống đọc cấu trúc, xem trước chương, kiểm tra trùng tên và lưu tất cả ở trạng thái nháp.</p></div></div>
+<div id="rt-import-drop" style="border:2px dashed rgba(245,158,11,.45);border-radius:14px;padding:24px;text-align:center;background:rgba(245,158,11,.04);transition:.2s">
+<style>#rt-import-drop.dragging{border-color:#f59e0b;background:rgba(245,158,11,.12)}#rt-import-drop .btn{margin:5px}#rt-import-chapters td{vertical-align:middle}</style>
+<div style="font-size:34px;margin-bottom:8px">📂</div><strong>Thả ZIP hoặc ảnh JPG/JPEG vào vùng này</strong><p class="muted">Có thể chọn một ZIP lớn hoặc chọn cả thư mục ảnh. File chỉ được đọc trên trình duyệt để xem trước, chưa upload cho đến khi bấm nút nhập.</p>
+<label class="btn btn-primary" for="rt-import-zip">Chọn file ZIP / ảnh</label>
+<input id="rt-import-zip" type="file" multiple accept=".zip,.jpg,.jpeg,.png,.webp,.gif" style="display:none">
+<label class="btn" for="rt-import-folder">Chọn thư mục ảnh</label>
+<input id="rt-import-folder" type="file" multiple webkitdirectory directory accept=".jpg,.jpeg,.png,.webp,.gif" style="display:none">
+</div>
+<div class="grid two" style="gap:12px;margin-top:16px">
+<div class="form-row"><label for="rt-import-title">Tên truyện *</label><input class="input" id="rt-import-title" maxlength="240" placeholder="Tên truyện"></div>
+<div class="form-row"><label for="rt-import-author">Tác giả / bút danh</label><input class="input" id="rt-import-author" maxlength="160" placeholder="Chưa rõ tác giả"></div>
+<div class="form-row" style="grid-column:1/-1"><label for="rt-import-synopsis">Giới thiệu (không bắt buộc)</label><textarea class="input" id="rt-import-synopsis" rows="2" maxlength="5000" placeholder="Tóm tắt truyện..."></textarea></div>
+</div>
+<div class="notice" id="rt-import-summary" style="margin-top:10px">Chưa chọn file</div>
+<div id="rt-import-cover-preview" class="muted" style="margin:8px 0">Chưa nhận diện ảnh bìa riêng.</div>
+<p id="rt-import-duplicate" role="status" aria-live="polite" class="muted">Chưa kiểm tra trùng tên.</p>
+<div class="table-wrap"><table class="table"><thead><tr><th>Chương</th><th>Tên thư mục</th><th>Số ảnh</th><th>Ảnh đầu tiên</th></tr></thead><tbody id="rt-import-chapters"><tr><td colspan="4" class="empty">Chọn ZIP hoặc thư mục ảnh để xem trước.</td></tr></tbody></table></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn btn-primary" type="button" id="rt-import-start" disabled>Upload ảnh và lưu bản nháp</button><button class="btn" type="button" id="rt-import-reset">Xóa bản xem trước</button></div>
+<p id="rt-import-status" class="muted" role="status" aria-live="polite" style="margin-top:12px"></p>
+<p class="muted" style="font-size:12px">Bucket dự kiến: <code>rotruyen-pages</code>. Nếu Storage chưa được cấu hình, hãy chạy SQL hướng dẫn trong <code>supabase/rotruyen-storage-setup.sql</code> trên đúng dự án Supabase của RoFlix/RoHub.</p>
+</div>
 <div class="card" style="margin-top:16px"><div class="toolbar"><input class="input" id="rt-admin-search" placeholder="🔎 Tìm tên truyện, tác giả hoặc slug..." style="flex:1"><select class="input" id="rt-admin-published-filter" style="max-width:200px"><option value="all">Tất cả trạng thái</option><option value="published">Đã xuất bản</option><option value="draft">Bản nháp / chờ duyệt</option></select><button class="btn" id="rt-admin-refresh">↻ Làm mới</button></div>
 <div class="table-wrap"><table class="table"><thead><tr><th>Tác phẩm</th><th>Nguồn</th><th>Phân loại</th><th>Xuất bản</th><th>Thao tác</th></tr></thead><tbody id="rt-admin-series-body"><tr><td colspan="5" class="empty">Đang tải catalog RoTruyện...</td></tr></tbody></table></div><p class="muted" id="rt-admin-message" role="status" aria-live="polite"></p></div>
 <div class="card" style="margin-top:16px"><div class="page-title"><div><h2>Chương của tác phẩm</h2><p id="rt-admin-chapter-caption">Chọn một tác phẩm để quản lý chương.</p></div></div>
@@ -52,4 +75,5 @@
 </section>
 </div></main></div><div class="modal" id="user-modal"><div class="modal-card"><div class="modal-head"><h3 id="modal-title">Quản lý tài khoản</h3><button class="close" id="modal-close">×</button></div><div id="modal-body"></div></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script><script src="js/admin/admin.js"></script><script src="js/admin/system-health.js?v=1"></script><script src="js/admin/release-schedule-admin.js"></script><script src="js/admin/admin-v3.js"></script><script src="js/admin/gacha-admin.js"></script><script src="js/admin/admin-v4-enhancements.js?v=1"></script><script src="js/admin/rotruyen-admin.js?v=2"></script><script src="js/admin/movie-control-admin.js?v=5" id="roflix-movie-control-admin"></script><script src="js/features/roflix-suite-50.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script><script src="js/admin/rotruyen-bulk-import.js?v=1"></script>
 </body></html>
