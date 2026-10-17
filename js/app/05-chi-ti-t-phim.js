@@ -15,10 +15,14 @@
             const aniId = movieData.anilistId || movieData.animeId || movieData.aniMapperId || movieData.id;
             if (aniId != null && String(aniId).trim()) {
                 try {
-                    const response = await fetch('/api/animapper?path=' + encodeURIComponent('/metadata?id=' + encodeURIComponent(String(aniId))), { headers: { Accept: 'application/json' } });
-                    if (response.ok) {
-                        const payload = await response.json();
-                        aniMeta = payload && (payload.result || payload.data || payload);
+                    if (window.RoflixAniMapper && typeof window.RoflixAniMapper.getMetadata === 'function') {
+                        aniMeta = await window.RoflixAniMapper.getMetadata(aniId);
+                    } else {
+                        const response = await fetch('/api/animapper?path=' + encodeURIComponent('/metadata?id=' + encodeURIComponent(String(aniId))), { headers: { Accept: 'application/json' } });
+                        if (response.ok) {
+                            const payload = await response.json();
+                            aniMeta = payload && (payload.result || payload.data || payload);
+                        }
                     }
                 } catch (error) { console.warn('[RoFlix] Không tải được AniMapper metadata:', error); }
             }
