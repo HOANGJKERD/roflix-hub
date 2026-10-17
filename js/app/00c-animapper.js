@@ -567,6 +567,14 @@
     var response = await api(batchPath, 20000);
     var payload = response && (response.result || response.data || response);
     var items = Array.isArray(payload) ? payload : (payload && (payload.items || payload.results || payload.metadata));
+    if (!Array.isArray(items) && payload && typeof payload === 'object') {
+      // Chấp nhận cả dạng object keyed-by-ID để không phụ thuộc một kiểu envelope duy nhất.
+      items = Object.keys(payload).filter(function (id) { return missing.indexOf(String(id)) >= 0; })
+        .map(function (id) {
+          var item = payload[id];
+          return item && typeof item === 'object' ? Object.assign({ id: id }, item) : null;
+        }).filter(Boolean);
+    }
     if (!Array.isArray(items)) throw new Error('Batch metadata response không đúng định dạng');
     items.forEach(function (item) {
       if (!item || item.id == null) return;
