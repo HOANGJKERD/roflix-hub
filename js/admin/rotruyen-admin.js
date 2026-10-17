@@ -36,9 +36,12 @@ async function loadSeries(){
 }
 async function loadChapters(series){
  state.selected=series;
+ $('rt-admin-create-chapter').hidden=false;
+ $('rt-admin-create-chapter').dataset.seriesId=String(series.id);
+ $('rt-new-chapter-number').value=String((Number(state.chapters.at(-1)?.chapter_number)||0)+1);
  $('rt-admin-chapter-caption').textContent='Tác phẩm: '+(series.title||series.id);
  $('rt-admin-chapters-body').innerHTML='<tr><td colspan="5" class="empty">Đang tải chương...</td></tr>';
- const {data,error}=await sb.from('rotruyen_chapters').select('id,series_id,chapter_number,title,is_published,published_at').eq('series_id',series.id).order('chapter_number',{ascending:true}).limit(500);
+ const {data,error}=await sb.from('rotruyen_chapters').select('id,series_id,chapter_number,title,is_published,published_at,external_url,page_manifest').eq('series_id',series.id).order('chapter_number',{ascending:true}).limit(500);
  if(error)throw error;state.chapters=data||[];
  $('rt-admin-chapters-body').innerHTML=state.chapters.length?state.chapters.map(c=>'<tr><td>'+esc(c.chapter_number)+'</td><td>'+esc(c.title||'Chương '+c.chapter_number)+'</td><td>'+esc(c.published_at?new Date(c.published_at).toLocaleDateString('vi-VN'):'—')+'</td><td><span class="pill '+(c.is_published?'pill-active':'pill-user')+'">'+(c.is_published?'Đã xuất bản':'Bản nháp')+'</span></td><td><button class="btn '+(c.is_published?'btn-danger':'btn-primary')+'" data-rt-chapter-action="publish" data-id="'+esc(c.id)+'">'+(c.is_published?'Gỡ xuất bản':'Xuất bản')+'</button> <button class="btn btn-danger" data-rt-chapter-action="delete" data-id="'+esc(c.id)+'">Xóa</button></td></tr>').join(''):'<tr><td colspan="5" class="empty">Tác phẩm này chưa có chương trong database.</td></tr>';
 }
@@ -77,12 +80,63 @@ async function chapterAction(action,id){
  }
  await loadChapters(state.selected);message('Đã cập nhật chương.');
 }
+function slugify(value){
+ return String(value||'truyen-moi').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,100)||'truyen-moi';
+}
+function httpsUrl(value,label,optional=true){
+ const v=String(value||'').trim();if(!v&&optional)return '';
+ let u;try{u=new URL(v);}catch(_){throw new Error(label+' phải là URL hợp lệ.');}
+ if(u.protocol!=='https:')throw new Error(label+' phải dùng HTTPS.');
+ return u.href;
+}
+async function createSeries(event){
+ event.preventDefault();await authorized();
+ const form=$('rt-admin-create-series'),button=$('rt-new-save');button.disabled=true;
+ try{
+  const title=$('rt-new-title').value.trim();if(title.length<2)throw new Error('Tên truyện cần ít nhất 2 ký tự.');
+  const cover=httpsUrl($('rt-new-cover').value,'Ảnh bìa');
+  const payload={title,slug:slugify(title)+'-'+Date.now().toString(36).slice(-5),author:$('rt-new-author').value.trim()||'Chưa rõ tác giả',synopsis:$('rt-new-synopsis').value.trim(),cover_url:cover,source_key:'manual',genres:[$('rt-new-genre').value==='other'?'Khác':$('rt-new-genre').value],content_rating:$('rt-new-rating').value,status:$('rt-new-status').value,is_published:false,created_by:(await sb.auth.getUser()).data.user.id,sort_order:0};
+  const {data,error}=await sb.from('rotruyen_series').insert(payload).select('id,title,slug,synopsis,cover_url,author,source_key,content_rating,status,is_published,sort_order').single();
+  if(error)throw error;
+  form.reset();message('Đã tạo bản nháp “'+data.title+'”. Chọn truyện trong danh sách để thêm chương, rồi xuất bản khi sẵn sàng.');
+  await loadSeries();
+ }finally{button.disabled=false;}
+}
+async function createChapter(event){
+ event.preventDefault();await authorized();
+ const form=$('rt-admin-create-chapter'),button=$('rt-new-chapter-save'),seriesId=form.dataset.seriesId;
+ if(!seriesId||!state.selected)throw new Error('Hãy chọn tác phẩm trước khi thêm chương.');
+ button.disabled=true;
+ try{
+  const chapterNumber=Number($('rt-new-chapter-number').value);
+  if(!Number.isFinite(chapterNumber)||chapterNumber<0)throw new Error('Số chương không hợp lệ.');
+  const type=$('rt-new-chapter-type').value,raw=$('rt-new-chapter-content').value.trim();
+  if(!raw)throw new Error('Hãy nhập nội dung chương.');
+  const publish=$('rt-new-chapter-publish').value==='published';
+  const payload={series_id:seriesId,chapter_number:chapterNumber,title:$('rt-new-chapter-title').value.trim(),external_url:null,page_manifest:[],is_published:publish,published_at:publish?new Date().toISOString():null};
+  if(type==='text'){
+   payload.page_manifest=[{type:'text',text:raw}];
+  }else if(type==='images'){
+   const lines=raw.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean);
+   if(!lines.length)throw new Error('Hãy nhập ít nhất một URL ảnh.');
+   payload.page_manifest=lines.map((line,i)=>({url:httpsUrl(line,'Ảnh trang '+(i+1),false)}));
+  }else{
+   payload.external_url=httpsUrl(raw,'Liên kết chương',false);
+  }
+  const {error}=await sb.from('rotruyen_chapters').insert(payload);if(error)throw error;
+  form.reset();$('rt-new-chapter-number').value=String(chapterNumber+1);
+  $('rt-new-chapter-publish').value='draft';message('Đã thêm chương '+chapterNumber+' cho “'+state.selected.title+'”.');
+  await loadChapters(state.selected);await loadSeries();
+ }finally{button.disabled=false;}
+}
 function run(fn){fn().catch(e=>{console.error('[RoTruyen admin]',e);message(e?.message||'Thao tác thất bại.',true);});}
 function init(){
  const nav=document.querySelector('#admin-nav [data-page="rotruyen"]');if(!nav)return;
  nav.addEventListener('click',()=>run(async()=>{await authorized();state.ready=true;await loadSeries();}));
  $('rt-admin-refresh')?.addEventListener('click',()=>run(async()=>{await authorized();state.ready=true;await loadSeries();if(state.selected)await loadChapters(state.selected);}));
  $('rt-admin-search')?.addEventListener('input',renderSeries);$('rt-admin-published-filter')?.addEventListener('change',renderSeries);
+ $('rt-admin-create-series')?.addEventListener('submit',e=>run(()=>createSeries(e)));
+ $('rt-admin-create-chapter')?.addEventListener('submit',e=>run(()=>createChapter(e)));
  $('rt-admin-series-body')?.addEventListener('click',e=>{const b=e.target.closest('[data-rt-action]');if(b)run(()=>action(b.dataset.rtAction,b.dataset.id));});
  $('rt-admin-chapters-body')?.addEventListener('click',e=>{const b=e.target.closest('[data-rt-chapter-action]');if(b)run(()=>chapterAction(b.dataset.rtChapterAction,b.dataset.id));});
 }
