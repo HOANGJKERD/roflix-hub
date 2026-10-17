@@ -154,7 +154,7 @@
     var v = document.getElementById('rf-am-video');
     if (v) { try { v.pause(); v.removeAttribute('src'); v.load(); } catch (_) {} v.remove(); }
     var f = document.getElementById('rf-am-frame');
-    if (f) { f.style.display = 'none'; f.src = 'about:blank'; }
+    if (f) { try { f.src = 'about:blank'; } catch (_) {} f.remove(); }
   }
 
   function closePage() {
@@ -205,9 +205,14 @@
     function playEmbed(url) {
       stopPlayer();
       hidePlaceholder();
-      var f = document.getElementById('rf-am-frame');
-      f.style.display = 'block';
-      f.src = url;
+      var frame = document.createElement('iframe');
+      frame.id = 'rf-am-frame';
+      frame.allowFullscreen = true;
+      frame.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
+      frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+      frame.style.cssText = 'display:block;width:100%;height:100%;min-height:420px;border:0;background:#000;';
+      frame.src = url;
+      stage().appendChild(frame);
     }
 
     // Trả về Promise: resolve khi đã thực sự có hình/segment, reject khi lỗi nặng hoặc quá 20s.
@@ -223,9 +228,14 @@
         video.playsInline = true;
         stage().appendChild(video);
         var viaProxy = /^https:\/\/api\.animapper\.net\/api\/v1\/stream\/source\/m3u8\//.test(sourceUrl);
-        var referer = sourceMeta && sourceMeta.proxyHeaders && (sourceMeta.proxyHeaders.Referer || sourceMeta.proxyHeaders.referer);
+        var headers = sourceMeta && sourceMeta.proxyHeaders || {};
+        var referer = headers.Referer || headers.referer || headers.REFERER || '';
+        // Chỉ dùng proxy đã ký cho URL HLS thuộc endpoint được hỗ trợ; không biến endpoint này thành open proxy.
         var src = viaProxy ? HLS_PROXY + encodeURIComponent(sourceUrl) +
           (referer ? '&referer=' + encodeURIComponent(referer) : '') : sourceUrl;
+        if (sourceMeta && sourceMeta.corsProxyRequired && !viaProxy) {
+          throw new Error('Nguồn yêu cầu CORS proxy nhưng URL không thuộc endpoint HLS được hỗ trợ');
+        }
 
         return new Promise(function (resolve, reject) {
           var settled = false;
@@ -260,9 +270,11 @@
     }
 
     function fetchSource(episodeData, provider, server) {
+      // Tên server hiển thị trong UI của RoFlix map sang DU của AniMapper.
+      var apiServer = server === 'AnimeVsub' ? 'DU' : server;
       var path = '/stream/source?episodeData=' + encodeURIComponent(episodeData) +
         '&provider=' + encodeURIComponent(provider) +
-        '&server=' + encodeURIComponent(server);
+        '&server=' + encodeURIComponent(apiServer);
       return api(path, 24000).then(function (d) {
         var data = (d && (d.result || d.data)) || d || {};
         var url = data.url || d.url;
@@ -329,6 +341,27 @@
           return;
         } catch (e) {
           if (e && e.message === 'đã huỷ') return;
+          // Tự cứu hộ: lỗi tải HLS/manifest, lỗi mạng hoặc HTTP 404 thì thử HDX.
+          if (server !== 'HDX' && token === playToken) {
+            try {
+              var fallback = await fetchSource(episodeData, provider, 'HDX');
+              if (token !== playToken) return;
+              var fallbackType = fallback.type || (/\.m3u8(?:[?#]|$)/i.test(fallback.url) ? 'HLS' : 'EMBED');
+              if (fallbackType === 'EMBED' || (fallbackType === 'DIRECT' && !/\.m3u8(?:[?#]|$)/i.test(fallback.url))) {
+                playEmbed(fallback.url);
+              } else {
+                await playHls(fallback.url, token, fallback);
+              }
+              if (token !== playToken) return;
+              state.server = fallback.server || 'HDX';
+              renderServerButtons();
+              setSub(provider + ' · ' + state.server + ' · Tập ' + epNo + ' (fallback)');
+              return;
+            } catch (fallbackError) {
+              if (fallbackError && fallbackError.message === 'đã huỷ') return;
+              errors.push('HDX fallback: ' + (fallbackError && fallbackError.message || fallbackError));
+            }
+          }
           if (e && (e.code === 'UPSTREAM_TIMEOUT' || e.code === 'UPSTREAM_RATE_LIMITED' || e.code === 'CLIENT_TIMEOUT')) {
             if (token !== playToken) return;
             var wait = Number(e.retryAfter || 30);
