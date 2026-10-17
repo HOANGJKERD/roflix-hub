@@ -244,7 +244,15 @@
     try {
       if(state.selected?.source==='database'){
         const pages=Array.isArray(chapter.page_manifest)?chapter.page_manifest:[];
-        if(pages.length){const urls=pages.map(p=>typeof p==='string'?p:p?.url).filter(u=>{try{return new URL(u).protocol==='https:'}catch(_){return false}});if(urls.length){$('#reader-content').innerHTML=urls.map((url,i)=>'<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(url)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">').join('');return;}}
+        const textBlocks=pages.filter(p=>p&&typeof p==='object'&&p.type==='text'&&typeof p.text==='string');
+        if(textBlocks.length){
+          $('#reader-content').innerHTML=textBlocks.map(p=>'<article class="reader-text" style="max-width:820px;margin:0 auto;padding:24px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.95;font-size:1.08rem">'+esc(p.text)+'</article>').join('');
+          return;
+        }
+        if(pages.length){
+          const urls=pages.map(p=>typeof p==='string'?p:p?.url).filter(u=>{try{return new URL(u).protocol==='https:'}catch(_){return false}});
+          if(urls.length){$('#reader-content').innerHTML=urls.map((url,i)=>'<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(url)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">').join('');return;}
+        }
         if(chapter.external_url&&/^https:\/\//i.test(chapter.external_url)){ $('#reader-content').innerHTML='<div class="reader-error"><h3>Chương nằm ở nguồn ngoài</h3><p>Để tôn trọng cách phân phối của nguồn, chương này sẽ mở trong tab riêng.</p><a class="btn" href="'+esc(chapter.external_url)+'" target="_blank" rel="noopener noreferrer">Mở chương ↗</a></div>';return; }
         throw new Error('Chương chưa có danh sách trang HTTPS hoặc URL nguồn hợp lệ.');
       }
