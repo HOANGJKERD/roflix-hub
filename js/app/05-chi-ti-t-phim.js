@@ -12,7 +12,7 @@
             
             const movie = mapMovieData(movieData);
             let aniMeta = null;
-            const aniId = movieData.anilistId || movieData.animeId || movieData.aniMapperId || movieData.id;
+            const aniId = movieData.anilistId || movieData.animeId || movieData.aniMapperId;
             if (aniId != null && String(aniId).trim()) {
                 try {
                     if (window.RoflixAniMapper && typeof window.RoflixAniMapper.getMetadata === 'function') {
