@@ -8,6 +8,7 @@ const API='/api/animapper?path=';
 const PROVIDER_PRIORITY=['ANIMEVIETSUB','NINIYO','ANIMETVN'];
 const sourceCache=new Map(),mediaCache=new Map(),episodeCache=new Map();
 let hlsInstance=null,embedFrame=null,videoElement=null;
+let currentEpisodeList=[],currentMovieTitle='',currentSlug='';
 
 const text=v=>String(v==null?'':v).trim();
 const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
@@ -93,8 +94,9 @@ async function resolveEpisode(providerMediaId,provider,e,i,forcedServer){
       const corsProxyRequired=Boolean(d?.corsProxyRequired||d?.data?.corsProxyRequired||d?.result?.corsProxyRequired);
       const proxyHeaders=d?.proxyHeaders||d?.data?.proxyHeaders||d?.result?.proxyHeaders||{};
       if(u && type==='HLS' && corsProxyRequired){
-        // Proxy nội bộ sẽ đính kèm Referer phía server. Không gửi header tùy ý từ browser.
-        u='/api/hls?u='+encodeURIComponent(u);
+        // Proxy nội bộ đính kèm Referer ở server; chỉ gửi URL đã được proxy kiểm tra.
+        const referer=val(proxyHeaders,['Referer','referer','REFERER']);
+        u='/api/hls?u='+encodeURIComponent(u)+(referer?'&referer='+encodeURIComponent(referer):'');
       }
       if(u){
         const r={url:u,type,server:text(d?.server||d?.data?.server||d?.result?.server)||server,provider:pk,episodeData:ed,index:i,corsProxyRequired,proxyHeaders};
@@ -154,6 +156,9 @@ async function prepare(item){
   window.__ROFLIX_ANIME_PROVIDER_POOL__=usable;
   currentEpisodeList=chosen.episodes.map((e,i)=>({name:episodeName(e,i),link:'',__rfAniMapper:{mediaId:chosen.mediaId,provider:chosen.provider,episode:e,index:i}}));
   currentMovieTitle=title;currentSlug=item?.slug||currentSlug;
+  window.currentEpisodeList=currentEpisodeList;
+  window.currentMovieTitle=currentMovieTitle;
+  window.currentSlug=currentSlug;
   return {media,providers:usable,chosen};
 }
 async function play(item){
@@ -172,8 +177,12 @@ async function play(item){
     const meta={mediaId:selected.candidate.mediaId,provider:selected.candidate.provider,episode:selected.episode,index:0};
     currentEpisodeList=selected.candidate.episodes.map((e,i)=>({name:episodeName(e,i),link:'',__rfAniMapper:{mediaId:selected.candidate.mediaId,provider:selected.candidate.provider,episode:e,index:i}}));
     currentEpisodeList[0].link=selected.resolved.url;
+    window.currentEpisodeList=currentEpisodeList;
+    window.currentMovieTitle=currentMovieTitle;
+    window.currentSlug=currentSlug;
     window.__ROFLIX_ANIME_SELECTED_PROVIDER__=selected.candidate.provider;
-    await playMovieByIndex(0);
+    if(typeof playMovieByIndex==='function') await playMovieByIndex(0);
+    else await mount(selected.resolved.url,title,selected.resolved.type);
   }catch(e){
     console.warn('[RoFlix Anime] multi-provider failed',e);
     if(typeof showToastPro==='function')showToastPro('warning','Anime chưa phát được','Không tìm thấy nguồn phát khả dụng.');
