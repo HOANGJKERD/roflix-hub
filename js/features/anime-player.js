@@ -81,18 +81,23 @@ async function resolveEpisode(providerMediaId,provider,e,i){
   // AnimeVietSub: DU = HLS cần CORS/Referer proxy; HDX = embed không cần proxy.
   // Browser không thể tự thêm Referer tùy ý, vì vậy không chờ DU rồi mới thử HDX.
   const reported=text(e?.server||e?.serverName||e?.sourceServer).toUpperCase();
-  const servers=['HDX'];
-  if(reported && reported!=='UNKNOWN' && reported!=='DU' && reported!=='HDX')servers.push(reported);
+  const servers=['DU','HDX'];
+  if(reported && reported!=='UNKNOWN' && !servers.includes(reported))servers.push(reported);
 
   let last=null;
   for(const server of servers){
     try{
       const d=await api('/stream/source?episodeData='+encodeURIComponent(ed)+'&provider='+encodeURIComponent(pk)+'&server='+encodeURIComponent(server));
-      const u=sourceUrl(d);
+      let u=sourceUrl(d);
       const type=text(d?.type||d?.data?.type||d?.result?.type).toUpperCase()||'EMBED';
-      if(d?.corsProxyRequired&&type==='HLS'){last=Error('HLS yêu cầu proxy CORS');continue;}
+      const corsProxyRequired=Boolean(d?.corsProxyRequired||d?.data?.corsProxyRequired||d?.result?.corsProxyRequired);
+      const proxyHeaders=d?.proxyHeaders||d?.data?.proxyHeaders||d?.result?.proxyHeaders||{};
+      if(u && type==='HLS' && corsProxyRequired){
+        // Proxy nội bộ sẽ đính kèm Referer phía server. Không gửi header tùy ý từ browser.
+        u='/api/hls?u='+encodeURIComponent(u);
+      }
       if(u){
-        const r={url:u,type,server:text(d?.server||d?.data?.server||d?.result?.server)||server,provider:pk,episodeData:ed,index:i};
+        const r={url:u,type,server:text(d?.server||d?.data?.server||d?.result?.server)||server,provider:pk,episodeData:ed,index:i,corsProxyRequired,proxyHeaders};
         sourceCache.set(key,r);return r;
       }
       last=Error('AniMapper không trả URL cho server '+server);
@@ -118,7 +123,19 @@ async function mount(url,title,type){
     if(isHls&&!videoElement.canPlayType('application/vnd.apple.mpegurl')){
       if(!window.Hls){const hs=document.createElement('script');hs.id='rf-hls-js';hs.src='https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';await new Promise((resolve,reject)=>{hs.onload=resolve;hs.onerror=()=>reject(Error('Không tải được HLS player'));document.head.appendChild(hs);});}
       if(!window.Hls||!window.Hls.isSupported())throw Error('Trình duyệt không hỗ trợ HLS');
-      hlsInstance=new window.Hls({enableWorker:true,lowLatencyMode:false});hlsInstance.loadSource(url);hlsInstance.attachMedia(videoElement);
+      hlsInstance=new window.Hls({enableWorker:true,lowLatencyMode:false});
+      let recovered=false;
+      hlsInstance.on(window.Hls.Events.ERROR,(_event,data)=>{
+        if(!data||!data.fatal||recovered)return;
+        const detail=String(data.details||'');
+        const network=data.type===window.Hls.ErrorTypes.NETWORK_ERROR||/MANIFEST_LOAD_ERROR|NETWORK_ERROR/i.test(detail);
+        if(!network)return;
+        recovered=true;
+        hlsInstance.destroy();hlsInstance=null;
+        const meta=currentEpisodeList.find(ep=>ep.link===url)?.__rfAniMapper;
+        if(meta){resolveEpisode(meta.mediaId,meta.provider,meta.episode,meta.index).then(src=>mount(src.url,title,src.type)).catch(err=>console.warn('[RoFlix Anime] HLS recovery failed',err));}
+      });
+      hlsInstance.loadSource(url);hlsInstance.attachMedia(videoElement);
     }else{videoElement.src=url;}
     try{await videoElement.play();}catch(_){}
     return;
