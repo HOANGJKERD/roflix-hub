@@ -72,16 +72,16 @@ async function loadEpisodes(mediaId,provider){
 }
 function episodeId(e){return val(e,['episodeId','episode_id','id','numberId','episodeData']);}
 function episodeName(e,i){return val(e,['number','episodeNumber','episode','title','name'])||String(i+1);}
-async function resolveEpisode(providerMediaId,provider,e,i){
+async function resolveEpisode(providerMediaId,provider,e,i,forcedServer){
   const pk=providerKey(provider)||text(provider),raw=episodeId(e);if(!raw)throw Error('Tập không có episodeId');
   // AniMapper returns provider-specific episodeId formats. Use it verbatim.
   const ed=raw;
-  const key=pk+':'+ed;if(sourceCache.has(key))return sourceCache.get(key);
+  const key=pk+':'+ed+(forcedServer?':'+forcedServer:'');if(sourceCache.has(key))return sourceCache.get(key);
 
   // AnimeVietSub: DU = HLS cần CORS/Referer proxy; HDX = embed không cần proxy.
   // Browser không thể tự thêm Referer tùy ý, vì vậy không chờ DU rồi mới thử HDX.
   const reported=text(e?.server||e?.serverName||e?.sourceServer).toUpperCase();
-  const servers=['DU','HDX'];
+  const servers=forcedServer?[forcedServer]:['DU','HDX'];
   if(reported && reported!=='UNKNOWN' && !servers.includes(reported))servers.push(reported);
 
   let last=null;
@@ -133,7 +133,7 @@ async function mount(url,title,type){
         recovered=true;
         hlsInstance.destroy();hlsInstance=null;
         const meta=currentEpisodeList.find(ep=>ep.link===url)?.__rfAniMapper;
-        if(meta){resolveEpisode(meta.mediaId,meta.provider,meta.episode,meta.index).then(src=>mount(src.url,title,src.type)).catch(err=>console.warn('[RoFlix Anime] HLS recovery failed',err));}
+        if(meta){resolveEpisode(meta.mediaId,meta.provider,meta.episode,meta.index,'HDX').then(src=>mount(src.url,title,src.type)).catch(err=>console.warn('[RoFlix Anime] HLS recovery failed',err));}
       });
       hlsInstance.loadSource(url);hlsInstance.attachMedia(videoElement);
     }else{videoElement.src=url;}
