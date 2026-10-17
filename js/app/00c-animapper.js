@@ -508,6 +508,8 @@
     if (id == null || String(id).trim() === '') throw new Error('Thiếu metadata ID');
     var cached = readMetadataCache(id);
     if (cached) return cached;
+    // Evict the generic in-memory API cache so an expired LocalStorage entry cannot live forever.
+    memoryCache.delete('/metadata?id=' + encodeURIComponent(String(id)));
     var response = await api('/metadata?id=' + encodeURIComponent(String(id)), 14000);
     var data = response && (response.result || response.data || response);
     if (!data || typeof data !== 'object') throw new Error('Metadata response không hợp lệ');
@@ -527,7 +529,9 @@
     });
     if (!missing.length) return result;
     // Một request duy nhất cho toàn bộ ID chưa cache, không gọi metadata lẻ theo từng phim.
-    var response = await api('/metadata/batch?ids=' + encodeURIComponent(missing.join(',')), 20000);
+    var batchPath = '/metadata/batch?ids=' + encodeURIComponent(missing.join(','));
+    memoryCache.delete(batchPath);
+    var response = await api(batchPath, 20000);
     var payload = response && (response.result || response.data || response);
     var items = Array.isArray(payload) ? payload : (payload && (payload.items || payload.results || payload.metadata));
     if (!Array.isArray(items)) throw new Error('Batch metadata response không đúng định dạng');
