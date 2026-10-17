@@ -337,7 +337,8 @@
       $('#submit-story-modal').hidden=false;document.body.classList.add('modal-open');
     }catch(e){notify('Không kiểm tra được phiên đăng nhập: '+e.message);}
   }
-\n  function bind() {
+
+  function bind() {
     $('#story-search').addEventListener('input',e=>{state.query=e.target.value;render();});
     $('#genre-filter').addEventListener('change',e=>{state.genre=e.target.value;render();});
     $('#reset-filters').addEventListener('click',resetFilters);$('#empty-reset').addEventListener('click',resetFilters);
