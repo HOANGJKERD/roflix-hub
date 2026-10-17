@@ -81,7 +81,7 @@ async function chapterAction(action,id){
  await loadChapters(state.selected);message('Đã cập nhật chương.');
 }
 function slugify(value){
- return String(value||'truyen-moi').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,100)||'truyen-moi';
+ return String(value||'truyen-moi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,100)||'truyen-moi';
 }
 function httpsUrl(value,label,optional=true){
  const v=String(value||'').trim();if(!v&&optional)return '';
