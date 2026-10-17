@@ -211,7 +211,7 @@
     }
 
     // Trả về Promise: resolve khi đã thực sự có hình/segment, reject khi lỗi nặng hoặc quá 20s.
-    function playHls(sourceUrl, token) {
+    function playHls(sourceUrl, token, sourceMeta) {
       return loadHlsLib().then(function (Hls) {
         if (token !== playToken) throw new Error('đã huỷ');
         stopPlayer();
@@ -223,7 +223,9 @@
         video.playsInline = true;
         stage().appendChild(video);
         var viaProxy = /^https:\/\/api\.animapper\.net\/api\/v1\/stream\/source\/m3u8\//.test(sourceUrl);
-        var src = viaProxy ? HLS_PROXY + encodeURIComponent(sourceUrl) : sourceUrl;
+        var referer = sourceMeta && sourceMeta.proxyHeaders && (sourceMeta.proxyHeaders.Referer || sourceMeta.proxyHeaders.referer);
+        var src = viaProxy ? HLS_PROXY + encodeURIComponent(sourceUrl) +
+          (referer ? '&referer=' + encodeURIComponent(referer) : '') : sourceUrl;
 
         return new Promise(function (resolve, reject) {
           var settled = false;
@@ -265,7 +267,7 @@
         var data = (d && (d.result || d.data)) || d || {};
         var url = data.url || d.url;
         if (!url) throw new Error('không trả URL');
-        return { url: url, type: String(data.type || d.type || '').toUpperCase(), server: data.server || server };
+        return { url: url, type: String(data.type || d.type || '').toUpperCase(), server: data.server || server, corsProxyRequired: Boolean(data.corsProxyRequired || d.corsProxyRequired), proxyHeaders: data.proxyHeaders || d.proxyHeaders || {} };
       });
     }
 
@@ -313,9 +315,9 @@
           if (token !== playToken) return;
           var type = src.type || (/\.m3u8(?:[?#]|$)/i.test(src.url) ? 'HLS' : 'EMBED');
           if (type === 'HLS') {
-            await playHls(src.url, token);
+            await playHls(src.url, token, src);
           } else if (type === 'DIRECT') {
-            if (/\.m3u8(?:[?#]|$)/i.test(src.url)) await playHls(src.url, token);
+            if (/\.m3u8(?:[?#]|$)/i.test(src.url)) await playHls(src.url, token, src);
             else playEmbed(src.url);
           } else {
             playEmbed(src.url);
@@ -476,10 +478,77 @@
     document.getElementById('rf-am-q').focus();
   }
 
+  // Metadata cache shared by RoFlix views. Cache envelope: { timestamp, data }, TTL 24h.
+  var METADATA_TTL = 24 * 60 * 60 * 1000;
+  function metadataCacheKey(id) { return 'roflix_metadata_' + String(id); }
+  function readMetadataCache(id) {
+    try {
+      var raw = localStorage.getItem(metadataCacheKey(id));
+      if (!raw) return null;
+      var entry = JSON.parse(raw);
+      if (!entry || !entry.timestamp || Date.now() - entry.timestamp >= METADATA_TTL || !entry.data) {
+        localStorage.removeItem(metadataCacheKey(id));
+        return null;
+      }
+      return entry.data;
+    } catch (error) {
+      try { localStorage.removeItem(metadataCacheKey(id)); } catch (_) {}
+      return null;
+    }
+  }
+  function writeMetadataCache(id, data) {
+    try {
+      localStorage.setItem(metadataCacheKey(id), JSON.stringify({ timestamp: Date.now(), data: data }));
+    } catch (error) {
+      // Storage quota/privacy mode must never block playback.
+      console.warn('[RoFlix AniMapper] Không lưu được metadata cache:', error);
+    }
+  }
+  async function getMetadata(id) {
+    if (id == null || String(id).trim() === '') throw new Error('Thiếu metadata ID');
+    var cached = readMetadataCache(id);
+    if (cached) return cached;
+    // Evict the generic in-memory API cache so an expired LocalStorage entry cannot live forever.
+    memoryCache.delete('/metadata?id=' + encodeURIComponent(String(id)));
+    var response = await api('/metadata?id=' + encodeURIComponent(String(id)), 14000);
+    var data = response && (response.result || response.data || response);
+    if (!data || typeof data !== 'object') throw new Error('Metadata response không hợp lệ');
+    writeMetadataCache(id, data);
+    return data;
+  }
+  async function getMetadataBatch(ids) {
+    var unique = Array.from(new Set((Array.isArray(ids) ? ids : []).filter(function (id) {
+      return id != null && String(id).trim() !== '';
+    }).map(String)));
+    var result = {};
+    var missing = [];
+    unique.forEach(function (id) {
+      var cached = readMetadataCache(id);
+      if (cached) result[id] = cached;
+      else missing.push(id);
+    });
+    if (!missing.length) return result;
+    // Một request duy nhất cho toàn bộ ID chưa cache, không gọi metadata lẻ theo từng phim.
+    var batchPath = '/metadata/batch?ids=' + encodeURIComponent(missing.join(','));
+    memoryCache.delete(batchPath);
+    var response = await api(batchPath, 20000);
+    var payload = response && (response.result || response.data || response);
+    var items = Array.isArray(payload) ? payload : (payload && (payload.items || payload.results || payload.metadata));
+    if (!Array.isArray(items)) throw new Error('Batch metadata response không đúng định dạng');
+    items.forEach(function (item) {
+      if (!item || item.id == null) return;
+      var id = String(item.id);
+      if (missing.indexOf(id) < 0) return;
+      result[id] = item;
+      writeMetadataCache(id, item);
+    });
+    return result;
+  }
+
   function boot() { injectSourcePill(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
   setTimeout(injectSourcePill, 800);
   setTimeout(injectSourcePill, 2200);
-  w.RoflixAniMapper = { open: openPage, injectSourcePill: injectSourcePill };
+  w.RoflixAniMapper = { open: openPage, injectSourcePill: injectSourcePill, getMetadata: getMetadata, getMetadataBatch: getMetadataBatch };
 })(window);

@@ -36,6 +36,18 @@
                         ...(auRes.status === 'fulfilled' ? mapListResultItems(auRes.value) : []),
                         ...(krRes.status === 'fulfilled' ? mapListResultItems(krRes.value) : [])
                     ].filter(m => m.slug && isValidPosterUrl(m.poster));
+                    // Batch metadata một lần cho các item có AniMapper ID rõ ràng.
+                    // Không dùng slug VSMOV/KKPhim thay cho AniMapper ID vì hai hệ ID khác nhau.
+                    try {
+                        const aniIds = pool.map(m => m.aniMapperId || m.anilistId || m.animeId)
+                            .filter(id => id != null && String(id).trim() !== '');
+                        if (aniIds.length && window.RoflixAniMapper &&
+                            typeof window.RoflixAniMapper.getMetadataBatch === 'function') {
+                            await window.RoflixAniMapper.getMetadataBatch(aniIds);
+                        }
+                    } catch (metadataError) {
+                        console.warn('[RoFlix] Batch metadata tuần này thất bại:', metadataError);
+                    }
                     // chọn 8 phim rating cao
                     movies = pool
                         .sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0))

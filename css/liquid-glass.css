@@ -696,3 +696,47 @@
             .hero-nav-prev { left: 8px; }
             .hero-nav-next { right: 8px; }
         }
+
+
+/* RoFlix per-title accent, scoped to the movie detail surface. */
+#detail-content-container {
+    --anime-accent: #f59e0b;
+}
+#detail-content-container .glass-premium {
+    border-color: color-mix(in srgb, var(--anime-accent) 28%, rgba(255,255,255,.10));
+    box-shadow: var(--ro-shadow-ios), var(--lg-shadow), inset 0 1px 0 var(--lg-edge-soft),
+        0 0 34px color-mix(in srgb, var(--anime-accent) 12%, transparent);
+}
+#detail-content-container .glass-premium:hover {
+    border-color: color-mix(in srgb, var(--anime-accent) 55%, transparent);
+    box-shadow: var(--ro-shadow-ios), var(--lg-shadow), inset 0 1px 0 var(--lg-edge-soft),
+        0 0 42px color-mix(in srgb, var(--anime-accent) 18%, transparent);
+}
+#detail-content-container .rf-detail-watch-btn,
+#detail-content-container button[data-related-id] {
+    border-color: color-mix(in srgb, var(--anime-accent) 48%, transparent);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--anime-accent) 12%, transparent);
+}
+#detail-content-container .rf-anime-meta-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+#detail-content-container .rf-anime-meta-badge,
+#detail-content-container .rf-related-link {
+    border: 1px solid color-mix(in srgb, var(--anime-accent) 36%, transparent);
+    background: color-mix(in srgb, var(--anime-accent) 10%, transparent);
+    color: var(--ro-text-primary, #f3f4f6);
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 11px;
+    line-height: 1.4;
+}
+#detail-content-container .rf-related-link {
+    cursor: pointer;
+    font-weight: 750;
+}
+#detail-content-container .rf-related-link:hover {
+    background: color-mix(in srgb, var(--anime-accent) 22%, transparent);
+}

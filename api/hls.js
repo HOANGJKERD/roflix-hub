@@ -12,7 +12,15 @@ const crypto = require('crypto');
 const net = require('net');
 const { Readable } = require('stream');
 
-const REFERER = 'https://animevietsub.nl/';
+const DEFAULT_REFERER = 'https://animevietsub.nl/';
+const TRUSTED_REFERER_HOSTS = new Set(['animevietsub.nl', 'animevietsub.page']);
+function trustedReferer(value) {
+  try {
+    const url = new URL(String(value || DEFAULT_REFERER));
+    if (url.protocol !== 'https:' || !TRUSTED_REFERER_HOSTS.has(url.hostname.toLowerCase())) return DEFAULT_REFERER;
+    return url.origin + '/';
+  } catch (_) { return DEFAULT_REFERER; }
+}
 const FIRST_HOP_HOST = 'api.animapper.net';
 const FIRST_HOP_PREFIX = '/api/v1/stream/source/m3u8/';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
@@ -123,7 +131,8 @@ async function handler(req, res) {
     return res.status(403).json({ error: 'Chữ ký không hợp lệ' });
   }
 
-  const headers = { Referer: REFERER, 'User-Agent': UA, Accept: '*/*' };
+  const referer = trustedReferer(req.query && req.query.referer);
+  const headers = { Referer: referer, 'User-Agent': UA, Accept: '*/*' };
   if (req.headers.range) headers.Range = req.headers.range;
 
   const ctrl = new AbortController();

@@ -11,6 +11,35 @@
             if (!movieData) return;
             
             const movie = mapMovieData(movieData);
+            let aniMeta = null;
+            const aniId = movieData.anilistId || movieData.animeId || movieData.aniMapperId;
+            if (aniId != null && String(aniId).trim()) {
+                try {
+                    if (window.RoflixAniMapper && typeof window.RoflixAniMapper.getMetadata === 'function') {
+                        aniMeta = await window.RoflixAniMapper.getMetadata(aniId);
+                    } else {
+                        const response = await fetch('/api/animapper?path=' + encodeURIComponent('/metadata?id=' + encodeURIComponent(String(aniId))), { headers: { Accept: 'application/json' } });
+                        if (response.ok) {
+                            const payload = await response.json();
+                            aniMeta = payload && (payload.result || payload.data || payload);
+                        }
+                    }
+                } catch (error) { console.warn('[RoFlix] Không tải được AniMapper metadata:', error); }
+            }
+            const accentCandidate = aniMeta && aniMeta.images && aniMeta.images.coverColor;
+            const accent = typeof accentCandidate === 'string' && /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i.test(accentCandidate.trim()) ? accentCandidate.trim() : '#f59e0b';
+            const metaBadges = [
+                ...(Array.isArray(aniMeta && aniMeta.genres) ? aniMeta.genres : []),
+                ...(Array.isArray(aniMeta && aniMeta.tags) ? aniMeta.tags : [])
+            ].map(item => typeof item === 'string' ? item : (item && (item.name || item.title)) || '').filter(Boolean);
+            const relations = Array.isArray(aniMeta && aniMeta.relations) ? aniMeta.relations : [];
+            const relationButtons = relations.map(relation => {
+                const relatedId = relation && (relation.id || relation.slug);
+                if (relatedId == null) return '';
+                const relationType = String(relation.type || relation.relationType || '').toUpperCase();
+                const label = /MOVIE|FILM/.test(relationType) ? 'Xem Movie' : 'Xem Phần 2';
+                return '<button type="button" class="rf-related-link" data-related-id="' + escapeHtml(String(relatedId)) + '">' + label + '</button>';
+            }).join('');
             currentSlug = slug;
             const rating = getMovieRating(slug);
             const avg = rating.count > 0 ? (rating.total / rating.count) : 0;
@@ -85,6 +114,11 @@
                                 <div>
                                     <h1 class="text-2xl md:text-3xl font-black text-white">${escapeHtml(movie.title)}</h1>
                                     <p class="text-sm mt-1 text-gray-400">${escapeHtml(movie.origin_name || '')}</p>
+                                    ${aniMeta ? '<div class="rf-anime-meta-badges">' +
+                                        '<span class="rf-anime-meta-badge">' + escapeHtml(String(aniMeta.totalUnits || '')) + (aniMeta.totalUnits ? ' tập' : '') + '</span>' +
+                                        '<span class="rf-anime-meta-badge">' + escapeHtml(String(aniMeta.status || '')) + '</span>' +
+                                        metaBadges.map(tag => '<span class="rf-anime-meta-badge">' + escapeHtml(tag) + '</span>').join('') +
+                                        relationButtons + '</div>' : ''}
                                 </div>
                                 <button onclick="toggleFavorite('${slug}')" class="text-xs px-4 py-2.5 rounded-xl border border-gray-800 flex items-center gap-2 transition ${isFav ? 'bg-amber-500 text-black font-bold shadow-lg shadow-amber-500/20' : 'bg-gray-900/60 text-gray-300 hover:border-amber-500'} btn-ripple">
                                     <i class="fa-${isFav ? 'solid' : 'regular'} fa-bookmark"></i>
@@ -155,6 +189,13 @@
                 </div>
             `;
             
+            const detailContainer = document.getElementById('detail-content-container');
+            if (detailContainer) {
+                detailContainer.style.setProperty('--anime-accent', accent);
+                detailContainer.querySelectorAll('[data-related-id]').forEach(button => {
+                    button.addEventListener('click', () => viewMovieDetail(button.getAttribute('data-related-id')));
+                });
+            }
             navigateTo('detail-page');
             setTimeout(() => updateRatingDisplay(slug), 100);
             if (typeof window.rfRenderCommentThread2 === 'function') window.rfRenderCommentThread2(slug);
