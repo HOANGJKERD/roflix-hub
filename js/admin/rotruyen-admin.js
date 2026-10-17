@@ -38,11 +38,11 @@ async function loadChapters(series){
  state.selected=series;
  $('rt-admin-create-chapter').hidden=false;
  $('rt-admin-create-chapter').dataset.seriesId=String(series.id);
- $('rt-new-chapter-number').value=String((Number(state.chapters.at(-1)?.chapter_number)||0)+1);
  $('rt-admin-chapter-caption').textContent='Tác phẩm: '+(series.title||series.id);
  $('rt-admin-chapters-body').innerHTML='<tr><td colspan="5" class="empty">Đang tải chương...</td></tr>';
  const {data,error}=await sb.from('rotruyen_chapters').select('id,series_id,chapter_number,title,is_published,published_at,external_url,page_manifest').eq('series_id',series.id).order('chapter_number',{ascending:true}).limit(500);
  if(error)throw error;state.chapters=data||[];
+ $('rt-new-chapter-number').value=String((Number(state.chapters.at(-1)?.chapter_number)||0)+1);
  $('rt-admin-chapters-body').innerHTML=state.chapters.length?state.chapters.map(c=>'<tr><td>'+esc(c.chapter_number)+'</td><td>'+esc(c.title||'Chương '+c.chapter_number)+'</td><td>'+esc(c.published_at?new Date(c.published_at).toLocaleDateString('vi-VN'):'—')+'</td><td><span class="pill '+(c.is_published?'pill-active':'pill-user')+'">'+(c.is_published?'Đã xuất bản':'Bản nháp')+'</span></td><td><button class="btn '+(c.is_published?'btn-danger':'btn-primary')+'" data-rt-chapter-action="publish" data-id="'+esc(c.id)+'">'+(c.is_published?'Gỡ xuất bản':'Xuất bản')+'</button> <button class="btn btn-danger" data-rt-chapter-action="delete" data-id="'+esc(c.id)+'">Xóa</button></td></tr>').join(''):'<tr><td colspan="5" class="empty">Tác phẩm này chưa có chương trong database.</td></tr>';
 }
 async function action(action,id){
