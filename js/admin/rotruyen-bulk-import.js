@@ -6,7 +6,49 @@ function msg(t,bad){const e=$('rt-import-status');if(e){e.textContent=t;e.style.
 function isCover(p){return /(^|[/_\-\s])(cover|thumb|thumbnail|poster|bia|bìa|folder)([/_.\-\s]|$)/i.test(p);}
 function num(s,f){const m=String(s).match(/(?:chapter|chap|ch|chuong|chương|tap|tập|vol|volume)?\s*[-_. #]*(\d+(?:[.,]\d+)?)/i);return m?Number(m[1].replace(',','.')):f;}
 async function read(input){const out=[];for(const f of Array.from(input||[])){if(/\.zip$/i.test(f.name)){if(!window.JSZip)throw Error('Không tải được bộ đọc ZIP. Tải lại trang Admin.');const z=await window.JSZip.loadAsync(f);for(const e of Object.values(z.files).filter(x=>!x.dir&&ext.test(x.name)&&!/(^|\/)(__MACOSX|\.git)(\/|$)/i.test(x.name))){const n=e.name.split('/').pop();out.push({path:e.name.replace(/^\/+/,''),name:n,zipEntry:e,zipRef:z,size:e._data?.uncompressedSize||0});}}else if(ext.test(f.name))out.push({path:(f.webkitRelativePath||f.name).replace(/^\/+/,''),name:f.name,file:f,size:f.size});}return out.sort((a,b)=>sort(a.path,b.path));}
-function group(files){let cover=files.find(x=>isCover(x.path))||null;const images=files.filter(x=>!isCover(x.path));const map=new Map();images.forEach(x=>{const p=x.path.split('/'),k=p.length>1?p.slice(0,-1).join('/'):'__root__';if(!map.has(k))map.set(k,[]);map.get(k).push(x);});const filenameChapter=/^(?:chapter|chap|ch)[-_ .]*(\d+(?:[.,]\d+)?)[-_ .]+(\d+)(?:[-_. ]|$)/i;if(map.size===1&&images.length>1&&images.every(x=>filenameChapter.test(x.name))){map.clear();images.forEach(x=>{const m=x.name.match(filenameChapter),n=Number(m[1].replace(',','.')),k='__filename_chapter__'+n;if(!map.has(k))map.set(k,[]);map.get(k).push(x);});}const chapters=Array.from(map.entries()).map((e,i)=>{const fromName=e[0].startsWith('__filename_chapter__'),number=fromName?Number(e[0].slice('__filename_chapter__'.length)):num(e[0]==='__root__'?'':e[0].split('/').pop(),i+1);return{folder:e[0],number,title:fromName?'Chương '+number:e[0]==='__root__'?'Chương 1':e[0].split('/').pop().replace(/[_-]+/g,' '),pages:e[1].sort((a,b)=>sort(a.name,b.name))};}).sort((a,b)=>a.number-b.number||sort(a.folder,b.folder));if(!chapters.length)throw Error('Không tìm thấy ảnh chương.');if(!cover)cover=chapters[0]?.pages[0]||null;return{cover,chapters:chapters.filter(c=>c.pages.length)};}
+function group(files){
+ let cover=files.find(x=>isCover(x.path))||null;
+ const images=files.filter(x=>!isCover(x.path));
+ const map=new Map();
+ const patterns=[
+  /^(?:chapter|chap|ch|chuong|chương)[-_ .]*(\d+(?:[.,]\d+)?)[-_ .]+(?:page|pages|p|img|image)?[-_ .]*(\d+)(?:[-_. ()]|$)/i,
+  /^(?:chapter|chap|ch|chuong|chương)[-_ .]*(\d+(?:[.,]\d+)?)(?:[-_. ()]|$)/i
+ ];
+ function chapterFromName(name){
+  const base=String(name||'').replace(/\.[^.]+$/,'');
+  for(let i=0;i<patterns.length;i++){
+   const m=base.match(patterns[i]);
+   if(m)return Number(m[1].replace(',','.'));
+  }
+  return null;
+ }
+ const detected=images.map(x=>({item:x,chapter:chapterFromName(x.name)}));
+ const namedCount=detected.filter(x=>x.chapter!==null&&Number.isFinite(x.chapter)).length;
+ const useFilename=images.length>0&&namedCount>=Math.max(2,Math.ceil(images.length*.7));
+ if(useFilename){
+  detected.forEach(({item,chapter})=>{
+   const p=item.path.split('/'),dir=p.length>1?p.slice(0,-1).join('/'):'';
+   const n=chapter===null?num(dir,1):chapter;
+   const key='__auto_chapter__'+n;
+   if(!map.has(key))map.set(key,[]);
+   map.get(key).push(item);
+  });
+ }else{
+  images.forEach(x=>{
+   const p=x.path.split('/'),k=p.length>1?p.slice(0,-1).join('/'):'__root__';
+   if(!map.has(k))map.set(k,[]);
+   map.get(k).push(x);
+  });
+ }
+ const chapters=Array.from(map.entries()).map((e,i)=>{
+  const auto=e[0].startsWith('__auto_chapter__');
+  const number=auto?Number(e[0].slice('__auto_chapter__'.length)):num(e[0]==='__root__'?'':e[0].split('/').pop(),i+1);
+  return {folder:e[0],number,title:'Chương '+number,pages:e[1].sort((a,b)=>sort(a.name,b.name))};
+ }).sort((a,b)=>a.number-b.number||sort(a.folder,b.folder));
+ if(!chapters.length)throw Error('Không tìm thấy ảnh chương.');
+ if(!cover)cover=chapters[0]?.pages[0]||null;
+ return {cover,chapters:chapters.filter(c=>c.pages.length)};
+}
 async function dup(){S.duplicate=false;S.resumeSeries=null;const title=($('rt-import-title')?.value||'').trim();if(!title||!sb)return;try{const r=await sb.from('rotruyen_series').select('id,title,is_published').ilike('title',title).limit(5);if(r.error)throw r.error;for(const row of (r.data||[])){if(row.title.toLocaleLowerCase('vi')!==title.toLocaleLowerCase('vi')||row.is_published)continue;const ch=await sb.from('rotruyen_chapters').select('id',{count:'exact',head:true}).eq('series_id',row.id);if(ch.error)throw ch.error;if((ch.count||0)===0){S.resumeSeries=row;break;}}S.duplicate=!!r.data?.length;const e=$('rt-import-duplicate');if(e){e.textContent=S.resumeSeries?'↻ Sẽ tiếp tục bản nháp trống “'+S.resumeSeries.title+'” và dùng lại ảnh đã upload.':S.duplicate?'⚠ Có thể trùng tên: '+r.data.map(x=>x.title).join(', ')+'. Đổi tên hoặc xử lý bản trùng trước khi nhập.':'✓ Chưa phát hiện truyện trùng tên.';e.style.color=S.resumeSeries?'#a7f3d0':S.duplicate?'#fbbf24':'#a7f3d0';}}catch(e){const el=$('rt-import-duplicate');if(el){el.textContent='Chưa kiểm tra được trùng: '+e.message;el.style.color='#fbbf24';}}}
 function render(){const sum=$('rt-import-summary'),body=$('rt-import-chapters'),btn=$('rt-import-start');if(sum)sum.textContent=S.files.length?S.files.length+' ảnh · '+S.chapters.length+' chương · '+(S.files.reduce((n,x)=>n+(x.size||x.file?.size||0),0)/1048576).toFixed(1)+' MB':'Chưa chọn file';if(body)body.innerHTML=S.chapters.length?S.chapters.map(c=>'<tr><td>'+esc(c.number)+'</td><td>'+esc(c.title)+'</td><td>'+c.pages.length+'</td><td>'+esc(c.pages[0]?.name||'')+'</td></tr>').join(''):'<tr><td colspan="4" class="empty">Chọn ZIP hoặc thư mục ảnh để xem trước.</td></tr>';if(btn)btn.disabled=!S.files.length||S.busy;const c=$('rt-import-cover-preview');if(c)c.textContent=S.cover?'Ảnh bìa: '+S.cover.name:'Chưa nhận diện ảnh bìa riêng.';}
 async function inspect(input){if(S.busy)return;msg('Đang đọc ZIP/ảnh và phân nhóm…');try{const f=await read(input);if(!f.length)throw Error('Không tìm thấy ảnh. Chọn ZIP hoặc thư mục JPG/JPEG/PNG/WebP/GIF.');const g=group(f);S.files=f;S.chapters=g.chapters;S.cover=g.cover;if(!$('rt-import-title').value.trim())$('rt-import-title').value=(f[0].path.split('/')[0]||'Truyện mới').replace(/\.(zip|jpe?g|png|webp|gif)$/i,'').replace(/[_-]+/g,' ');await dup();render();msg('Đã đọc '+f.length+' ảnh, '+S.chapters.length+' chương. Chưa upload gì lên Supabase.');}catch(e){S.files=[];S.chapters=[];S.cover=null;render();msg(e.message||'Không đọc được nguồn.',true);}}
