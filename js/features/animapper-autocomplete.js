@@ -106,7 +106,7 @@
       clearTimeout(timers.get(input));
       const query = input.value.trim();
       if (query.length < 2) { close(); return; }
-      timers.set(input, setTimeout(() => lookup(query), 220));
+      timers.set(input, setTimeout(() => lookup(query), 400));
     });
     input.addEventListener('keydown', event => {
       if (event.key === 'Escape') close();
