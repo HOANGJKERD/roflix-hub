@@ -5,16 +5,7 @@
   const API = '/api/mangadex';
   // TruyenDex is a MangaDex-powered frontend project, not a separate public REST API.
   // RoTruyen integrates MangaDex's documented public API directly.
-  /* Removed hard-coded demo catalogue: only real database/API records may be shown.
-  const DEMOS = [
-    {id:'demo-1',title:'Thành Phố Sau Hoàng Hôn',author:'RoTruyen Studio',genre:'fantasy',kind:'Fantasy',chapters:42,rating:9.2,pop:98,updated:6,icon:'fa-city',cover:'#282449',glow:'#8c6ce0',accent:'#d3b9ff',description:'Một thành phố nơi những vì sao chỉ xuất hiện sau hoàng hôn. Nhân vật chính bắt đầu hành trình tìm ra bí mật của bầu trời.'},
-    {id:'demo-2',title:'Kiếm Sĩ Cuối Cùng',author:'RoTruyen Studio',genre:'action',kind:'Hành động',chapters:86,rating:9.5,pop:100,updated:1,icon:'fa-khanda',cover:'#402b38',glow:'#d66d70',accent:'#ffc1a7',description:'Truyện mẫu dùng để trình diễn giao diện danh mục và trang chi tiết.'},
-    {id:'demo-3',title:'Khu Vườn Của Những Vì Sao',author:'RoTruyen Studio',genre:'romance',kind:'Lãng mạn',chapters:24,rating:8.9,pop:82,updated:2,icon:'fa-star',cover:'#243b4b',glow:'#58a9d4',accent:'#a5e4ff',description:'Một câu chuyện nhẹ nhàng về những lời hứa, ký ức và một khu vườn nhỏ.'},
-    {id:'demo-4',title:'Biên Niên Sử Lục Địa',author:'RoTruyen Studio',genre:'adventure',kind:'Phiêu lưu',chapters:112,rating:9.4,pop:95,updated:3,icon:'fa-mountain-sun',cover:'#423521',glow:'#d9a64b',accent:'#f9d58b',description:'Hành trình phiêu lưu qua những vùng đất chưa được vẽ lên bản đồ.'},
-    {id:'demo-5',title:'Ngày Mai Không Có Mưa',author:'RoTruyen Studio',genre:'drama',kind:'Chính kịch',chapters:18,rating:8.7,pop:73,updated:4,icon:'fa-cloud-moon',cover:'#293447',glow:'#7c91bd',accent:'#c9d7ff',description:'Truyện minh họa cho bản giao diện đầu tiên của RoTruyện.'},
-    {id:'demo-6',title:'Pháp Sư Và Chiếc Đồng Hồ',author:'RoTruyen Studio',genre:'fantasy',kind:'Fantasy',chapters:57,rating:9.1,pop:89,updated:0,icon:'fa-hourglass-half',cover:'#362943',glow:'#a56cce',accent:'#e9c7ff',description:'Một chiếc đồng hồ cổ có thể mở ra cánh cửa đến những thời điểm đã mất.'}
-  ];
-  */
+  // Public catalogue only uses published database records or the explicitly selected external API.
   const state = {source:'database',query:'',genre:'all',sort:'featured',items:[],saved:new Set(),history:[],selected:null,chapters:[],chapterIndex:0,chapterPages:[],apiBusy:false,readerBusy:false};
   const memory = {
     read(key, fallback) { try { const v=JSON.parse(localStorage.getItem('rotruyen:'+key)); return v ?? fallback; } catch (_) { return fallback; } },
