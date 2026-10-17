@@ -69,7 +69,7 @@
                 await renderMoviesFromAPI(1);
                 if (val) await appendAnimeSearchResults(val);
                 if (val) scrollToMovieList();
-            }, 350);
+            }, 400);
         }
 
         async function handleSearchMobile() {
