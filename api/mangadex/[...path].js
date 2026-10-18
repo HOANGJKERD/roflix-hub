@@ -52,7 +52,8 @@ module.exports = async function handler(req, res) {
     // Vercel catch-all routing may inject __path into the incoming query.
     // It is routing metadata, not a MangaDex API parameter; forwarding it causes
     // MangaDex validation_exception: property __path is not defined.
-    if (key !== 'path' && key !== '__path' && key !== '_rf') params.append(key, value);
+    // Strip internal routing metadata regardless of exact spelling/casing.
+    if (key !== 'path' && key !== '_rf' && !key.startsWith('__')) params.append(key, value);
   });
   const target = ORIGIN + '/' + parts.map(encodeURIComponent).join('/') + (params.toString() ? '?' + params.toString() : '');
   const controller = new AbortController();
