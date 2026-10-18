@@ -116,19 +116,12 @@
       }
       return params;
     };
+    // Chỉ lấy tác phẩm có bản dịch tiếng Việt. Không fallback sang catalog đa ngôn ngữ.
     let data;
     try {
       data=await fetchJSON(API+'/manga?'+buildParams(true).toString());
-      if(!(data.data||[]).length && !state.query.trim() && state.genre==='all') {
-        data=await fetchJSON(API+'/manga?'+buildParams(false).toString());
-      }
-    } catch(firstError) {
-      // Thử lại một lần với truy vấn rộng hơn để tránh bộ lọc ngôn ngữ làm hỏng việc tải catalog.
-      try {
-        data=await fetchJSON(API+'/manga?'+buildParams(false).toString());
-      } catch(secondError) {
-        throw new Error('Không kết nối được MangaDex API. '+secondError.message);
-      }
+    } catch(error) {
+      throw new Error('Không tải được catalog MangaDex có Vietsub. '+error.message);
     }
     return (data.data||[]).map(mapManga);
   }
@@ -214,15 +207,14 @@
         list.innerHTML=state.chapters.map((c,i)=>'<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.chapter_number)+' '+esc(c.title||'')+'</span><small>Đọc</small></button>').join('');return;
       }
       const buildChapterParams=(preferVietnamese)=>{const p=new URLSearchParams({limit:'100','order[chapter]':'asc'});if(preferVietnamese)p.append('translatedLanguage[]','vi');p.append('contentRating[]','safe');p.append('contentRating[]','suggestive');p.append('includes[]','scanlation_group');return p;};
+      // Feed chỉ trả về chương đã dịch tiếng Việt; tuyệt đối không tải chương ngôn ngữ khác.
       let data;
       try {
         data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+buildChapterParams(true).toString());
-        if(!(data.data||[]).length)data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+buildChapterParams(false).toString());
-      } catch(firstError) {
-        try { data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+buildChapterParams(false).toString()); }
-        catch(secondError) { throw new Error('Không tải được feed MangaDex. '+secondError.message); }
+      } catch(error) {
+        throw new Error('Không tải được danh sách chương Vietsub. '+error.message);
       }
-      state.chapters=(data.data||[]).filter(c=>c.attributes?.pages>0);
+      state.chapters=(data.data||[]).filter(c=>c.attributes?.pages>0 && c.attributes?.translatedLanguage==='vi');
       if(!state.chapters.length){list.innerHTML='<p>Nguồn chưa có chương công khai có trang đọc. Có thể truyện chưa có bản dịch hoặc chương đang bị giới hạn.</p>';return;}
       list.innerHTML=state.chapters.map((c,i)=>{const group=(c.relationships||[]).find(r=>r.type==='scanlation_group')?.attributes?.name;return '<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.attributes.chapter||'?')+' '+esc(c.attributes.title||'')+(group?'<small>Nhóm dịch: '+esc(group)+'</small>':'')+'</span><small>'+esc(c.attributes.translatedLanguage||'')+'</small></button>';}).join('');
     } catch(e){list.innerHTML='<p>Không tải được chương. '+esc(e.message)+'</p>';}
