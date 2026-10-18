@@ -252,6 +252,10 @@
     const chapter=state.chapters[index];if(!chapter)return;
     state.chapterIndex=index;const title=chapter.attributes?.chapter||chapter.chapter_number||'?';
     $('#reader-title').textContent=(state.selected?.title||'RoTruyện')+' · Chương '+title;
+    const prev=$('#reader-prev'),next=$('#reader-next'),position=$('#reader-chapter-position');
+    if(prev)prev.disabled=index<=0;
+    if(next)next.disabled=index>=state.chapters.length-1;
+    if(position)position.textContent='Chương '+(index+1)+' / '+state.chapters.length;
     const chapterGroup=(chapter.relationships||[]).find(r=>r.type==='scanlation_group')?.attributes?.name;
     const readerCredit=$('#reader-source-credit');if(readerCredit)readerCredit.textContent=chapterGroup?'Nguồn: MangaDex · Nhóm dịch: '+chapterGroup:'Nguồn chương: MangaDex';
     $('#reader-content').innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải trang đọc…</p></div>';closeModal('detail-modal');$('#reader-modal').hidden=false;document.body.classList.add('modal-open');
@@ -412,6 +416,8 @@
     $$('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);}));
     $('#detail-read').addEventListener('click',loadChapters);
     $('#chapter-list').addEventListener('click',e=>{const b=e.target.closest('[data-chapter]');if(b)openReader(Number(b.dataset.chapter));});
+    $('#reader-prev')?.addEventListener('click',()=>{if(state.chapterIndex>0)openReader(state.chapterIndex-1);});
+    $('#reader-next')?.addEventListener('click',()=>{if(state.chapterIndex<state.chapters.length-1)openReader(state.chapterIndex+1);});
     $('#mobile-menu').addEventListener('click',()=>$('#rt-nav').classList.toggle('open'));
     $('#security-dismiss')?.addEventListener('click',()=>{const el=$('#devtools-block');if(el)el.style.display='none';});
     document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.modal:not([hidden])').forEach(m=>closeModal(m.id));if(e.key==='/'&&!/input|textarea|select/i.test(document.activeElement.tagName)){e.preventDefault();$('#story-search').focus();}});
