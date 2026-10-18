@@ -525,20 +525,26 @@
     state.source='mixed';
     state.items=ownItems;
     render();
-    try {
-      const external=await searchMangaDex();
-      const existing=new Set(ownItems.map(x=>String(x.id)));
-      state.items=[...ownItems,...external.filter(x=>!existing.has(String(x.id)))];
-      if(!external.length&&!ownItems.length)notify('Chưa tìm thấy truyện đã xuất bản hoặc truyện Vietsub từ MangaDex.');
-      else if(!external.length)notify('Đã tải truyện RoTruyện. MangaDex hiện chưa trả về truyện Vietsub.');
-      render();
-    } catch(e) {
-      console.error('[RoTruyen MangaDex catalog]', e);
-      state.items=ownItems;
-      render();
-      const detail=(e && e.message) ? e.message : 'Lỗi không xác định';
-      notify(ownItems.length?'Đã tải truyện RoTruyện; MangaDex lỗi: '+detail:'Không tải được catalog tự động: '+detail);
-    }
+    // Gộp cả ba nguồn vào thư viện mặc định để người dùng không phải tự chọn từng provider.
+    const [mangaResult, vietResult] = await Promise.allSettled([
+      searchMangaDex(),
+      fetchJSON('/api/truyenviet?action=search&source=all'+(state.query.trim()?'&q='+encodeURIComponent(state.query.trim()):''))
+    ]);
+    const mangaItems = mangaResult.status==='fulfilled' ? mangaResult.value : [];
+    const vietItems = vietResult.status==='fulfilled' ? (vietResult.value.items||[]).map(item=>({...item,source:'truyenviet',contentType:'novel',kind:item.kind||'Tiểu thuyết',chapters:null,raw:item})) : [];
+    if(mangaResult.status==='rejected') console.warn('[RoTruyen MangaDex catalog]',mangaResult.reason);
+    if(vietResult.status==='rejected') console.warn('[RoTruyen Truyện Việt catalog]',vietResult.reason);
+    const existing=new Set(ownItems.map(x=>String(x.id)));
+    const combined=[...ownItems,...mangaItems.filter(x=>!existing.has(String(x.id)))];
+    const known=new Set(combined.map(x=>String(x.id)));
+    state.items=[...combined,...vietItems.filter(x=>!known.has(String(x.id)))];
+    render();
+    const errors=[];
+    if(mangaResult.status==='rejected')errors.push('MangaDex');
+    if(vietResult.status==='rejected')errors.push('Truyện Việt');
+    else if(vietResult.value.errors?.length)errors.push(...vietResult.value.errors.map(x=>x.source));
+    if(errors.length)notify('Một số nguồn chưa phản hồi: '+[...new Set(errors)].join(', '));
+    if(!state.items.length)notify('Chưa có truyện từ thư viện, MangaDex hoặc Truyện Việt.');
   }
 
 async function loadPublicGenres(){
