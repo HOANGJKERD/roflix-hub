@@ -6,7 +6,7 @@
   // TruyenDex is a MangaDex-powered frontend project, not a separate public REST API.
   // RoTruyen integrates MangaDex's documented public API directly.
   // Public catalogue only uses published database records or the explicitly selected external API.
-  const state = {source:'database',query:'',genre:'all',sort:'featured',items:[],saved:new Set(),history:[],selected:null,chapters:[],chapterIndex:0,chapterPages:[],apiBusy:false,readerBusy:false,chapterRequestId:0};
+  const state = {source:'database',query:'',genre:'all',status:'all',rating:'all',catalogSource:'all',sort:'featured',items:[],saved:new Set(),history:[],selected:null,chapters:[],chapterIndex:0,chapterPages:[],apiBusy:false,readerBusy:false,chapterRequestId:0};
   const memory = {
     read(key, fallback) { try { const v=JSON.parse(localStorage.getItem('rotruyen:'+key)); return v ?? fallback; } catch (_) { return fallback; } },
     write(key, value) { try { localStorage.setItem('rotruyen:'+key, JSON.stringify(value)); return true; } catch (_) { return false; } }
@@ -142,12 +142,55 @@
       .filter(item=>(item.attributes?.availableTranslatedLanguages||[]).includes('vi'))
       .map(mapManga);
   }
+  function normalizeFilterText(value){return String(value??'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLowerCase();}
+  function genreMatches(item,genre){
+    if(genre==='all')return true;
+    const aliases={
+      action:['action','hành động','hanh dong'],adventure:['adventure','phiêu lưu','phieu luu'],
+      comedy:['comedy','hài hước','hai huoc'],drama:['drama','chính kịch','chinh kich'],
+      fantasy:['fantasy','kỳ ảo','ky ao'],horror:['horror','kinh dị','kinh di'],
+      mystery:['mystery','bí ẩn','bi an'],romance:['romance','lãng mạn','lang man'],
+      'sci-fi':['sci-fi','science fiction','khoa học viễn tưởng','khoa hoc vien tuong'],
+      'slice-of-life':['slice of life','đời thường','doi thuong'],sports:['sports','thể thao','the thao'],
+      supernatural:['supernatural','siêu nhiên','sieu nhien']
+    };
+    const haystack=normalizeFilterText([item.genre,item.kind,...(Array.isArray(item.genres)?item.genres:[]),...(item.raw?.attributes?.tags||[]).map(t=>t.attributes?.name?.en||'')].join(' '));
+    return (aliases[genre]||[genre]).some(alias=>haystack.includes(normalizeFilterText(alias)));
+  }
+  function statusMatches(item){
+    if(state.status==='all')return true;
+    const value=normalizeFilterText(item.status);
+    const map={ongoing:['ongoing','publishing','đang ra','dang ra'],completed:['completed','finished','hoàn thành','hoan thanh'],hiatus:['hiatus','tạm ngưng','tam ngung'],cancelled:['cancelled','canceled','đã hủy','da huy']};
+    return (map[state.status]||[state.status]).some(x=>value.includes(normalizeFilterText(x)));
+  }
+  function ratingMatches(item){
+    if(state.rating==='all')return true;
+    const value=normalizeFilterText(item.contentRating??item.content_rating??'safe');
+    const adult=isAdultOnly(item)||['erotica','pornographic','adult','mature','18+','nsfw'].some(x=>value.includes(x));
+    if(state.rating==='adult')return adult;
+    if(state.rating==='safe')return !adult&&value!=='suggestive';
+    if(state.rating==='suggestive')return !adult&&value==='suggestive';
+    return true;
+  }
   function activeItems() {
-    let items=state.items.filter(s=>(!state.query || s.title.toLocaleLowerCase('vi').includes(state.query.toLocaleLowerCase('vi')) || (s.author||'').toLocaleLowerCase('vi').includes(state.query.toLocaleLowerCase('vi')))&&(state.genre==='all'||s.genre===state.genre));
-    if(state.sort==='latest') items=[...items].sort((a,b)=>(b.updated||0)-(a.updated||0));
-    if(state.sort==='popular') items=[...items].sort((a,b)=>(b.pop||0)-(a.pop||0));
+    const query=normalizeFilterText(state.query);
+    let items=state.items.filter(s=>{
+      const searchable=normalizeFilterText([s.title,s.author,s.description,s.synopsis,s.kind].join(' '));
+      return (!query||searchable.includes(query))
+        &&genreMatches(s,state.genre)
+        &&statusMatches(s)
+        &&ratingMatches(s)
+        &&(state.catalogSource==='all'||s.source===state.catalogSource);
+    });
+    if(state.sort==='latest') items=[...items].sort((a,b)=>(Date.parse(b.raw?.attributes?.updatedAt||b.updated||0)||0)-(Date.parse(a.raw?.attributes?.updatedAt||a.updated||0)||0));
+    if(state.sort==='popular') items=[...items].sort((a,b)=>(Number(b.pop)||Number(b.raw?.attributes?.followedCount)||0)-(Number(a.pop)||Number(a.raw?.attributes?.followedCount)||0));
     if(state.sort==='rating') items=[...items].sort((a,b)=>(b.rating||0)-(a.rating||0));
     return items;
+  }
+  function updateFilterSummary(){
+    const el=$('#active-filter-count');if(!el)return;
+    const count=[state.query.trim(),state.genre!=='all',state.status!=='all',state.rating!=='all',state.catalogSource!=='all'].filter(Boolean).length;
+    el.textContent=count+' bộ lọc đang dùng';
   }
   function coverMarkup(s) {
     const style='--cover:'+esc(s.coverColor||'#282449')+';--glow:'+esc(s.glow||'#8c6ce0')+';--accent:'+esc(s.accent||'#d3b9ff');
@@ -158,7 +201,7 @@
   function render() {
     const items=activeItems(), grid=$('#story-grid'); if(!grid)return;
     grid.innerHTML=items.map(s=>'<article class="story'+(isAdultOnly(s)?' story-adult':'')+'"><div class="story-open" data-open="'+esc(s.id)+'" role="button" tabindex="0" aria-label="'+(isAdultOnly(s)?'Truyện 18+, cần đăng nhập: ':'Xem chi tiết ')+esc(s.title)+'">'+coverMarkup(s)+'<h3 title="'+esc(s.title)+'">'+esc(s.title)+(isAdultOnly(s)?' <small class="rt-age-label">🔒 18+ · Đăng nhập để xem</small>':'')+'</h3></div><p>'+esc(s.author||'Đang cập nhật')+'</p><div class="meta"><span>'+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':'Chưa có chương')+'</span><span class="rating">'+(s.rating?'★ '+s.rating.toFixed(1):s.source==='mangadex'?'Nguồn ngoài':'Chưa đánh giá')+'</span></div></article>').join('');
-    const count=$('#result-count'); if(count)count.textContent=items.length+' kết quả';
+    const count=$('#result-count'); if(count)count.textContent=items.length+' kết quả';updateFilterSummary();
     const empty=$('#empty-state'); if(empty)empty.hidden=!!items.length;
     const rank=$('#ranking-list'); if(rank)rank.innerHTML=[...state.items].sort((a,b)=>(b.pop||0)-(a.pop||0)).slice(0,4).map((s,i)=>'<div class="ranking"><span class="rank">0'+(i+1)+'</span><span class="rank-info"><b>'+esc(s.title)+'</b><small>'+esc(s.kind||'Truyện')+'</small></span><span>'+(s.rating?'★ '+s.rating.toFixed(1):'↗')+'</span></div>').join('')||'<p class="muted">Chưa có dữ liệu xếp hạng từ nguồn này.</p>';
     renderSavedCount();
@@ -205,7 +248,7 @@
       state.source='longbook';render();if(!state.items.length)notify('LongBookApi đã phản hồi nhưng không nhận diện được danh sách truyện.');
     }catch(e){notify('LongBookApi chưa khả dụng: '+e.message);}
   }
-  function resetFilters(){state.query='';state.genre='all';state.sort='featured';$('#story-search').value='';$('#genre-filter').value='all';$$('[data-sort]').forEach(b=>{b.classList.toggle('active',b.dataset.sort===state.sort);b.setAttribute('aria-selected',String(b.dataset.sort===state.sort));});render();}
+  function resetFilters(){state.query='';state.genre='all';state.status='all';state.rating='all';state.catalogSource='all';state.sort='featured';$('#story-search').value='';$('#genre-filter').value='all';$('#status-filter').value='all';$('#rating-filter').value='all';$('#source-filter').value='all';$('[data-sort]').forEach(b=>{b.classList.toggle('active',b.dataset.sort===state.sort);b.setAttribute('aria-selected',String(b.dataset.sort===state.sort));});render();}
   function isAdultOnly(item) {
     const raw=String(item?.contentRating ?? item?.content_rating ?? item?.content_rating_label ?? item?.age_rating ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().trim();
     // Chấp nhận cả mã chuẩn lẫn nhãn do admin/importer lưu.
@@ -464,6 +507,9 @@
   function bind() {
     $('#story-search').addEventListener('input',e=>{state.query=e.target.value;render();});
     $('#genre-filter').addEventListener('change',e=>{state.genre=e.target.value;render();});
+    $('#status-filter')?.addEventListener('change',e=>{state.status=e.target.value;render();});
+    $('#rating-filter')?.addEventListener('change',e=>{state.rating=e.target.value;render();});
+    $('#source-filter')?.addEventListener('change',e=>{state.catalogSource=e.target.value;render();});
     $('#reset-filters').addEventListener('click',resetFilters);$('#empty-reset').addEventListener('click',resetFilters);
     $$('[data-sort]').forEach(b=>b.addEventListener('click',()=>{state.sort=b.dataset.sort;$$('[data-sort]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b));});render();}));
     $('#story-grid').addEventListener('click',e=>{const save=e.target.closest('[data-save]');if(save){e.preventDefault();e.stopPropagation();requireSignedIn('tủ truyện yêu thích').then(ok=>{if(!ok)return;const id=save.dataset.save;state.saved.has(id)?state.saved.delete(id):state.saved.add(id);memory.write('saved:v1',[...state.saved]);render();scheduleCloudSync();notify(state.saved.has(id)?'Đã lưu truyện vào tủ.':'Đã bỏ lưu truyện.');});return;}const open=e.target.closest('[data-open]');if(open){openDetail(open.dataset.open);}});
