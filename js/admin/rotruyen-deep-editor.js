@@ -141,6 +141,7 @@ async function importMangaDexChapters(){
 }
 function install(){
  const seriesBody=$('rt-admin-series-body'),chaptersBody=$('rt-admin-chapters-body');if(!seriesBody||!chaptersBody)return;
+ installDeepEditorLauncher();
  document.addEventListener('click',e=>{
   const b=e.target.closest('[data-rt-action="edit"]');if(b){e.preventDefault();e.stopImmediatePropagation();const row=(window.__rtDeepSeriesCache||[]).find(s=>String(s.id)===String(b.dataset.id));if(row){seriesEditor(row);return;}loadSeriesForEdit(b.dataset.id).catch(err=>showMessage(err.message,true));}
  },true);
@@ -152,6 +153,24 @@ function install(){
  const oldChapterRender=window.rfRenderRoTruyenChapters;
 }
 async function loadSeriesForEdit(id){const db=await admin(),{data,error}=await db.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,source_id,genres,content_rating,status,is_published,sort_order').eq('id',id).single();if(error)throw error;seriesEditor(data);}
+function installDeepEditorLauncher(){
+ const host=$('rt-deep-editor-launcher');if(!host||host.dataset.ready==='1')return;host.dataset.ready='1';
+ const select=$('rt-deep-series-select'),open=$('rt-deep-open-selected'),refresh=$('rt-deep-refresh-series');
+ async function populate(){
+  select.innerHTML='<option value="">Đang tải danh sách truyện…</option>';open.disabled=true;
+  try{
+   const db=await admin(),{data,error}=await db.from('rotruyen_series').select('id,title,author,slug,is_published').order('title',{ascending:true}).limit(1000);if(error)throw error;
+   window.__rtDeepSeriesCache=data||[];
+   select.innerHTML='<option value="">Chọn truyện cần chỉnh sửa…</option>'+(data||[]).map(s=>'<option value="'+esc(s.id)+'">'+esc(s.title||s.slug||s.id)+(s.is_published?' · Đã xuất bản':' · Bản nháp')+'</option>').join('');
+   open.disabled=!(data||[]).length;
+   if(!(data||[]).length)showMessage('Catalog chưa có truyện để chỉnh sửa.',true);
+  }catch(e){select.innerHTML='<option value="">Không tải được danh sách truyện</option>';showMessage('Không tải được danh sách chỉnh sửa sâu: '+e.message,true);}
+ }
+ select.addEventListener('change',()=>{open.disabled=!select.value;});
+ open.addEventListener('click',()=>{const s=(window.__rtDeepSeriesCache||[]).find(x=>String(x.id)===select.value);if(s)seriesEditor(s);});
+ refresh.addEventListener('click',populate);
+ populate();
+}
 function syncCache(){
  const sbody=$('rt-admin-series-body'),cbody=$('rt-admin-chapters-body');if(!sbody||!cbody)return;
  const series=(window.__rtDeepSeriesCache||[]); // obtain IDs and fetch only on edit, avoiding duplicate privileged reads.
