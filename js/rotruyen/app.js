@@ -287,6 +287,9 @@
     try {
       if(selected.source==='database'){
         const sb=window.rfSupabase;if(!sb)throw new Error('Supabase chưa sẵn sàng.');
+        const {data:seriesState,error:seriesError}=await sb.from('rotruyen_series').select('is_locked').eq('id',selected.id).maybeSingle();
+        if(seriesError)throw seriesError;
+        if(seriesState?.is_locked){selected.isLocked=true;closeModal('detail-modal');notify('Truyện này hiện đã bị khóa bởi quản trị viên.');return;}
         const {data,error}=await sb.from('rotruyen_chapters').select('id,series_id,chapter_number,title,external_url,page_manifest,is_published,published_at').eq('series_id',selected.id).eq('is_published',true).order('chapter_number',{ascending:true}).limit(500);
         if(!isCurrent())return;
         if(error)throw error;state.chapters=data||[];
