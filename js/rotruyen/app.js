@@ -509,6 +509,16 @@
     }
   }
 
+async function loadPublicGenres(){
+    const select=$('#genre-filter'),sb=window.rfSupabase;if(!select||!sb)return;
+    try{
+      const {data,error}=await sb.from('rotruyen_genres').select('name,slug').eq('is_active',true).order('sort_order',{ascending:true}).limit(200);
+      if(error)throw error;
+      const current=select.value,existing=new Set(Array.from(select.options).map(o=>o.value));
+      (data||[]).forEach(g=>{if(!existing.has(g.slug)){const option=document.createElement('option');option.value=g.slug;option.textContent=g.name;select.appendChild(option);existing.add(g.slug);}});
+      if(Array.from(select.options).some(o=>o.value===current))select.value=current;
+    }catch(error){console.warn('[RoTruyen genres]',error.message||error);}
+  }
   function bind() {
     $('#story-search').addEventListener('input',e=>{state.query=e.target.value;render();});
     $('#genre-filter').addEventListener('change',e=>{state.genre=e.target.value;render();});
@@ -548,5 +558,5 @@
   async function rtRenderAccountLink(){const link=$('#rt-account-link'),label=$('#rt-account-label'),sb=window.rfSupabase;if(!link||!sb)return;try{const {data}=await sb.auth.getUser();const user=data?.user;if(user){let p={};try{p=JSON.parse(localStorage.getItem('roflix-profile')||'{}')}catch(_){}link.href='rotruyen-account.html';if(label)label.textContent=(user.user_metadata?.display_name||p.name||user.email?.split('@')[0]||'Tài khoản').slice(0,24);link.title='Tài khoản '+(user.email||'')}else{link.href='rotruyen-account.html';if(label)label.textContent='Đăng nhập'}}catch(_){if(label)label.textContent='Tài khoản'}}
   rtRenderAccountLink();
   if(window.rfSupabase){window.rfSupabase.auth.onAuthStateChange(()=>{setTimeout(rtRenderAccountLink,0)})}
-  bind();render();connectRealtime();syncCloudLibrary();loadAutomaticCatalog();
+  bind();render();connectRealtime();syncCloudLibrary();loadPublicGenres();loadAutomaticCatalog();
 })();
