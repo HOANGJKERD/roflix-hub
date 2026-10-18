@@ -27,7 +27,7 @@ function stripTags(v) {
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
 }
 function attr(tag, name) {
-  const m = String(tag || '').match(new RegExp('(?:^|\\s)' + name + '\\s*=\\s*["\\']([^"\\']*)["\\']', 'i'));
+  const m = String(tag || '').match(new RegExp("\\b" + name + "\\s*=\\s*[\"']([^\"']*)[\"']", "i"));
   return m ? decodeHtml(m[1]) : '';
 }
 function absolute(base, path) {
