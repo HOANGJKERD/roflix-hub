@@ -31,7 +31,7 @@ function renderSeries(){
 async function loadSeries(){
  if(!state.ready)return;
  $('rt-admin-series-body').innerHTML='<tr><td colspan="5" class="empty">Đang tải catalog RoTruyện...</td></tr>';
- const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,content_rating,status,is_published,is_locked,lock_reason,genres,sort_order').order('sort_order',{ascending:true}).limit(500);
+ const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,content_rating,content_type,status,is_published,is_locked,lock_reason,genres,sort_order').order('sort_order',{ascending:true}).limit(500);
  if(error)throw error;state.series=data||[];renderStats();renderSeries();await loadGenres();message('Đã tải '+state.series.length+' tác phẩm từ rotruyen_series.');
 }
 async function loadGenres(){
@@ -145,7 +145,7 @@ async function createSeries(event){
  try{
   const title=$('rt-new-title').value.trim();if(title.length<2)throw new Error('Tên truyện cần ít nhất 2 ký tự.');
   const cover=httpsUrl($('rt-new-cover').value,'Ảnh bìa');
-  const payload={title,slug:slugify(title)+'-'+Date.now().toString(36).slice(-5),author:$('rt-new-author').value.trim()||'Chưa rõ tác giả',synopsis:$('rt-new-synopsis').value.trim(),cover_url:cover,source_key:'manual',genres:[$('rt-new-genre').value==='other'?'Khác':$('rt-new-genre').value],content_rating:$('rt-new-rating').value,status:$('rt-new-status').value,is_published:false,is_locked:false,lock_reason:'',created_by:(await sb.auth.getUser()).data.user.id,sort_order:0};
+  const payload={title,slug:slugify(title)+'-'+Date.now().toString(36).slice(-5),content_type:$('rt-new-content-type')?.value||'comic',author:$('rt-new-author').value.trim()||'Chưa rõ tác giả',synopsis:$('rt-new-synopsis').value.trim(),cover_url:cover,source_key:'manual',genres:[$('rt-new-genre').value==='other'?'Khác':$('rt-new-genre').value],content_rating:$('rt-new-rating').value,status:$('rt-new-status').value,is_published:false,is_locked:false,lock_reason:'',created_by:(await sb.auth.getUser()).data.user.id,sort_order:0};
   const {data,error}=await sb.from('rotruyen_series').insert(payload).select('id,title,slug,synopsis,cover_url,author,source_key,content_rating,status,is_published,sort_order').single();
   if(error)throw error;
   form.reset();message('Đã tạo bản nháp “'+data.title+'”. Chọn truyện trong danh sách để thêm chương, rồi xuất bản khi sẵn sàng.');
