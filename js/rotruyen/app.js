@@ -84,7 +84,7 @@
   }
   function coverOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
-    return id && file ? '/api/mangadex-image?host=uploads.mangadex.org&path='+encodeURIComponent('/covers/'+id+'/'+file) : '';
+    return id && file ? '/api/mangadex-image?host=uploads.mangadex.org&path='+encodeURIComponent('/covers/'+id+'/'+file+'.512.jpg') : '';
   }
   function mapManga(item) {
     const a=item.attributes||{};
@@ -136,11 +136,19 @@
       const tagIds={action:'391b0423-d847-456f-aff0-8b0cfc03066b',romance:'423e2eae-a7a2-4a8b-ac03-a8351462d71d',drama:'b9af3a63-f058-46de-a9a0-e0c13906197a',adventure:'3b60b75c-a2d7-4860-ab56-05f391bb889c',fantasy:'cdc58593-87dd-415e-bbc0-2ec27bf404cc'};
       if(tagIds[state.genre]) params.append('includedTags[]',tagIds[state.genre]);
     }
-    const data=await fetchMangaDexCatalog(params);
-    const results=Array.isArray(data.data)?data.data:[];
-    return results
+    // Load several pages so the catalogue is not artificially limited to the first 100 results.
+    // MangaDex caps each request at 100; offsets are deduplicated below.
+    const pages = await Promise.all([0,100,200].map(async offset => {
+      const pageParams = new URLSearchParams(params);
+      pageParams.set('offset', String(offset));
+      return fetchMangaDexCatalog(pageParams);
+    }));
+    const results = pages.flatMap(data => Array.isArray(data.data) ? data.data : []);
+    const unique = new Map();
+    results
       .filter(item=>(item.attributes?.availableTranslatedLanguages||[]).includes('vi'))
-      .map(mapManga);
+      .forEach(item => { if (!unique.has(item.id)) unique.set(item.id, item); });
+    return [...unique.values()].map(mapManga);
   }
   function normalizeFilterText(value){return String(value??'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLowerCase();}
   function genreMatches(item,genre){
