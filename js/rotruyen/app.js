@@ -13,6 +13,8 @@
   };
   state.saved = new Set(memory.read('saved:v1', []));
   state.history = memory.read('history:v1', []);
+  const readProgress = memory.read('read-progress:v1', {});
+  let progressSaveTimer = null;
   let cloudUserId=null, libraryChannel=null, userLibraryChannel=null, cloudSyncBusy=false, cloudSyncTimer=null;
   async function syncCloudLibrary(){
     const sb=window.rfSupabase;if(!sb||cloudSyncBusy)return;
@@ -248,9 +250,44 @@
     } catch(e){if(isCurrent())list.innerHTML='<p>Không tải được chương. '+esc(e.message)+'</p>';}
     finally{if(isCurrent()){read.disabled=false;read.textContent='Xem chương / Tải lại';}}
   }
+  function persistReadProgress(force) {
+    if (!state.selected || !state.chapters[state.chapterIndex]) return;
+    const modal=$('#reader-modal');
+    const chapter=state.chapters[state.chapterIndex];
+    const key=String(state.selected.id);
+    const max=Math.max(0,(modal?.scrollHeight||0)-(modal?.clientHeight||0));
+    const ratio=max>0?Math.min(1,Math.max(0,(modal.scrollTop||0)/max)):0;
+    readProgress[key]={mangaId:key,title:state.selected.title||'RoTruyện',source:state.selected.source||'unknown',chapterId:String(chapter.id||chapter.chapter_number||state.chapterIndex),chapter:String(chapter.attributes?.chapter||chapter.chapter_number||'?'),chapterIndex:state.chapterIndex,scrollRatio:ratio,updatedAt:Date.now()};
+    if(progressSaveTimer)clearTimeout(progressSaveTimer);
+    const save=()=>{memory.write('read-progress:v1',readProgress);};
+    if(force)save();else progressSaveTimer=setTimeout(save,250);
+  }
+  function rememberChapter() {
+    if(!state.selected || !state.chapters[state.chapterIndex]) return;
+    const chapter=state.chapters[state.chapterIndex];
+    const saved={mangaId:state.selected.id,title:state.selected.title,chapterId:chapter.id,chapter:chapter.attributes?.chapter||chapter.chapter_number||'?',updatedAt:Date.now()};
+    state.history=[saved,...state.history.filter(x=>String(x.mangaId)!==String(saved.mangaId))].slice(0,100);
+    memory.write('history:v1',state.history);
+    scheduleCloudSync();
+  }
+  function wireReaderImages() {
+    const container=$('#reader-content');
+    container?.querySelectorAll('img').forEach((img)=>{
+      img.addEventListener('error',()=>{
+        if(img.dataset.roRetry==='1')return;
+        img.dataset.roRetry='1';
+        const original=img.getAttribute('src');
+        if(original && original.startsWith('/api/mangadex-image?')){
+          try{const u=new URL(original,location.origin);u.searchParams.set('retry',String(Date.now()));img.src=u.pathname+u.search;return;}catch(_){}
+        }
+        if(original){img.src=original;return;}
+        img.alt='Không tải được ảnh. Hãy tải lại chương.';
+      });
+    });
+  }
   async function openReader(index) {
     const chapter=state.chapters[index];if(!chapter)return;
-    state.chapterIndex=index;const title=chapter.attributes?.chapter||chapter.chapter_number||'?';
+    state.chapterIndex=index;const title=chapter.attributes?.chapter||chapter.chapter_number||'?';persistReadProgress(true);rememberChapter();
     $('#reader-title').textContent=(state.selected?.title||'RoTruyện')+' · Chương '+title;
     const prev=$('#reader-prev'),next=$('#reader-next'),position=$('#reader-chapter-position');
     if(prev)prev.disabled=index<=0;
@@ -269,7 +306,7 @@
         }
         if(pages.length){
           const urls=pages.map(p=>typeof p==='string'?p:p?.url).filter(u=>{try{return new URL(u).protocol==='https:'}catch(_){return false}});
-          if(urls.length){$('#reader-content').innerHTML=urls.map((url,i)=>'<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(url)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">').join('');return;}
+          if(urls.length){$('#reader-content').innerHTML=urls.map((url,i)=>'<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(url)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">').join('');wireReaderImages();return;}
         }
         if(chapter.external_url&&/^https:\/\//i.test(chapter.external_url)){ $('#reader-content').innerHTML='<div class="reader-error"><h3>Chương nằm ở nguồn ngoài</h3><p>Để tôn trọng cách phân phối của nguồn, chương này sẽ mở trong tab riêng.</p><a class="btn" href="'+esc(chapter.external_url)+'" target="_blank" rel="noopener noreferrer">Mở chương ↗</a></div>';return; }
         throw new Error('Chương chưa có danh sách trang HTTPS hoặc URL nguồn hợp lệ.');
@@ -286,8 +323,7 @@
       const pageSrc=(kind, file)=>'/api/mangadex-image?host='+encodeURIComponent(imageHost)+'&path='+encodeURIComponent('/'+kind+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file));
       const container=$('#reader-content');
       container.innerHTML=files.map((file,i)=>{const fallback=saverFiles[i]?pageSrc('data-saver', saverFiles[i]):'';return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pageSrc('data', file))+'" data-saver="'+esc(fallback)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
-      container.querySelectorAll('img[data-saver]').forEach(img=>{img.addEventListener('error',()=>{const next=img.getAttribute('data-saver');if(next&&!img.dataset.fallback){img.dataset.fallback='1';img.src=next;}});});
-      const saved={mangaId:state.selected.id,title:state.selected.title,chapterId:chapter.id,chapter:title,updatedAt:Date.now()};requireSignedIn('lịch sử đọc').then(ok=>{if(!ok)return;state.history=[saved,...state.history.filter(x=>x.mangaId!==saved.mangaId)].slice(0,100);memory.write('history:v1',state.history);scheduleCloudSync();});
+      container.querySelectorAll('img[data-saver]').forEach(img=>{img.addEventListener('error',()=>{const next=img.getAttribute('data-saver');if(next&&!img.dataset.fallback){img.dataset.fallback='1';img.src=next;}});});wireReaderImages();
     }catch(e){$('#reader-content').innerHTML='<div class="reader-error"><h3>Không thể tải chương</h3><p>'+esc(e.message)+'</p><p>Thử lại sau hoặc chọn chương khác.</p><button class="btn" id="retry-chapter">Thử lại</button></div>';$('#retry-chapter')?.addEventListener('click',()=>openReader(index));}
   }
   async function requireSignedIn(feature){const sb=window.rfSupabase;if(!sb){notify('Dịch vụ tài khoản chưa sẵn sàng.');return false;}try{const {data,error}=await sb.auth.getUser();if(error)throw error;if(!data?.user){notify('Đăng nhập RoHub để dùng '+feature+'.');location.href='rotruyen-account.html';return false;}return true;}catch(e){notify('Không kiểm tra được tài khoản: '+e.message);return false;}}
@@ -418,6 +454,8 @@
     $('#chapter-list').addEventListener('click',e=>{const b=e.target.closest('[data-chapter]');if(b)openReader(Number(b.dataset.chapter));});
     $('#reader-prev')?.addEventListener('click',()=>{if(state.chapterIndex>0)openReader(state.chapterIndex-1);});
     $('#reader-next')?.addEventListener('click',()=>{if(state.chapterIndex<state.chapters.length-1)openReader(state.chapterIndex+1);});
+    $('#reader-modal')?.addEventListener('scroll',()=>persistReadProgress(false),{passive:true});
+    $('#reader-close')?.addEventListener('click',()=>persistReadProgress(true));
     $('#mobile-menu').addEventListener('click',()=>$('#rt-nav').classList.toggle('open'));
     $('#security-dismiss')?.addEventListener('click',()=>{const el=$('#devtools-block');if(el)el.style.display='none';});
     document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.modal:not([hidden])').forEach(m=>closeModal(m.id));if(e.key==='/'&&!/input|textarea|select/i.test(document.activeElement.tagName)){e.preventDefault();$('#story-search').focus();}});
