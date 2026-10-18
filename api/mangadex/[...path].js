@@ -23,7 +23,22 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Only GET is supported');
 
-  const raw = req.query && req.query.path;
+  // Vercel catch-all functions do not expose the dynamic path identically in every
+  // deployment/runtime. Prefer req.query.path when present, otherwise parse the
+  // pathname so /api/mangadex/manga is resolved as ["manga"].
+  let raw = req.query && req.query.path;
+  if (raw == null) {
+    try {
+      const pathname = new URL(req.url, 'https://rohub.invalid').pathname;
+      const marker = '/api/mangadex/';
+      const markerIndex = pathname.indexOf(marker);
+      if (markerIndex >= 0) {
+        raw = pathname.slice(markerIndex + marker.length).split('/').filter(Boolean).map(segment => {
+          try { return decodeURIComponent(segment); } catch (_) { return segment; }
+        });
+      }
+    } catch (_) {}
+  }
   const parts = (Array.isArray(raw) ? raw : raw == null ? [] : [raw]).map(String);
   if (!endpointAllowed(parts)) {
     return sendError(res, 400, 'ENDPOINT_NOT_ALLOWED', 'MangaDex endpoint or identifier is not allowed');
