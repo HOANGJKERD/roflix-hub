@@ -2,6 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id), client=()=>window.rfSupabase;
 const state={running:false,lastRun:null,results:[]};
+const checks={startedAt:0};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const stamp=v=>v?new Date(v).toLocaleString('vi-VN',{dateStyle:'short',timeStyle:'medium'}):'Chưa chạy';
 function paintSummary(){
@@ -17,7 +18,7 @@ function render(){
  else host.innerHTML=state.results.map(x=>'<article class="health-result health-result-'+x.status+'"><span class="health-status">'+(x.status==='ok'?'✓':x.status==='warn'?'!':'×')+'</span><div class="health-result-copy"><div class="health-result-title">'+esc(x.title)+'</div><p>'+esc(x.detail)+'</p>'+(x.meta?'<small>'+esc(x.meta)+'</small>':'')+'</div><span class="health-tag">'+(x.status==='ok'?'Đạt':x.status==='warn'?'Cần xem':'Lỗi')+'</span></article>').join('');
  paintSummary();
 }
-function add(title,status,detail,meta){state.results.push({title,status,detail,meta:meta||''});render();}
+function add(title,status,detail,meta){state.results.push({title,status,detail,meta:meta||'',checkedAt:new Date().toISOString()});render();}
 async function fetchTimed(url,ms){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),ms||7000);
  try{return await fetch(url,{method:'GET',cache:'no-store',signal:controller.signal,headers:{Accept:'application/json, text/plain, */*'}});}
@@ -27,16 +28,25 @@ async function checkAsset(path){
  try{const r=await fetchTimed(new URL(path,location.href).href,6000);if(r.ok)add('Tệp giao diện: '+path,'ok','HTTP '+r.status,'Tài nguyên tĩnh');else add('Tệp giao diện: '+path,'fail','Máy chủ trả HTTP '+r.status,'Kiểm tra tên tệp, đường dẫn và cấu hình deploy');}
  catch(e){add('Tệp giao diện: '+path,'fail',e.name==='AbortError'?'Hết thời gian chờ tải tệp':e.message,'Không thể xác minh tài nguyên trên máy chủ hiện tại');}
 }
-async function checkApi(name,url){
- try{const r=await fetchTimed(url,8000);if(!r.ok){add(name,'warn','Endpoint trả HTTP '+r.status,'API có phản hồi nhưng không trả mã thành công');return;}const type=r.headers.get('content-type')||'';add(name,'ok','HTTP '+r.status+(type?' · '+type.split(';')[0]:''),'Đã nhận phản hồi endpoint; chưa xác minh khả năng phát video từng tập');}
- catch(e){add(name,'warn',e.name==='AbortError'?'Hết thời gian chờ.':e instanceof TypeError?'Trình duyệt không đọc được endpoint (có thể do CORS, mạng hoặc máy chủ).':e.message,'Không đủ căn cứ kết luận máy chủ nguồn đã ngừng hoạt động');}
+async function checkApi(name,url,validator){
+ const started=performance.now();
+ try{
+  const r=await fetchTimed(url,8000),type=r.headers.get('content-type')||'',elapsed=Math.round(performance.now()-started);
+  if(!r.ok){add(name,'warn','HTTP '+r.status+' · '+elapsed+' ms','Endpoint phản hồi nhưng không trả mã thành công');return;}
+  let detail='HTTP '+r.status+' · '+elapsed+' ms'+(type?' · '+type.split(';')[0]:'');
+  if(type.includes('json')){
+   let payload;try{payload=await r.clone().json();}catch(_){add(name,'warn',detail,'Content-Type JSON nhưng không phân tích được JSON hợp lệ');return;}
+   if(validator&&!validator(payload)){add(name,'warn',detail,'JSON hợp lệ nhưng thiếu cấu trúc dữ liệu mong đợi');return;}
+   add(name,'ok',detail,'Đã xác minh phản hồi JSON cơ bản, chưa xác minh luồng phát/xem end-to-end');
+  }else add(name,'warn',detail,'Phản hồi không khai báo JSON; có thể là CORS, trang chặn hoặc thay đổi API');
+ }catch(e){add(name,'warn',e.name==='AbortError'?'Hết thời gian chờ.':e instanceof TypeError?'Trình duyệt không đọc được endpoint (có thể do CORS, mạng hoặc máy chủ).':e.message,'Không đủ căn cứ kết luận máy chủ nguồn đã ngừng hoạt động');}
 }
 async function checkTable(db,table){
  try{const result=await db.from(table).select('*',{head:true,count:'exact'});if(result.error){add('Bảng Supabase: '+table,'fail',result.error.message,'Kiểm tra migration, tên bảng và quyền RLS');return;}add('Bảng Supabase: '+table,'ok','Truy vấn metadata thành công'+(Number.isFinite(result.count)?' · '+result.count+' bản ghi nhìn thấy':''),'Số bản ghi phản ánh quyền của phiên hiện tại');}
  catch(e){add('Bảng Supabase: '+table,'fail',e.message,'Lỗi truy vấn không mong đợi');}
 }
 async function run(){
- if(state.running)return;state.running=true;state.results=[];state.lastRun=new Date().toISOString();render();
+ if(state.running)return;state.running=true;state.results=[];state.lastRun=new Date().toISOString();checks.startedAt=performance.now();const runButton=$('health-run-btn');if(runButton){runButton.disabled=true;runButton.textContent='Đang kiểm tra…';}render();
  const db=client();
  if(!db){add('Supabase client','fail','window.rfSupabase chưa được khởi tạo.','Kiểm tra CDN, cấu hình Supabase và js/core/supabase.js');state.running=false;render();return;}
  add('Supabase client','ok','Client JavaScript đã được khởi tạo.','Chưa đồng nghĩa backend đã truy cập được');
@@ -53,14 +63,21 @@ async function run(){
    else add('Quyền quản trị','ok','Role admin và trạng thái tài khoản đã được xác minh.');
   }
  }catch(e){add('Phiên đăng nhập / quyền','fail',e.message,'Kiểm tra kết nối Supabase và chính sách RLS');}
+ const permission=state.results.find(x=>x.title==='Quyền quản trị');
+ const signedIn=state.results.find(x=>x.title==='Phiên đăng nhập');
+ if(!permission||permission.status!=='ok'||!signedIn||signedIn.status!=='ok'){
+  add('Kiểm tra bị giới hạn','warn','Đã dừng các truy vấn sâu vì không xác minh được phiên admin.','Không chạy truy vấn bảng hoặc kiểm tra API khi chưa xác thực admin.');
+  state.running=false;state.lastRun=new Date().toISOString();if(runButton){runButton.disabled=false;runButton.textContent='▶ Chạy kiểm tra';}render();return;
+ }
  await Promise.all(['profiles','rohub_theme_versions','rotruyen_series','rotruyen_chapters','roflix_active_sessions','roflix_admin_audit_logs'].map(t=>checkTable(db,t)));
  await Promise.all(['js/config/supabase.config.js','js/core/supabase.js','js/admin/admin.js','js/admin/rotruyen-admin.js','js/admin/rohub-studio.js','js/rotruyen/published-theme-runtime.js'].map(checkAsset));
  await Promise.all([
-  checkApi('Nguồn phim KKPhim','https://phimapi.com/v1/api/danh-sach/phim-moi-cap-nhat?page=1'),
-  checkApi('Nguồn phim VSMOV','https://vsmov.com/api/danh-sach/phim-moi-cap-nhat?page=1'),
-  checkApi('Nguồn truyện MangaDex qua RoHub','/api/mangadex/manga?limit=1&includes%5B%5D=cover_art')
+  checkApi('Nguồn phim KKPhim','https://phimapi.com/v1/api/danh-sach/phim-moi-cap-nhat?page=1',p=>!!p&&(Array.isArray(p.data)||Array.isArray(p.items)||Array.isArray(p.items?.data))),
+  checkApi('Nguồn phim VSMOV','https://vsmov.com/api/danh-sach/phim-moi-cap-nhat?page=1',p=>!!p&&(Array.isArray(p.data)||Array.isArray(p.items)||Array.isArray(p.results))),
+  checkApi('Nguồn truyện MangaDex qua RoHub','/api/mangadex/manga?limit=1&includes%5B%5D=cover_art',p=>!!p&&Array.isArray(p.data))
  ]);
- state.running=false;state.lastRun=new Date().toISOString();render();
+ add('Hiệu năng kiểm tra','ok','Hoàn tất '+Math.round(performance.now()-checks.startedAt)+' ms.','Thời gian phía trình duyệt, không phải SLA máy chủ');
+ state.running=false;state.lastRun=new Date().toISOString();if(runButton){runButton.disabled=false;runButton.textContent='▶ Chạy kiểm tra';}render();
 }
 function exportReport(){
  const report={product:'RoHub System Health Center',generatedAt:state.lastRun,summary:{passed:state.results.filter(x=>x.status==='ok').length,warnings:state.results.filter(x=>x.status==='warn').length,failed:state.results.filter(x=>x.status==='fail').length},checks:state.results};
