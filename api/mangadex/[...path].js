@@ -49,7 +49,10 @@ module.exports = async function handler(req, res) {
   catch (_) { return sendError(res, 400, 'INVALID_URL', 'Invalid request URL'); }
   const params = new URLSearchParams();
   incoming.searchParams.forEach((value, key) => {
-    if (key !== 'path' && key !== '_rf') params.append(key, value);
+    // Vercel catch-all routing may inject __path into the incoming query.
+    // It is routing metadata, not a MangaDex API parameter; forwarding it causes
+    // MangaDex validation_exception: property __path is not defined.
+    if (key !== 'path' && key !== '__path' && key !== '_rf') params.append(key, value);
   });
   const target = ORIGIN + '/' + parts.map(encodeURIComponent).join('/') + (params.toString() ? '?' + params.toString() : '');
   const controller = new AbortController();
