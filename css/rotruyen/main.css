@@ -220,3 +220,10 @@ header button:hover,.shelf-link:hover,.toolbar button:hover{border-color:#f59e0b
 .reader-chapter-nav button:disabled{opacity:.35;cursor:not-allowed}
 #reader-chapter-position{color:var(--muted);font-size:12px;text-align:center;white-space:nowrap}
 @media(max-width:520px){.reader-chapter-nav{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding:9px 10px calc(9px + env(safe-area-inset-bottom))}.reader-chapter-nav button{padding:9px 8px;font-size:12px}.reader-chapter-nav button:last-child{justify-self:stretch;grid-column:2;grid-row:1}#reader-chapter-position{grid-column:1;grid-row:1;font-size:11px}.reader-chapter-nav button:first-child{grid-column:1;grid-row:2}.reader-chapter-nav button:last-child{grid-column:2;grid-row:2}}
+
+
+/* Hotfix: reader must remain vertically scrollable; the global modal overflow rule
+   otherwise clips the chapter pages and makes the reader feel frozen. */
+.reader-modal{display:block;padding:0;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.reader-modal .reader-content{min-height:0;overflow:visible;touch-action:pan-y}
+.reader-modal .reader-chapter-nav{position:sticky;bottom:0;z-index:5}
