@@ -284,7 +284,7 @@
     if(isStoryLocked(s)){notify('Truyện này hiện đã bị khóa bởi quản trị viên.');return;}
     if(!(await canOpenAdultContent(s)))return;
     state.selected=s;
-    $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&['mangadex','database','longbook'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
+    $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&['mangadex','database','longbook','truyenviet'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     $('#detail-meta').textContent=(s.kind||'Truyện')+' · '+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':s.source==='database'?'Catalog RoTruyện':s.source==='longbook'?'LongBook API':s.source==='truyenviet'?'Truyện Việt':'Bản demo');
     const read=$('#detail-read');read.disabled=!['mangadex','database','truyenviet'].includes(s.source);read.textContent=['mangadex','database','truyenviet'].includes(s.source)?'Xem chương / Tải lại':'Bản demo chưa có nội dung chương';
     if(isAdultOnly(s))$('#detail-meta').textContent+=' · 🔞 18+ · Yêu cầu đăng nhập';
