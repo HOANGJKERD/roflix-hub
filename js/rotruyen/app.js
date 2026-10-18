@@ -116,14 +116,31 @@
       }
       return params;
     };
-    // Lấy trang catalog lớn nhất MangaDex cho phép; giữ bộ lọc ngôn ngữ Việt để ưu tiên chương Vietsub.
-    let data;
+    // Ưu tiên truyện có bản dịch tiếng Việt. Nếu API trả lỗi hoặc không có kết quả,
+    // thử lại không giới hạn ngôn ngữ để catalog không bị trắng chỉ vì bộ lọc này.
+    let vietnameseError = null;
     try {
-      data=await fetchJSON(API+'/manga?'+buildParams(true).toString());
-    } catch(error) {
-      throw new Error('Không tải được catalog MangaDex có Vietsub. '+error.message);
+      const data = await fetchJSON(API+'/manga?'+buildParams(true).toString());
+      const results = Array.isArray(data.data) ? data.data : [];
+      if (results.length) return results.map(mapManga);
+    } catch (error) {
+      vietnameseError = error;
     }
-    return (data.data||[]).map(mapManga);
+
+    try {
+      const fallback = await fetchJSON(API+'/manga?'+buildParams(false).toString());
+      const results = Array.isArray(fallback.data) ? fallback.data : [];
+      if (results.length) return results.map(mapManga);
+      if (vietnameseError) {
+        throw new Error('Truy vấn có Vietsub lỗi ('+vietnameseError.message+'); truy vấn dự phòng không có kết quả.');
+      }
+      return [];
+    } catch (fallbackError) {
+      const detail = vietnameseError
+        ? 'Truy vấn có Vietsub: '+vietnameseError.message+'. Truy vấn dự phòng: '+fallbackError.message
+        : 'Truy vấn dự phòng: '+fallbackError.message;
+      throw new Error('Không tải được catalog MangaDex. '+detail);
+    }
   }
   function activeItems() {
     let items=state.items.filter(s=>(!state.query || s.title.toLocaleLowerCase('vi').includes(state.query.toLocaleLowerCase('vi')) || (s.author||'').toLocaleLowerCase('vi').includes(state.query.toLocaleLowerCase('vi')))&&(state.genre==='all'||s.genre===state.genre));
