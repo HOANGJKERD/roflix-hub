@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
     const upstream = await fetch('https://' + host + path, {
-      headers: { 'User-Agent': 'RoHub-Image-Proxy/1.0', Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8' },
+      headers: { 'User-Agent': 'RoHub-Image-Proxy/1.0', Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8', Referer: 'https://mangadex.org/' },
       signal: controller.signal
     });
     if (!upstream.ok) {
