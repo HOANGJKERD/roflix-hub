@@ -205,11 +205,25 @@
     }catch(e){notify('LongBookApi chưa khả dụng: '+e.message);}
   }
   function resetFilters(){state.query='';state.genre='all';state.sort='featured';$('#story-search').value='';$('#genre-filter').value='all';$$('[data-sort]').forEach(b=>{b.classList.toggle('active',b.dataset.sort===state.sort);b.setAttribute('aria-selected',String(b.dataset.sort===state.sort));});render();}
-  function openDetail(id) {
-    const s=state.items.find(x=>String(x.id)===String(id));if(!s)return;state.selected=s;
+  function isAdultOnly(item) {
+    const rating=String(item?.contentRating ?? item?.content_rating ?? '').toLowerCase();
+    return rating==='erotica' || rating==='pornographic' || rating==='18+' || rating==='adult' || rating==='mature';
+  }
+  async function canOpenAdultContent(item) {
+    if(!isAdultOnly(item))return true;
+    const ok=await requireSignedIn('đọc truyện 18+');
+    if(!ok)return false;
+    return true;
+  }
+  async function openDetail(id) {
+    const s=state.items.find(x=>String(x.id)===String(id));if(!s)return;
+    if(!(await canOpenAdultContent(s)))return;
+    state.selected=s;
     $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&['mangadex','database','longbook'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     $('#detail-meta').textContent=(s.kind||'Truyện')+' · '+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':s.source==='database'?'Catalog RoTruyện':s.source==='longbook'?'LongBook API':'Bản demo');
-    const read=$('#detail-read');read.disabled=!['mangadex','database'].includes(s.source);read.textContent=s.source==='mangadex'?'Xem chương / Tải lại':s.source==='database'?'Xem chương / Tải lại':'Bản demo chưa có nội dung chương';$('#chapter-list').innerHTML=['mangadex','database'].includes(s.source)?'<p>Đang tải danh sách chương…</p>':'';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');if(['mangadex','database'].includes(s.source))loadChapters();
+    const read=$('#detail-read');read.disabled=!['mangadex','database'].includes(s.source);read.textContent=s.source==='mangadex'?'Xem chương / Tải lại':s.source==='database'?'Xem chương / Tải lại':'Bản demo chưa có nội dung chương';
+    if(isAdultOnly(s))$('#detail-meta').textContent+=' · 🔞 18+ · Yêu cầu đăng nhập';
+    $('#chapter-list').innerHTML=['mangadex','database'].includes(s.source)?'<p>Đang tải danh sách chương…</p>':'';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');if(['mangadex','database'].includes(s.source))loadChapters();
   }
   function closeModal(id){const m=$('#'+id);if(m)m.hidden=true;if(!$$('.modal:not([hidden])').length)document.body.classList.remove('modal-open');}
   async function loadChapters() {
@@ -295,6 +309,7 @@
   }
   async function openReader(index) {
     const chapter=state.chapters[index];if(!chapter)return;
+    if(!(await canOpenAdultContent(state.selected)))return;
     persistReadProgress(true);state.chapterIndex=index;const title=chapter.attributes?.chapter||chapter.chapter_number||'?';rememberChapter();
     $('#reader-title').textContent=(state.selected?.title||'RoTruyện')+' · Chương '+title;
     const prev=$('#reader-prev'),next=$('#reader-next'),position=$('#reader-chapter-position');
