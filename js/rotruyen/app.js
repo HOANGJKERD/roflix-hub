@@ -181,7 +181,8 @@
         &&genreMatches(s,state.genre)
         &&statusMatches(s)
         &&ratingMatches(s)
-        &&(state.catalogSource==='all'||s.source===state.catalogSource)\n        &&(state.contentType==='all'||(s.contentType||'comic')===state.contentType);
+        &&(state.catalogSource==='all'||s.source===state.catalogSource)
+        &&(state.contentType==='all'||(s.contentType||'comic')===state.contentType);
     });
     if(state.sort==='latest') items=[...items].sort((a,b)=>(Date.parse(b.raw?.attributes?.updatedAt||b.updated||0)||0)-(Date.parse(a.raw?.attributes?.updatedAt||a.updated||0)||0));
     if(state.sort==='popular') items=[...items].sort((a,b)=>(Number(b.pop)||Number(b.raw?.attributes?.followedCount)||0)-(Number(a.pop)||Number(a.raw?.attributes?.followedCount)||0));
