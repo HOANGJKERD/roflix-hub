@@ -82,7 +82,7 @@
   }
   function coverOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
-    return id && file ? 'https://uploads.mangadex.org/covers/'+encodeURIComponent(id)+'/'+encodeURIComponent(file)+'.512.jpg' : '';
+    return id && file ? '/api/mangadex-image?host=uploads.mangadex.org&path='+encodeURIComponent('/covers/'+id+'/'+file+'.512.jpg') : '';
   }
   function mapManga(item) {
     const a=item.attributes||{};
@@ -288,7 +288,7 @@
       try { const parsedBase=new URL(base); if(parsedBase.protocol!=='https:')throw new Error(); imageHost=parsedBase.hostname; }
       catch (_) { throw new Error('MangaDex @Home trả về baseUrl không hợp lệ.'); }
       const hostQuery='?host='+encodeURIComponent(imageHost);
-      const container=$('#reader-content');container.innerHTML=files.map((file,i)=>{const pagePath=base.replace(/\/$/,'')+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file);return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pagePath)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
+      const container=$('#reader-content');container.innerHTML=files.map((file,i)=>{const imagePath='/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file);const pagePath='/api/mangadex-image?host='+encodeURIComponent(imageHost)+'&path='+encodeURIComponent(imagePath);return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pagePath)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer" onerror="this.classList.add(\'image-failed\')">';}).join('');
       const saved={mangaId:state.selected.id,title:state.selected.title,chapterId:chapter.id,chapter:title,updatedAt:Date.now()};requireSignedIn('lịch sử đọc').then(ok=>{if(!ok)return;state.history=[saved,...state.history.filter(x=>x.mangaId!==saved.mangaId)].slice(0,100);memory.write('history:v1',state.history);scheduleCloudSync();});
     }catch(e){$('#reader-content').innerHTML='<div class="reader-error"><h3>Không thể tải chương</h3><p>'+esc(e.message)+'</p><p>Thử lại sau hoặc chọn chương khác.</p><button class="btn" id="retry-chapter">Thử lại</button></div>';$('#retry-chapter')?.addEventListener('click',()=>openReader(index));}
   }
