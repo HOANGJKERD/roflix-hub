@@ -329,6 +329,36 @@
     }catch(e){notify('Không kiểm tra được phiên đăng nhập: '+e.message);}
   }
 
+  async function loadAutomaticCatalog() {
+    const grid=$('#story-grid');
+    if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải truyện tự động từ RoTruyện và MangaDex…</p></div>';
+    // Tải truyện người dùng/admin đã xuất bản trước, sau đó bổ sung catalog Vietsub từ MangaDex.
+    let ownItems=[];
+    try {
+      const sb=window.rfSupabase;
+      if(sb){
+        const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,source_id,genres,content_rating,status,is_published,sort_order').eq('is_published',true).order('sort_order',{ascending:true}).limit(100);
+        if(error)throw error;
+        ownItems=(data||[]).map(s=>({id:s.id,source:'database',title:s.title,author:s.author,genre:(s.genres||[])[0]||'all',kind:(s.genres||[]).join(' · ')||'Truyện',chapters:null,rating:null,pop:0,updated:0,cover:s.cover_url,description:s.synopsis,status:s.status,contentRating:s.content_rating,sourceId:s.source_id}));
+      }
+    } catch(e) { console.warn('[RoTruyện catalog]',e.message||e); }
+    state.source='mixed';
+    state.items=ownItems;
+    render();
+    try {
+      const external=await searchMangaDex();
+      const existing=new Set(ownItems.map(x=>String(x.id)));
+      state.items=[...ownItems,...external.filter(x=>!existing.has(String(x.id)))];
+      if(!external.length&&!ownItems.length)notify('Chưa tìm thấy truyện đã xuất bản hoặc truyện Vietsub từ MangaDex.');
+      else if(!external.length)notify('Đã tải truyện RoTruyện. MangaDex hiện chưa trả về truyện Vietsub.');
+      render();
+    } catch(e) {
+      state.items=ownItems;
+      render();
+      notify(ownItems.length?'Đã tải truyện RoTruyện; MangaDex tạm thời chưa kết nối được.':'Không tải được catalog tự động: '+e.message);
+    }
+  }
+
   function bind() {
     $('#story-search').addEventListener('input',e=>{state.query=e.target.value;render();});
     $('#genre-filter').addEventListener('change',e=>{state.genre=e.target.value;render();});
@@ -361,5 +391,5 @@
   async function rtRenderAccountLink(){const link=$('#rt-account-link'),label=$('#rt-account-label'),sb=window.rfSupabase;if(!link||!sb)return;try{const {data}=await sb.auth.getUser();const user=data?.user;if(user){let p={};try{p=JSON.parse(localStorage.getItem('roflix-profile')||'{}')}catch(_){}link.href='rotruyen-account.html';if(label)label.textContent=(user.user_metadata?.display_name||p.name||user.email?.split('@')[0]||'Tài khoản').slice(0,24);link.title='Tài khoản '+(user.email||'')}else{link.href='rotruyen-account.html';if(label)label.textContent='Đăng nhập'}}catch(_){if(label)label.textContent='Tài khoản'}}
   rtRenderAccountLink();
   if(window.rfSupabase){window.rfSupabase.auth.onAuthStateChange(()=>{setTimeout(rtRenderAccountLink,0)})}
-  bind();render();connectRealtime();syncCloudLibrary();loadOwnCatalog();
+  bind();render();connectRealtime();syncCloudLibrary();loadAutomaticCatalog();
 })();
