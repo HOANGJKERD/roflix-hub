@@ -6,7 +6,7 @@
   // TruyenDex is a MangaDex-powered frontend project, not a separate public REST API.
   // RoTruyen integrates MangaDex's documented public API directly.
   // Public catalogue only uses published database records or the explicitly selected external API.
-  const state = {source:'database',query:'',genre:'all',status:'all',rating:'all',catalogSource:'all',sort:'featured',items:[],saved:new Set(),history:[],selected:null,chapters:[],chapterIndex:0,chapterPages:[],apiBusy:false,readerBusy:false,chapterRequestId:0};
+  const state = {source:'database',query:'',genre:'all',status:'all',rating:'all',catalogSource:'all',contentType:'all',sort:'featured',items:[],saved:new Set(),history:[],selected:null,chapters:[],chapterIndex:0,chapterPages:[],apiBusy:false,readerBusy:false,chapterRequestId:0};
   const memory = {
     read(key, fallback) { try { const v=JSON.parse(localStorage.getItem('rotruyen:'+key)); return v ?? fallback; } catch (_) { return fallback; } },
     write(key, value) { try { localStorage.setItem('rotruyen:'+key, JSON.stringify(value)); return true; } catch (_) { return false; } }
@@ -181,7 +181,7 @@
         &&genreMatches(s,state.genre)
         &&statusMatches(s)
         &&ratingMatches(s)
-        &&(state.catalogSource==='all'||s.source===state.catalogSource);
+        &&(state.catalogSource==='all'||s.source===state.catalogSource)\n        &&(state.contentType==='all'||(s.contentType||'comic')===state.contentType);
     });
     if(state.sort==='latest') items=[...items].sort((a,b)=>(Date.parse(b.raw?.attributes?.updatedAt||b.updated||0)||0)-(Date.parse(a.raw?.attributes?.updatedAt||a.updated||0)||0));
     if(state.sort==='popular') items=[...items].sort((a,b)=>(Number(b.pop)||Number(b.raw?.attributes?.followedCount)||0)-(Number(a.pop)||Number(a.raw?.attributes?.followedCount)||0));
@@ -190,7 +190,7 @@
   }
   function updateFilterSummary(){
     const el=$('#active-filter-count');if(!el)return;
-    const count=[state.query.trim(),state.genre!=='all',state.status!=='all',state.rating!=='all',state.catalogSource!=='all'].filter(Boolean).length;
+    const count=[state.query.trim(),state.genre!=='all',state.status!=='all',state.rating!=='all',state.catalogSource!=='all',state.contentType!=='all'].filter(Boolean).length;
     el.textContent=count+' bộ lọc đang dùng';
   }
   function isStoryLocked(item){return item?.source==='database' && (item.isLocked===true || item.is_locked===true);}
@@ -215,9 +215,9 @@
     if(!sb){state.source='database';state.items=[];render();notify('Supabase chưa sẵn sàng. Không hiển thị truyện mẫu.');return;}
     const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải catalog RoTruyện…</p></div>';
     try{
-      const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,source_id,genres,content_rating,status,is_published,is_locked,lock_reason,sort_order').eq('is_published',true).order('sort_order',{ascending:true}).limit(100);
+      const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,source_id,genres,content_rating,content_type,status,is_published,is_locked,lock_reason,sort_order').eq('is_published',true).order('sort_order',{ascending:true}).limit(100);
       if(error)throw error;
-      state.items=(data||[]).map(s=>({id:s.id,source:'database',title:s.title,author:s.author,genre:(s.genres||[])[0]||'all',kind:(s.genres||[]).join(' · ')||'Truyện',chapters:null,rating:null,pop:0,updated:0,cover:s.cover_url,description:s.synopsis,status:s.status,contentRating:s.content_rating,isLocked:!!s.is_locked,lockReason:s.lock_reason||'',sourceId:s.source_id}));
+      state.items=(data||[]).map(s=>({id:s.id,source:'database',title:s.title,author:s.author,genre:(s.genres||[])[0]||'all',kind:({comic:'Truyện tranh',novel:'Tiểu thuyết',light_novel:'Light Novel',web_novel:'Web Novel'}[s.content_type]||'Truyện tranh')+' · '+((s.genres||[]).join(' · ')||'Chưa phân loại'),contentType:s.content_type||'comic',chapters:null,rating:null,pop:0,updated:0,cover:s.cover_url,description:s.synopsis,status:s.status,contentRating:s.content_rating,isLocked:!!s.is_locked,lockReason:s.lock_reason||'',sourceId:s.source_id}));
       state.source='database';
       if(!state.items.length){notify('Catalog chưa có truyện thật đã xuất bản.');}
       render();
@@ -251,7 +251,7 @@
       state.source='longbook';render();if(!state.items.length)notify('LongBookApi đã phản hồi nhưng không nhận diện được danh sách truyện.');
     }catch(e){notify('LongBookApi chưa khả dụng: '+e.message);}
   }
-  function resetFilters(){state.query='';state.genre='all';state.status='all';state.rating='all';state.catalogSource='all';state.sort='featured';$('#story-search').value='';$('#genre-filter').value='all';$('#status-filter').value='all';$('#rating-filter').value='all';$('#source-filter').value='all';$('[data-sort]').forEach(b=>{b.classList.toggle('active',b.dataset.sort===state.sort);b.setAttribute('aria-selected',String(b.dataset.sort===state.sort));});render();}
+  function resetFilters(){state.query='';state.genre='all';state.status='all';state.rating='all';state.catalogSource='all';state.contentType='all';state.sort='featured';$('#story-search').value='';$('#genre-filter').value='all';$('#status-filter').value='all';$('#rating-filter').value='all';$('#source-filter').value='all';if($('#content-type-filter'))$('#content-type-filter').value='all';$('[data-sort]').forEach(b=>{b.classList.toggle('active',b.dataset.sort===state.sort);b.setAttribute('aria-selected',String(b.dataset.sort===state.sort));});render();}
   function isAdultOnly(item) {
     const raw=String(item?.contentRating ?? item?.content_rating ?? item?.content_rating_label ?? item?.age_rating ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().trim();
     // Chấp nhận cả mã chuẩn lẫn nhãn do admin/importer lưu.
@@ -527,7 +527,7 @@ async function loadPublicGenres(){
     $('#genre-filter').addEventListener('change',e=>{state.genre=e.target.value;render();});
     $('#status-filter')?.addEventListener('change',e=>{state.status=e.target.value;render();});
     $('#rating-filter')?.addEventListener('change',e=>{state.rating=e.target.value;render();});
-    $('#source-filter')?.addEventListener('change',e=>{state.catalogSource=e.target.value;render();});
+    $('#source-filter')?.addEventListener('change',e=>{state.catalogSource=e.target.value;render();});\n    $('#content-type-filter')?.addEventListener('change',e=>{state.contentType=e.target.value;render();});
     $('#reset-filters').addEventListener('click',resetFilters);$('#empty-reset').addEventListener('click',resetFilters);
     $$('[data-sort]').forEach(b=>b.addEventListener('click',()=>{state.sort=b.dataset.sort;$$('[data-sort]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b));});render();}));
     $('#story-grid').addEventListener('click',e=>{const save=e.target.closest('[data-save]');if(save){e.preventDefault();e.stopPropagation();requireSignedIn('tủ truyện yêu thích').then(ok=>{if(!ok)return;const id=save.dataset.save;state.saved.has(id)?state.saved.delete(id):state.saved.add(id);memory.write('saved:v1',[...state.saved]);render();scheduleCloudSync();notify(state.saved.has(id)?'Đã lưu truyện vào tủ.':'Đã bỏ lưu truyện.');});return;}const open=e.target.closest('[data-open]');if(open){openDetail(open.dataset.open);}});
