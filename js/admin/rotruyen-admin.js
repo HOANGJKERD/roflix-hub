@@ -44,6 +44,7 @@ async function loadChapters(series){
  if(error)throw error;state.chapters=data||[];
  $('rt-new-chapter-number').value=String((Number(state.chapters.at(-1)?.chapter_number)||0)+1);
  $('rt-admin-chapters-body').innerHTML=state.chapters.length?state.chapters.map(c=>'<tr><td>'+esc(c.chapter_number)+'</td><td>'+esc(c.title||'Chương '+c.chapter_number)+'</td><td>'+esc(c.published_at?new Date(c.published_at).toLocaleDateString('vi-VN'):'—')+'</td><td><span class="pill '+(c.is_published?'pill-active':'pill-user')+'">'+(c.is_published?'Đã xuất bản':'Bản nháp')+'</span></td><td><button class="btn '+(c.is_published?'btn-danger':'btn-primary')+'" data-rt-chapter-action="publish" data-id="'+esc(c.id)+'">'+(c.is_published?'Gỡ xuất bản':'Xuất bản')+'</button> <button class="btn btn-danger" data-rt-chapter-action="delete" data-id="'+esc(c.id)+'">Xóa</button></td></tr>').join(''):'<tr><td colspan="5" class="empty">Tác phẩm này chưa có chương trong database.</td></tr>';
+ updateBulkButton();
 }
 async function action(action,id){
  const s=state.series.find(x=>String(x.id)===String(id));if(!s)return;
@@ -67,6 +68,33 @@ async function action(action,id){
   if(state.selected?.id===s.id){state.selected=null;state.chapters=[];$('rt-admin-chapters-body').innerHTML='<tr><td colspan="5" class="empty">Chưa chọn tác phẩm.</td></tr>';$('rt-admin-chapter-caption').textContent='Chọn một tác phẩm để quản lý chương.';}
   message('Đã xóa tác phẩm.');await loadSeries();
  }
+}
+async function publishAllDraftChapters(){
+ await authorized();
+ if(!state.selected)throw new Error('Hãy chọn một tác phẩm trước.');
+ const drafts=state.chapters.filter(c=>!c.is_published);
+ if(!drafts.length){$('rt-bulk-publish-status').textContent='Không có chương nháp cần xuất bản.';return;}
+ if(!confirm('Xuất bản '+drafts.length+' chương nháp của “'+state.selected.title+'”? Các chương này sẽ hiển thị nếu tác phẩm cũng đã xuất bản.'))return;
+ const button=$('rt-bulk-publish-chapters');button.disabled=true;
+ const status=$('rt-bulk-publish-status');status.textContent='Đang xuất bản 0/'+drafts.length+' chương…';
+ let done=0,failed=[];
+ try{
+  for(let i=0;i<drafts.length;i+=25){
+   const batch=drafts.slice(i,i+25),ids=batch.map(c=>c.id),now=new Date().toISOString();
+   const {data,error}=await sb.from('rotruyen_chapters').update({is_published:true,published_at:now}).in('id',ids).eq('series_id',state.selected.id).select('id');
+   if(error){failed.push(...batch.map(c=>c.chapter_number));status.textContent='Đang xử lý: '+done+'/'+drafts.length+' · lỗi ở chương '+batch.map(c=>c.chapter_number).join(', ');continue;}
+   done+=(data||[]).length;
+   status.textContent='Đang xuất bản '+done+'/'+drafts.length+' chương…';
+  }
+  await loadChapters(state.selected);await loadSeries();
+  if(failed.length){status.textContent='Đã xuất bản '+done+'/'+drafts.length+' chương. Cần thử lại các chương: '+failed.join(', ');message('Một số chương chưa xuất bản; xem thông báo bên dưới.',true);}
+  else{status.textContent='Hoàn tất! Đã xuất bản '+done+' chương.';message('Đã xuất bản hàng loạt '+done+' chương của “'+state.selected.title+'”.');}
+ }finally{button.disabled=false;button.textContent='Xuất bản tất cả chương nháp';updateBulkButton();}
+}
+function updateBulkButton(){
+ const b=$('rt-bulk-publish-chapters');if(!b)return;
+ const n=state.chapters.filter(c=>!c.is_published).length;
+ b.disabled=!state.selected||!n;b.textContent=n?'Xuất bản tất cả chương nháp ('+n+')':'Không còn chương nháp';
 }
 async function chapterAction(action,id){
  const c=state.chapters.find(x=>String(x.id)===String(id));if(!c||!state.selected)return;
@@ -137,6 +165,10 @@ function init(){
  $('rt-admin-search')?.addEventListener('input',renderSeries);$('rt-admin-published-filter')?.addEventListener('change',renderSeries);
  $('rt-admin-create-series')?.addEventListener('submit',e=>run(()=>createSeries(e)));
  $('rt-admin-create-chapter')?.addEventListener('submit',e=>run(()=>createChapter(e)));
+ $('rt-bulk-publish-chapters')?.addEventListener('click',()=>run(publishAllDraftChapters));
+ const autoPublish=$('rt-auto-publish-import');
+ if(autoPublish){try{autoPublish.checked=localStorage.getItem('rotruyen-auto-publish-import')==='true';}catch(_){}autoPublish.addEventListener('change',()=>{try{localStorage.setItem('rotruyen-auto-publish-import',String(autoPublish.checked));}catch(_){}message(autoPublish.checked?'Đã bật tự động xuất bản chương mới khi nhập hàng loạt.':'Đã tắt tự động xuất bản; chương mới sẽ là bản nháp.');});}
+
  $('rt-admin-series-body')?.addEventListener('click',e=>{const b=e.target.closest('[data-rt-action]');if(b)run(()=>action(b.dataset.rtAction,b.dataset.id));});
  $('rt-admin-chapters-body')?.addEventListener('click',e=>{const b=e.target.closest('[data-rt-chapter-action]');if(b)run(()=>chapterAction(b.dataset.rtChapterAction,b.dataset.id));});
 }
