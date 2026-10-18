@@ -197,14 +197,14 @@
   function isStoryLocked(item){return item?.source==='database' && (item.isLocked===true || item.is_locked===true);}
   function coverMarkup(s) {
     const style='--cover:'+esc(s.coverColor||'#282449')+';--glow:'+esc(s.glow||'#8c6ce0')+';--accent:'+esc(s.accent||'#d3b9ff');
-    const visual=s.cover && ['mangadex','database','longbook'].includes(s.source) && s.cover ? '<img loading="lazy" src="'+esc(s.cover)+'" alt="" onerror="this.onerror=null;this.style.display=\'none\';this.parentElement.classList.add(\'cover-missing\');this.insertAdjacentHTML(\'beforeend\',\'<i class=&quot;fa-solid fa-book-open&quot; aria-hidden=&quot;true&quot;></i>\')">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
+    const visual=s.cover && ['mangadex','database','longbook','truyenviet'].includes(s.source) && s.cover ? '<img loading="lazy" src="'+esc(s.cover)+'" alt="" onerror="this.onerror=null;this.style.display=\'none\';this.parentElement.classList.add(\'cover-missing\');this.insertAdjacentHTML(\'beforeend\',\'<i class=&quot;fa-solid fa-book-open&quot; aria-hidden=&quot;true&quot;></i>\')">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     const locked=isStoryLocked(s),ageLock=isAdultOnly(s)?'<span class="rt-age-lock" title="18+ · cần đăng nhập"><i class="fa-solid fa-lock"></i> 18+</span>':'';
     const lockBadge=locked?'<span class="rt-story-lock-badge"><i class="fa-solid fa-lock"></i> Đã khóa</span>':'';
     return '<div class="cover'+(locked?' is-story-locked':'')+'" style="'+style+'">'+visual+ageLock+lockBadge+'<small>'+esc(s.kind||'Truyện')+'</small><button data-save="'+esc(s.id)+'" class="'+(state.saved.has(s.id)?'saved':'')+'" aria-label="'+(state.saved.has(s.id)?'Bỏ lưu':'Lưu truyện')+'"><i class="fa-'+(state.saved.has(s.id)?'solid':'regular')+' fa-bookmark"></i></button></div>';
   }
   function render() {
     const items=activeItems(), grid=$('#story-grid'); if(!grid)return;
-    grid.innerHTML=items.map(s=>'<article class="story'+(isAdultOnly(s)?' story-adult':'')+(isStoryLocked(s)?' story-locked':'')+'"><div class="story-open" data-open="'+esc(s.id)+'" role="button" tabindex="0" aria-label="'+(isStoryLocked(s)?'Truyện đã bị khóa: ':isAdultOnly(s)?'Truyện 18+, cần đăng nhập: ':'Xem chi tiết ')+esc(s.title)+'">'+coverMarkup(s)+'<h3 title="'+esc(s.title)+'">'+esc(s.title)+(isStoryLocked(s)?' <small class="rt-age-label">🔒 Truyện đã khóa</small>':isAdultOnly(s)?' <small class="rt-age-label">🔒 18+ · Đăng nhập để xem</small>':'')+'</h3></div><p>'+esc(s.author||'Đang cập nhật')+'</p><div class="meta"><span>'+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':'Chưa có chương')+'</span><span class="rating">'+(s.rating?'★ '+s.rating.toFixed(1):s.source==='mangadex'?'Nguồn ngoài':'Chưa đánh giá')+'</span></div></article>').join('');
+    grid.innerHTML=items.map(s=>'<article class="story'+(isAdultOnly(s)?' story-adult':'')+(isStoryLocked(s)?' story-locked':'')+'"><div class="story-open" data-open="'+esc(s.id)+'" role="button" tabindex="0" aria-label="'+(isStoryLocked(s)?'Truyện đã bị khóa: ':isAdultOnly(s)?'Truyện 18+, cần đăng nhập: ':'Xem chi tiết ')+esc(s.title)+'">'+coverMarkup(s)+'<h3 title="'+esc(s.title)+'">'+esc(s.title)+(isStoryLocked(s)?' <small class="rt-age-label">🔒 Truyện đã khóa</small>':isAdultOnly(s)?' <small class="rt-age-label">🔒 18+ · Đăng nhập để xem</small>':'')+'</h3></div><p>'+esc(s.author||'Đang cập nhật')+'</p><div class="meta"><span>'+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':s.source==='truyenviet'?'Truyện Việt':'Chưa có chương')+'</span><span class="rating">'+(s.rating?'★ '+s.rating.toFixed(1):['mangadex','truyenviet'].includes(s.source)?'Nguồn ngoài':'Chưa đánh giá')+'</span></div></article>').join('');
     const count=$('#result-count'); if(count)count.textContent=items.length+' kết quả';updateFilterSummary();
     const empty=$('#empty-state'); if(empty)empty.hidden=!!items.length;
     const rank=$('#ranking-list'); if(rank)rank.innerHTML=[...state.items].sort((a,b)=>(b.pop||0)-(a.pop||0)).slice(0,4).map((s,i)=>'<div class="ranking"><span class="rank">0'+(i+1)+'</span><span class="rank-info"><b>'+esc(s.title)+'</b><small>'+esc(s.kind||'Truyện')+'</small></span><span>'+(s.rating?'★ '+s.rating.toFixed(1):'↗')+'</span></div>').join('')||'<p class="muted">Chưa có dữ liệu xếp hạng từ nguồn này.</p>';
@@ -232,6 +232,19 @@
     try {state.items=await searchMangaDex();render();if(!state.items.length)notify('Nguồn đã phản hồi nhưng chưa có kết quả phù hợp.');}
     catch(e){state.items=[];state.source='mangadex';render();notify('MangaDex chưa tải được: '+(e.name==='AbortError'?'hết thời gian chờ':e.message)+'. Không hiển thị truyện mẫu.');}
     finally{state.apiBusy=false;if(btn){btn.disabled=false;btn.textContent='Tải truyện từ MangaDex';}}
+  }
+
+  async function loadTruyenViet() {
+    const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải nguồn Truyện Việt…</p></div>';
+    try{
+      const params=new URLSearchParams({action:'search',source:'all'});
+      if(state.query.trim())params.set('q',state.query.trim());
+      const data=await fetchJSON('/api/truyenviet?'+params.toString());
+      state.items=(data.items||[]).map(item=>({...item,source:'truyenviet',contentType:'novel',kind:item.kind||'Tiểu thuyết',chapters:null,raw:item}));
+      state.source='truyenviet';render();
+      if(data.errors?.length)notify('Một số nguồn Truyện Việt chưa phản hồi: '+data.errors.map(x=>x.source).join(', '));
+      else if(!state.items.length)notify('Nguồn phản hồi nhưng chưa nhận diện được truyện. Thử tìm bằng từ khóa hoặc mở lại sau.');
+    }catch(e){state.items=[];state.source='truyenviet';render();notify('Truyện Việt chưa tải được: '+e.message);}
   }
 
   async function loadLongBook() {
@@ -272,20 +285,27 @@
     if(!(await canOpenAdultContent(s)))return;
     state.selected=s;
     $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&['mangadex','database','longbook'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
-    $('#detail-meta').textContent=(s.kind||'Truyện')+' · '+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':s.source==='database'?'Catalog RoTruyện':s.source==='longbook'?'LongBook API':'Bản demo');
-    const read=$('#detail-read');read.disabled=!['mangadex','database'].includes(s.source);read.textContent=s.source==='mangadex'?'Xem chương / Tải lại':s.source==='database'?'Xem chương / Tải lại':'Bản demo chưa có nội dung chương';
+    $('#detail-meta').textContent=(s.kind||'Truyện')+' · '+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':s.source==='database'?'Catalog RoTruyện':s.source==='longbook'?'LongBook API':s.source==='truyenviet'?'Truyện Việt':'Bản demo');
+    const read=$('#detail-read');read.disabled=!['mangadex','database','truyenviet'].includes(s.source);read.textContent=['mangadex','database','truyenviet'].includes(s.source)?'Xem chương / Tải lại':'Bản demo chưa có nội dung chương';
     if(isAdultOnly(s))$('#detail-meta').textContent+=' · 🔞 18+ · Yêu cầu đăng nhập';
-    $('#chapter-list').innerHTML=['mangadex','database'].includes(s.source)?'<p>Đang tải danh sách chương…</p>':'';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');if(['mangadex','database'].includes(s.source))loadChapters();
+    $('#chapter-list').innerHTML=['mangadex','database','truyenviet'].includes(s.source)?'<p>Đang tải danh sách chương…</p>':'';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');if(['mangadex','database','truyenviet'].includes(s.source))loadChapters();
   }
   function closeModal(id){const m=$('#'+id);if(m)m.hidden=true;if(!$$('.modal:not([hidden])').length)document.body.classList.remove('modal-open');}
   async function loadChapters() {
-    const selected=state.selected;if(!selected||!['mangadex','database'].includes(selected.source))return;
+    const selected=state.selected;if(!selected||!['mangadex','database','truyenviet'].includes(selected.source))return;
     const requestId=++state.chapterRequestId;
     const list=$('#chapter-list'),read=$('#detail-read');
     read.disabled=true;read.textContent='Đang tải chương…';
     list.innerHTML='<p>Đang tải danh sách chương…</p>';
     const isCurrent=()=>requestId===state.chapterRequestId&&state.selected===selected&&$('#detail-modal')&&!$('#detail-modal').hidden;
     try {
+      if(selected.source==='truyenviet'){
+        const params=new URLSearchParams({action:'chapters',source:selected.provider||'truyenfull',url:selected.externalUrl||selected.id});
+        const data=await fetchJSON('/api/truyenviet?'+params.toString());
+        if(!isCurrent())return;state.chapters=(data.chapters||[]).map(c=>({...c,source:'truyenviet'}));
+        if(!state.chapters.length){list.innerHTML='<p>Chưa lấy được danh sách chương từ nguồn. Bạn có thể mở trang nguồn chính thức.</p><p><a class="btn" href="'+esc(selected.externalUrl)+'" target="_blank" rel="noopener noreferrer">Mở truyện tại nguồn ↗</a></p>';return;}
+        list.innerHTML=state.chapters.map((c,i)=>'<button class="chapter-row" data-chapter="'+i+'"><span class="chapter-row-title"><span class="chapter-number">Chương '+esc(c.chapter_number||i+1)+'</span><span class="chapter-name">'+esc(c.title)+'</span></span><span class="chapter-row-meta"><small>Truyện Việt</small></span></button>').join('');return;
+      }
       if(selected.source==='database'){
         const sb=window.rfSupabase;if(!sb)throw new Error('Supabase chưa sẵn sàng.');
         const {data:seriesState,error:seriesError}=await sb.from('rotruyen_series').select('is_locked').eq('id',selected.id).maybeSingle();
@@ -376,6 +396,14 @@
     const readerCredit=$('#reader-source-credit');if(readerCredit)readerCredit.textContent=chapterGroup?'Nguồn: MangaDex · Nhóm dịch: '+chapterGroup:'Nguồn chương: MangaDex';
     $('#reader-content').innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải trang đọc…</p></div>';closeModal('detail-modal');$('#reader-modal').hidden=false;document.body.classList.add('modal-open');
     try {
+      if(state.selected?.source==='truyenviet'){
+        const params=new URLSearchParams({action:'chapter',source:chapter.provider||state.selected.provider||'truyenfull',url:chapter.url,title:chapter.title||''});
+        const data=await fetchJSON('/api/truyenviet?'+params.toString());
+        const body=data.chapter?.content;if(!body)throw new Error('Nguồn chưa cung cấp nội dung chương.');
+        $('#reader-content').innerHTML='<article class="reader-text" style="max-width:820px;margin:0 auto;padding:24px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.95;font-size:1.08rem">'+esc(body)+'</article>';
+        const credit=$('#reader-source-credit');if(credit)credit.textContent='Nguồn chương: '+(chapter.provider||state.selected.provider||'Truyện Việt');
+        restoreReadProgress();return;
+      }
       if(state.selected?.source==='database'){
         const pages=Array.isArray(chapter.page_manifest)?chapter.page_manifest:[];
         const textBlocks=pages.filter(p=>p&&typeof p==='object'&&p.type==='text'&&typeof p.text==='string');
@@ -528,7 +556,8 @@ async function loadPublicGenres(){
     $('#genre-filter').addEventListener('change',e=>{state.genre=e.target.value;render();});
     $('#status-filter')?.addEventListener('change',e=>{state.status=e.target.value;render();});
     $('#rating-filter')?.addEventListener('change',e=>{state.rating=e.target.value;render();});
-    $('#source-filter')?.addEventListener('change',e=>{state.catalogSource=e.target.value;render();});
+    $('#source-filter')?.addEventListener('change',e=>{state.catalogSource=e.target.value;const v=e.target.value;if(v==='truyenviet')loadTruyenViet();else if(v==='mangadex'){state.source='mangadex';loadCatalog();}else if(v==='database')loadOwnCatalog();else if(v==='all')loadAutomaticCatalog();else render();});
+    $('#story-search')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&state.source==='truyenviet')loadTruyenViet();});
     $('#content-type-filter')?.addEventListener('change',e=>{state.contentType=e.target.value;render();});
     $('#reset-filters').addEventListener('click',resetFilters);$('#empty-reset').addEventListener('click',resetFilters);
     $$('[data-sort]').forEach(b=>b.addEventListener('click',()=>{state.sort=b.dataset.sort;$$('[data-sort]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b));});render();}));
