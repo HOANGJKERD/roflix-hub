@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
   try {
     const upstream = await fetch(target, {
       method: req.method,
-      headers: { Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8', 'User-Agent': 'RoHub-MangaDex-Image-Proxy/1.0' },
+      headers: { Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8', 'User-Agent': 'RoHub-MangaDex-Image-Proxy/1.0', Referer: 'https://mangadex.org/' },
       signal: controller.signal
     });
     if (upstream.status === 429) {
