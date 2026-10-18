@@ -227,3 +227,27 @@ header button:hover,.shelf-link:hover,.toolbar button:hover{border-color:#f59e0b
 .reader-modal{display:block;padding:0;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 .reader-modal .reader-content{min-height:0;overflow:visible;touch-action:pan-y}
 .reader-modal .reader-chapter-nav{position:sticky;bottom:0;z-index:5}
+
+
+/* RoTruyen advanced catalogue filters */
+.filter-panel{display:grid;gap:14px;margin:18px 0 14px;padding:16px;border:1px solid #ffffff20;border-radius:16px;background:linear-gradient(135deg,#151722eF,#11131beF);box-shadow:0 12px 34px #0002}
+.filter-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+.filter-search-row .search{min-width:0}
+.filter-reset{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;border:1px solid #ffffff22;border-radius:10px;background:#1b1d29;color:var(--text);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.filter-reset:hover{border-color:#f59e0b88;color:#fbbf24}
+.filter-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.filter-control{display:grid;gap:7px;min-width:0}
+.filter-control>span{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;font-weight:750}
+.filter-control>span i{color:#fbbf24}
+.filter-control select{width:100%;min-width:0;min-height:42px;padding:10px 30px 10px 11px;border:1px solid #ffffff22;border-radius:10px;background:#0e111b;color:var(--text);font:inherit;font-size:13px}
+.filter-control select:focus-visible,.filter-reset:focus-visible{outline:2px solid #fbbf24;outline-offset:2px}
+.filter-control select option{background:#11131d;color:#f5f6fb}
+.filter-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:11px;border-top:1px solid #ffffff14;color:var(--muted);font-size:11px}
+.filter-footer i{color:#fbbf24;margin-right:5px}
+#active-filter-count{color:#fcdba0;font-weight:700}
+body[data-theme="light"] .filter-panel{background:linear-gradient(135deg,#fff,#f8fafc);border-color:#11182720}
+body[data-theme="light"] .filter-control select,body[data-theme="light"] .filter-reset{background:#fff;color:#171717;border-color:#11182724}
+body[data-theme="light"] .filter-control select option{background:#fff;color:#171717}
+body[data-theme="light"] #active-filter-count{color:#92400e}
+@media(max-width:850px){.filter-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.filter-panel{padding:12px;gap:12px}.filter-search-row{grid-template-columns:minmax(0,1fr)}.filter-reset{min-height:40px}.filter-controls{grid-template-columns:1fr 1fr;gap:10px}.filter-control select{font-size:12px;padding:9px 22px 9px 8px}.filter-footer{font-size:10px}}
