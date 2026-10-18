@@ -152,11 +152,12 @@
   function coverMarkup(s) {
     const style='--cover:'+esc(s.coverColor||'#282449')+';--glow:'+esc(s.glow||'#8c6ce0')+';--accent:'+esc(s.accent||'#d3b9ff');
     const visual=s.cover && ['mangadex','database','longbook'].includes(s.source) && s.cover ? '<img loading="lazy" src="'+esc(s.cover)+'" alt="" onerror="this.onerror=null;this.style.display=\'none\';this.parentElement.classList.add(\'cover-missing\');this.insertAdjacentHTML(\'beforeend\',\'<i class=&quot;fa-solid fa-book-open&quot; aria-hidden=&quot;true&quot;></i>\')">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
-    return '<div class="cover" style="'+style+'">'+visual+'<small>'+esc(s.kind||'Truyện')+'</small><button data-save="'+esc(s.id)+'" class="'+(state.saved.has(s.id)?'saved':'')+'" aria-label="'+(state.saved.has(s.id)?'Bỏ lưu':'Lưu truyện')+'"><i class="fa-'+(state.saved.has(s.id)?'solid':'regular')+' fa-bookmark"></i></button></div>';
+    const ageLock=isAdultOnly(s)?'<span class="rt-age-lock" title="18+ · cần đăng nhập"><i class="fa-solid fa-lock"></i> 18+</span>':'';
+    return '<div class="cover" style="'+style+'">'+visual+ageLock+'<small>'+esc(s.kind||'Truyện')+'</small><button data-save="'+esc(s.id)+'" class="'+(state.saved.has(s.id)?'saved':'')+'" aria-label="'+(state.saved.has(s.id)?'Bỏ lưu':'Lưu truyện')+'"><i class="fa-'+(state.saved.has(s.id)?'solid':'regular')+' fa-bookmark"></i></button></div>';
   }
   function render() {
     const items=activeItems(), grid=$('#story-grid'); if(!grid)return;
-    grid.innerHTML=items.map(s=>'<article class="story"><div class="story-open" data-open="'+esc(s.id)+'" role="button" tabindex="0" aria-label="Xem chi tiết '+esc(s.title)+'">'+coverMarkup(s)+'<h3 title="'+esc(s.title)+'">'+esc(s.title)+'</h3></div><p>'+esc(s.author||'Đang cập nhật')+'</p><div class="meta"><span>'+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':'Chưa có chương')+'</span><span class="rating">'+(s.rating?'★ '+s.rating.toFixed(1):s.source==='mangadex'?'Nguồn ngoài':'Chưa đánh giá')+'</span></div></article>').join('');
+    grid.innerHTML=items.map(s=>'<article class="story'+(isAdultOnly(s)?' story-adult':'')+'"><div class="story-open" data-open="'+esc(s.id)+'" role="button" tabindex="0" aria-label="'+(isAdultOnly(s)?'Truyện 18+, cần đăng nhập: ':'Xem chi tiết ')+esc(s.title)+'">'+coverMarkup(s)+'<h3 title="'+esc(s.title)+'">'+esc(s.title)+(isAdultOnly(s)?' <small class="rt-age-label">🔒 18+ · Đăng nhập để xem</small>':'')+'</h3></div><p>'+esc(s.author||'Đang cập nhật')+'</p><div class="meta"><span>'+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':'Chưa có chương')+'</span><span class="rating">'+(s.rating?'★ '+s.rating.toFixed(1):s.source==='mangadex'?'Nguồn ngoài':'Chưa đánh giá')+'</span></div></article>').join('');
     const count=$('#result-count'); if(count)count.textContent=items.length+' kết quả';
     const empty=$('#empty-state'); if(empty)empty.hidden=!!items.length;
     const rank=$('#ranking-list'); if(rank)rank.innerHTML=[...state.items].sort((a,b)=>(b.pop||0)-(a.pop||0)).slice(0,4).map((s,i)=>'<div class="ranking"><span class="rank">0'+(i+1)+'</span><span class="rank-info"><b>'+esc(s.title)+'</b><small>'+esc(s.kind||'Truyện')+'</small></span><span>'+(s.rating?'★ '+s.rating.toFixed(1):'↗')+'</span></div>').join('')||'<p class="muted">Chưa có dữ liệu xếp hạng từ nguồn này.</p>';
@@ -206,14 +207,17 @@
   }
   function resetFilters(){state.query='';state.genre='all';state.sort='featured';$('#story-search').value='';$('#genre-filter').value='all';$$('[data-sort]').forEach(b=>{b.classList.toggle('active',b.dataset.sort===state.sort);b.setAttribute('aria-selected',String(b.dataset.sort===state.sort));});render();}
   function isAdultOnly(item) {
-    const rating=String(item?.contentRating ?? item?.content_rating ?? '').toLowerCase();
-    return rating==='erotica' || rating==='pornographic' || rating==='18+' || rating==='adult' || rating==='mature';
+    const raw=String(item?.contentRating ?? item?.content_rating ?? item?.content_rating_label ?? item?.age_rating ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().trim();
+    // Chấp nhận cả mã chuẩn lẫn nhãn do admin/importer lưu.
+    return /(^|[^a-z])(erotica|pornographic|adult|mature|18\s*\+|18plus|nsfw|restricted)([^a-z]|$)/i.test(raw)
+      || raw.includes('nguoi truong thanh')
+      || raw.includes('danh cho nguoi lon')
+      || raw.includes('chi danh cho nguoi lon');
   }
   async function canOpenAdultContent(item) {
     if(!isAdultOnly(item))return true;
-    const ok=await requireSignedIn('đọc truyện 18+');
-    if(!ok)return false;
-    return true;
+    // Fail closed: nếu không xác minh được phiên đăng nhập thì không mở nội dung.
+    return await requireSignedIn('đọc truyện 18+');
   }
   async function openDetail(id) {
     const s=state.items.find(x=>String(x.id)===String(id));if(!s)return;
