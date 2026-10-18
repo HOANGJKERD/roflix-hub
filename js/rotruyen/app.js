@@ -244,42 +244,17 @@
         if(!state.chapters.length){list.innerHTML='<p>Tác phẩm này chưa có chương được xuất bản.</p>';return;}
         list.innerHTML=state.chapters.map((c,i)=>'<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.chapter_number)+' '+esc(c.title||'')+'</span><small>Đọc</small></button>').join('');return;
       }
-      const buildChapterParams=(lang, offset)=>{const p=new URLSearchParams({limit:'100','order[chapter]':'asc',offset:String(offset||0)});if(lang)p.append('translatedLanguage[]',lang);p.append('contentRating[]','safe');p.append('contentRating[]','suggestive');p.append('contentRating[]','erotica');p.append('includes[]','scanlation_group');return p;};
-      async function pullChapters(lang){
-        const rows=[]; let offset=0, total=Infinity;
-        while(offset<total && rows.length<500){
-          const data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+buildChapterParams(lang, offset).toString());
-          const raw=data.data||[];
-          const batch=raw.filter(c=>(Number(c.attributes?.pages)||0)>0);
-          total=Number(data.total||0);
-          rows.push(...batch);
-          if(!raw.length || raw.length<100) break;
-          offset += raw.length;
-        }
-        return rows;
-      }
-      let langNote='';
+      const buildChapterParams=(preferVietnamese)=>{const p=new URLSearchParams({limit:'100','order[chapter]':'asc'});if(preferVietnamese)p.append('translatedLanguage[]','vi');p.append('contentRating[]','safe');p.append('contentRating[]','suggestive');p.append('includes[]','scanlation_group');return p;};
+      // Feed chỉ trả về chương đã dịch tiếng Việt; tuyệt đối không tải chương ngôn ngữ khác.
+      let data;
       try {
-        state.chapters=await pullChapters('vi');
-        if(!state.chapters.length){
-          state.chapters=await pullChapters('en');
-          if(state.chapters.length) langNote='Chưa có bản tiếng Việt. Đang hiện bản English.';
-        }
-        if(!state.chapters.length){
-          const any=await pullChapters('');
-          const counts={};
-          any.forEach(c=>{const lang=c.attributes?.translatedLanguage||'?'; counts[lang]=(counts[lang]||0)+1;});
-          const best=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
-          const lang=best?best[0]:'';
-          state.chapters=lang?any.filter(c=>c.attributes?.translatedLanguage===lang):any;
-          if(state.chapters.length) langNote='Chưa có bản tiếng Việt hoặc English. Đang hiện bản '+(lang||'khác')+'.';
-        }
+        data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+buildChapterParams(true).toString());
       } catch(error) {
-        throw new Error('Không tải được danh sách chương. '+error.message);
+        throw new Error('Không tải được danh sách chương Vietsub. '+error.message);
       }
+      state.chapters=(data.data||[]).filter(c=>c.attributes?.pages>0 && c.attributes?.translatedLanguage==='vi');
       if(!state.chapters.length){list.innerHTML='<p>Nguồn chưa có chương công khai có trang đọc. Có thể truyện chưa có bản dịch hoặc chương đang bị giới hạn.</p>';return;}
-      const note=langNote?'<p>'+esc(langNote)+'</p>':'';
-      list.innerHTML=note+state.chapters.map((c,i)=>{const group=(c.relationships||[]).find(r=>r.type==='scanlation_group')?.attributes?.name;const lang=c.attributes.translatedLanguage||'';return '<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.attributes.chapter||'?')+' '+esc(c.attributes.title||'')+(group?'<small>Nhóm dịch: '+esc(group)+'</small>':'')+'</span><small>'+esc(lang)+'</small></button>';}).join('');
+      list.innerHTML=state.chapters.map((c,i)=>{const group=(c.relationships||[]).find(r=>r.type==='scanlation_group')?.attributes?.name;return '<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.attributes.chapter||'?')+' '+esc(c.attributes.title||'')+(group?'<small>Nhóm dịch: '+esc(group)+'</small>':'')+'</span><small>'+esc(c.attributes.translatedLanguage||'')+'</small></button>';}).join('');
     } catch(e){list.innerHTML='<p>Không tải được chương. '+esc(e.message)+'</p>';}
   }
   async function openReader(index) {
