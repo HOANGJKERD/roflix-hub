@@ -310,6 +310,7 @@
         const textBlocks=pages.filter(p=>p&&typeof p==='object'&&p.type==='text'&&typeof p.text==='string');
         if(textBlocks.length){
           $('#reader-content').innerHTML=textBlocks.map(p=>'<article class="reader-text" style="max-width:820px;margin:0 auto;padding:24px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.95;font-size:1.08rem">'+esc(p.text)+'</article>').join('');
+          restoreReadProgress();
           return;
         }
         if(pages.length){
