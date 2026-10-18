@@ -207,7 +207,7 @@
     const s=state.items.find(x=>String(x.id)===String(id));if(!s)return;state.selected=s;
     $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&['mangadex','database','longbook'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     $('#detail-meta').textContent=(s.kind||'Truyện')+' · '+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':s.source==='database'?'Catalog RoTruyện':s.source==='longbook'?'LongBook API':'Bản demo');
-    const read=$('#detail-read');read.disabled=!['mangadex','database'].includes(s.source);read.textContent=s.source==='mangadex'?'Tải lại danh sách chương':s.source==='database'?'Tải lại chương đã xuất bản':'Bản demo chưa có nội dung chương';$('#chapter-list').innerHTML=['mangadex','database'].includes(s.source)?'<p>Đang tải danh sách chương…</p>':'';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');if(['mangadex','database'].includes(s.source))loadChapters();
+    const read=$('#detail-read');read.disabled=!['mangadex','database'].includes(s.source);read.textContent=s.source==='mangadex'?'Xem chương / Tải lại':s.source==='database'?'Xem chương / Tải lại':'Bản demo chưa có nội dung chương';$('#chapter-list').innerHTML=['mangadex','database'].includes(s.source)?'<p>Đang tải danh sách chương…</p>':'';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');if(['mangadex','database'].includes(s.source))loadChapters();
   }
   function closeModal(id){const m=$('#'+id);if(m)m.hidden=true;if(!$$('.modal:not([hidden])').length)document.body.classList.remove('modal-open');}
   async function loadChapters() {
@@ -246,7 +246,7 @@
       if(!rows.length){list.innerHTML='<p>Truyện này hiện chưa có chương tiếng Việt công khai có trang đọc.</p>';return;}
       list.innerHTML=rows.map((c,i)=>{const group=(c.relationships||[]).find(r=>r.type==='scanlation_group')?.attributes?.name;return '<button class="chapter-row" data-chapter="'+i+'"><span class="chapter-row-title"><span class="chapter-number">Chương '+esc(c.attributes.chapter||'?')+'</span><span class="chapter-name">'+esc(c.attributes.title||'')+'</span></span><span class="chapter-row-meta">'+(group?'<span class="chapter-group">Nhóm dịch: '+esc(group)+'</span>':'')+'<small>vi</small></span></button>';}).join('');
     } catch(e){if(isCurrent())list.innerHTML='<p>Không tải được chương. '+esc(e.message)+'</p>';}
-    finally{if(isCurrent()){read.disabled=false;read.textContent=selected.source==='mangadex'?'Tải lại danh sách chương':'Tải lại chương đã xuất bản';}}
+    finally{if(isCurrent()){read.disabled=false;read.textContent='Xem chương / Tải lại';}}
   }
   async function openReader(index) {
     const chapter=state.chapters[index];if(!chapter)return;
