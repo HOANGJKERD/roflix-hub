@@ -152,9 +152,10 @@
       mystery:['mystery','bí ẩn','bi an'],romance:['romance','lãng mạn','lang man'],
       'sci-fi':['sci-fi','science fiction','khoa học viễn tưởng','khoa hoc vien tuong'],
       'slice-of-life':['slice of life','đời thường','doi thuong'],sports:['sports','thể thao','the thao'],
-      supernatural:['supernatural','siêu nhiên','sieu nhien']
+      supernatural:['supernatural','siêu nhiên','sieu nhien'],adult:['adult','18+','18plus','erotica','pornographic','nsfw','người lớn','nguoi lon']
     };
     const haystack=normalizeFilterText([item.genre,item.kind,...(Array.isArray(item.genres)?item.genres:[]),...(item.raw?.attributes?.tags||[]).map(t=>t.attributes?.name?.en||'')].join(' '));
+    if(genre==='adult')return isAdultOnly(item)||aliases.adult.some(alias=>haystack.includes(normalizeFilterText(alias)));
     return (aliases[genre]||[genre]).some(alias=>haystack.includes(normalizeFilterText(alias)));
   }
   function statusMatches(item){
@@ -192,15 +193,17 @@
     const count=[state.query.trim(),state.genre!=='all',state.status!=='all',state.rating!=='all',state.catalogSource!=='all'].filter(Boolean).length;
     el.textContent=count+' bộ lọc đang dùng';
   }
+  function isStoryLocked(item){return item?.source==='database' && (item.isLocked===true || item.is_locked===true);}
   function coverMarkup(s) {
     const style='--cover:'+esc(s.coverColor||'#282449')+';--glow:'+esc(s.glow||'#8c6ce0')+';--accent:'+esc(s.accent||'#d3b9ff');
     const visual=s.cover && ['mangadex','database','longbook'].includes(s.source) && s.cover ? '<img loading="lazy" src="'+esc(s.cover)+'" alt="" onerror="this.onerror=null;this.style.display=\'none\';this.parentElement.classList.add(\'cover-missing\');this.insertAdjacentHTML(\'beforeend\',\'<i class=&quot;fa-solid fa-book-open&quot; aria-hidden=&quot;true&quot;></i>\')">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
-    const ageLock=isAdultOnly(s)?'<span class="rt-age-lock" title="18+ · cần đăng nhập"><i class="fa-solid fa-lock"></i> 18+</span>':'';
-    return '<div class="cover" style="'+style+'">'+visual+ageLock+'<small>'+esc(s.kind||'Truyện')+'</small><button data-save="'+esc(s.id)+'" class="'+(state.saved.has(s.id)?'saved':'')+'" aria-label="'+(state.saved.has(s.id)?'Bỏ lưu':'Lưu truyện')+'"><i class="fa-'+(state.saved.has(s.id)?'solid':'regular')+' fa-bookmark"></i></button></div>';
+    const locked=isStoryLocked(s),ageLock=isAdultOnly(s)?'<span class="rt-age-lock" title="18+ · cần đăng nhập"><i class="fa-solid fa-lock"></i> 18+</span>':'';
+    const lockBadge=locked?'<span class="rt-story-lock-badge"><i class="fa-solid fa-lock"></i> Đã khóa</span>':'';
+    return '<div class="cover'+(locked?' is-story-locked':'')+'" style="'+style+'">'+visual+ageLock+lockBadge+'<small>'+esc(s.kind||'Truyện')+'</small><button data-save="'+esc(s.id)+'" class="'+(state.saved.has(s.id)?'saved':'')+'" aria-label="'+(state.saved.has(s.id)?'Bỏ lưu':'Lưu truyện')+'"><i class="fa-'+(state.saved.has(s.id)?'solid':'regular')+' fa-bookmark"></i></button></div>';
   }
   function render() {
     const items=activeItems(), grid=$('#story-grid'); if(!grid)return;
-    grid.innerHTML=items.map(s=>'<article class="story'+(isAdultOnly(s)?' story-adult':'')+'"><div class="story-open" data-open="'+esc(s.id)+'" role="button" tabindex="0" aria-label="'+(isAdultOnly(s)?'Truyện 18+, cần đăng nhập: ':'Xem chi tiết ')+esc(s.title)+'">'+coverMarkup(s)+'<h3 title="'+esc(s.title)+'">'+esc(s.title)+(isAdultOnly(s)?' <small class="rt-age-label">🔒 18+ · Đăng nhập để xem</small>':'')+'</h3></div><p>'+esc(s.author||'Đang cập nhật')+'</p><div class="meta"><span>'+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':'Chưa có chương')+'</span><span class="rating">'+(s.rating?'★ '+s.rating.toFixed(1):s.source==='mangadex'?'Nguồn ngoài':'Chưa đánh giá')+'</span></div></article>').join('');
+    grid.innerHTML=items.map(s=>'<article class="story'+(isAdultOnly(s)?' story-adult':'')+(isStoryLocked(s)?' story-locked':'')+'"><div class="story-open" data-open="'+esc(s.id)+'" role="button" tabindex="0" aria-label="'+(isStoryLocked(s)?'Truyện đã bị khóa: ':isAdultOnly(s)?'Truyện 18+, cần đăng nhập: ':'Xem chi tiết ')+esc(s.title)+'">'+coverMarkup(s)+'<h3 title="'+esc(s.title)+'">'+esc(s.title)+(isStoryLocked(s)?' <small class="rt-age-label">🔒 Truyện đã khóa</small>':isAdultOnly(s)?' <small class="rt-age-label">🔒 18+ · Đăng nhập để xem</small>':'')+'</h3></div><p>'+esc(s.author||'Đang cập nhật')+'</p><div class="meta"><span>'+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':'Chưa có chương')+'</span><span class="rating">'+(s.rating?'★ '+s.rating.toFixed(1):s.source==='mangadex'?'Nguồn ngoài':'Chưa đánh giá')+'</span></div></article>').join('');
     const count=$('#result-count'); if(count)count.textContent=items.length+' kết quả';updateFilterSummary();
     const empty=$('#empty-state'); if(empty)empty.hidden=!!items.length;
     const rank=$('#ranking-list'); if(rank)rank.innerHTML=[...state.items].sort((a,b)=>(b.pop||0)-(a.pop||0)).slice(0,4).map((s,i)=>'<div class="ranking"><span class="rank">0'+(i+1)+'</span><span class="rank-info"><b>'+esc(s.title)+'</b><small>'+esc(s.kind||'Truyện')+'</small></span><span>'+(s.rating?'★ '+s.rating.toFixed(1):'↗')+'</span></div>').join('')||'<p class="muted">Chưa có dữ liệu xếp hạng từ nguồn này.</p>';
@@ -212,9 +215,9 @@
     if(!sb){state.source='database';state.items=[];render();notify('Supabase chưa sẵn sàng. Không hiển thị truyện mẫu.');return;}
     const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải catalog RoTruyện…</p></div>';
     try{
-      const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,source_id,genres,content_rating,status,is_published,sort_order').eq('is_published',true).order('sort_order',{ascending:true}).limit(100);
+      const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,source_id,genres,content_rating,status,is_published,is_locked,lock_reason,sort_order').eq('is_published',true).order('sort_order',{ascending:true}).limit(100);
       if(error)throw error;
-      state.items=(data||[]).map(s=>({id:s.id,source:'database',title:s.title,author:s.author,genre:(s.genres||[])[0]||'all',kind:(s.genres||[]).join(' · ')||'Truyện',chapters:null,rating:null,pop:0,updated:0,cover:s.cover_url,description:s.synopsis,status:s.status,contentRating:s.content_rating,sourceId:s.source_id}));
+      state.items=(data||[]).map(s=>({id:s.id,source:'database',title:s.title,author:s.author,genre:(s.genres||[])[0]||'all',kind:(s.genres||[]).join(' · ')||'Truyện',chapters:null,rating:null,pop:0,updated:0,cover:s.cover_url,description:s.synopsis,status:s.status,contentRating:s.content_rating,isLocked:!!s.is_locked,lockReason:s.lock_reason||'',sourceId:s.source_id}));
       state.source='database';
       if(!state.items.length){notify('Catalog chưa có truyện thật đã xuất bản.');}
       render();
@@ -264,6 +267,7 @@
   }
   async function openDetail(id) {
     const s=state.items.find(x=>String(x.id)===String(id));if(!s)return;
+    if(isStoryLocked(s)){notify('Truyện này hiện đã bị khóa bởi quản trị viên.');return;}
     if(!(await canOpenAdultContent(s)))return;
     state.selected=s;
     $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&['mangadex','database','longbook'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
@@ -356,6 +360,7 @@
   }
   async function openReader(index) {
     const chapter=state.chapters[index];if(!chapter)return;
+    if(isStoryLocked(state.selected)){closeModal('reader-modal');notify('Truyện này hiện đã bị khóa bởi quản trị viên.');return;}
     if(!(await canOpenAdultContent(state.selected)))return;
     persistReadProgress(true);state.chapterIndex=index;const title=chapter.attributes?.chapter||chapter.chapter_number||'?';rememberChapter();
     $('#reader-title').textContent=(state.selected?.title||'RoTruyện')+' · Chương '+title;
