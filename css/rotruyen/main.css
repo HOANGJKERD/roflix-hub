@@ -251,3 +251,11 @@ body[data-theme="light"] .filter-control select option{background:#fff;color:#17
 body[data-theme="light"] #active-filter-count{color:#92400e}
 @media(max-width:850px){.filter-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.filter-panel{padding:12px;gap:12px}.filter-search-row{grid-template-columns:minmax(0,1fr)}.filter-reset{min-height:40px}.filter-controls{grid-template-columns:1fr 1fr;gap:10px}.filter-control select{font-size:12px;padding:9px 22px 9px 8px}.filter-footer{font-size:10px}}
+
+
+/* Admin-controlled locked stories */
+.story-locked .cover.is-story-locked>img{filter:blur(3px) brightness(.38) grayscale(.55);transform:scale(1.04)}
+.story-locked .cover.is-story-locked:after{content:' ';position:absolute;inset:0;background:linear-gradient(180deg,#08090a20,#08090ad9);pointer-events:none}
+.cover.is-story-locked{position:relative;overflow:hidden}
+.rt-story-lock-badge{position:absolute;z-index:2;top:10px;left:10px;display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border:1px solid #ffffff35;border-radius:8px;background:#090a0de8;color:#fff;font-size:11px;font-weight:850;backdrop-filter:blur(8px)}
+.story-locked .story-open{cursor:not-allowed}
