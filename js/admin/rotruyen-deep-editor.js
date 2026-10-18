@@ -27,10 +27,12 @@ function seriesEditor(s){
  field('Tóm tắt / mô tả','rt-deep-synopsis',s.synopsis||'','textarea',true)+
  field('MangaDex: tìm theo tên','rt-md-query',s.title||'','text',true)+
  '<div class="rt-deep-field full"><button type="button" class="btn" id="rt-md-search">🔎 Tìm trên MangaDex</button><div id="rt-md-status" class="rt-deep-hint">Tìm tác phẩm để tự điền ID, tên, mô tả, thể loại và bìa nếu API cung cấp.</div><div id="rt-md-results" class="rt-md-results"></div></div>'+
+ '<div class="rt-deep-field full"><button type="button" class="btn btn-primary" id="rt-md-import-chapters">⬇ Nhập chapter MangaDex + tự lấy ảnh trang</button><div id="rt-md-import-status" class="rt-deep-hint">Cần ID MangaDex. Chỉ nhập các chapter tiếng Việt, tự bỏ qua chapter đã có. Ảnh trang lưu dưới dạng manifest để trình đọc tải tự động.</div><div id="rt-md-import-progress" class="rt-md-results"></div></div>'+
  selectField('Trạng thái hiển thị','rt-deep-published',s.is_published?'true':'false',[['false','Bản nháp / ẩn'],['true','Đã xuất bản']])+
  '</div><p class="rt-deep-hint">Lưu ý: ID MangaDex chỉ liên kết metadata. Việc đọc chapter MangaDex cần endpoint/luồng chapter tương ứng; không tự sao chép ảnh chương chỉ bằng UUID.</p></form>';
  const el=overlay('🛠️ Chỉnh sửa sâu: '+esc(s.title||'Tác phẩm'),body,'<button type="button" class="btn" data-close>Hủy</button><button type="submit" form="rt-deep-series-form" class="btn btn-primary" id="rt-deep-save">Lưu toàn bộ thay đổi</button>');
  $('rt-md-search').addEventListener('click',()=>searchMangaDex($('rt-md-query').value));
+ $('rt-md-import-chapters').addEventListener('click',importMangaDexChapters);
  $('rt-deep-series-form').addEventListener('submit',saveSeries);
 }
 async function searchMangaDex(q){
@@ -95,6 +97,48 @@ async function saveChapter(e){
   $('rt-deep-overlay').remove();showMessage('Đã cập nhật chapter '+num+'.');$('rt-admin-refresh')?.click();
  }catch(err){showMessage(err.message||'Không thể lưu chapter.',true);button.disabled=false;}
 }
+async function importMangaDexChapters(){
+ const button=$('rt-md-import-chapters'),status=$('rt-md-import-status'),progress=$('rt-md-import-progress');
+ const mangaId=$('rt-deep-sourceid').value.trim()||activeSeries.source_id;
+ if(!mangaId){status.textContent='Chưa có MangaDex UUID. Hãy tìm và chọn tác phẩm MangaDex trước.';status.className='rt-deep-hint rt-deep-error';return;}
+ button.disabled=true;progress.innerHTML='';
+ try{
+  const db=await admin();
+  status.textContent='Đang tải danh sách chapter tiếng Việt từ MangaDex…';
+  const res=await fetch('/api/mangadex/chapters?manga='+encodeURIComponent(mangaId),{headers:{Accept:'application/json'}});
+  const json=await res.json();if(!res.ok)throw Error(json.error||('MangaDex HTTP '+res.status));
+  const chapters=Array.isArray(json.data)?json.data:[];
+  if(!chapters.length)throw Error('MangaDex không trả chapter tiếng Việt. Có thể truyện chưa có bản dịch tiếng Việt.');
+  const {data:existing,error:existingError}=await db.from('rotruyen_chapters').select('chapter_number').eq('series_id',activeSeries.id).limit(1000);
+  if(existingError)throw existingError;
+  const numbers=new Set((existing||[]).map(x=>Number(x.chapter_number)));
+  const candidates=chapters.filter(ch=>{const n=Number(ch.attributes?.chapter);return Number.isFinite(n)&&!numbers.has(n);});
+  if(!candidates.length){status.textContent='Không có chapter mới. Các số chapter trả về đã tồn tại trong Supabase.';status.className='rt-deep-hint rt-deep-ok';return;}
+  let done=0,failed=0;const batch=[];
+  for(const ch of candidates){
+   const a=ch.attributes||{},rawNum=a.chapter,chapterNum=Number(rawNum);
+   try{
+    const atRes=await fetch('/api/mangadex/at-home?chapter='+encodeURIComponent(ch.id),{headers:{Accept:'application/json'}});
+    const at=await atRes.json();if(!atRes.ok)throw Error(at.error||'Không lấy được server ảnh');
+    const base=at.baseUrl,hash=at.chapter?.hash,files=at.chapter?.dataSaver?.length?at.chapter.dataSaver:at.chapter?.data;
+    if(!base||!hash||!Array.isArray(files)||!files.length)throw Error('Manifest ảnh rỗng');
+    const pages=files.map((file,index)=>({url:'/api/mangadex-image?host='+encodeURIComponent(new URL(base).hostname)+'&path='+encodeURIComponent('/'+(at.chapter?.dataSaver?.length?'data-saver':'data')+'/'+hash+'/'+file),alt:'Chapter '+rawNum+' · trang '+(index+1),source:'mangadex',page:index+1}));
+    batch.push({series_id:activeSeries.id,chapter_number:chapterNum,title:a.title||('Chapter '+rawNum),external_url:'https://mangadex.org/chapter/'+ch.id,page_manifest:pages,is_published:false,published_at:null});
+   }catch(err){failed++;console.warn('[RoTruyen MangaDex import]',ch.id,err);}
+   done++;status.textContent='Đang lấy ảnh trang: '+done+'/'+candidates.length+' · chuẩn bị lưu '+batch.length+' · lỗi '+failed;
+   progress.innerHTML='<div class="rt-deep-hint">Đã phân tích '+done+'/'+candidates.length+' chapter. Chương được nhập ở trạng thái bản nháp để admin kiểm tra trước khi xuất bản.</div>';
+  }
+  if(batch.length){
+   const {error}=await db.from('rotruyen_chapters').insert(batch);if(error)throw error;
+   const {error:logError}=await db.from('rotruyen_audit_logs').insert({actor_id:(await db.auth.getUser()).data.user.id,action:'mangadex_chapters_imported',entity_type:'rotruyen_series',entity_id:String(activeSeries.id),details:{manga_id:mangaId,imported:batch.length,failed}});
+   if(logError)console.warn('[RoTruyen audit]',logError.message);
+  }
+  status.textContent='Hoàn tất: đã nhập '+batch.length+' chapter với dữ liệu ảnh trang tự động'+(failed?' · lỗi lấy ảnh '+failed:'')+'. Tất cả để bản nháp.';
+  status.className='rt-deep-hint '+(batch.length?'rt-deep-ok':'rt-deep-error');
+  if(batch.length){showMessage('Đã nhập '+batch.length+' chapter MangaDex và manifest ảnh vào Supabase. Hãy kiểm tra rồi xuất bản.');$('rt-admin-refresh')?.click();}
+ }catch(err){status.textContent='Nhập chapter thất bại: '+(err.message||err);status.className='rt-deep-hint rt-deep-error';}
+ finally{button.disabled=false;}
+}
 function install(){
  const seriesBody=$('rt-admin-series-body'),chaptersBody=$('rt-admin-chapters-body');if(!seriesBody||!chaptersBody)return;
  document.addEventListener('click',e=>{
@@ -103,7 +147,7 @@ function install(){
  document.addEventListener('click',e=>{
   const b=e.target.closest('[data-rt-chapter-action="edit-deep"]');if(b){e.preventDefault();e.stopImmediatePropagation();const c=(window.__rtDeepChapterCache||[]).find(x=>String(x.id)===String(b.dataset.id));if(c)chapterEditor(c);}
  },true);
- const watch=new MutationObserver(()=>syncCache());watch.observe(seriesBody,{childList:true,subtree:true});watch.observe(chaptersBody,{childList:true,subtree:true});syncCache();
+ const watch=new MutationObserver(()=>{syncCache();installChapterEditButtonsOnce();});watch.observe(seriesBody,{childList:true,subtree:true});watch.observe(chaptersBody,{childList:true,subtree:true});syncCache();installChapterEditButtonsOnce();
  // Replace row rendering with a supplementary edit button while preserving existing controls.
  const oldChapterRender=window.rfRenderRoTruyenChapters;
 }
@@ -112,6 +156,20 @@ function syncCache(){
  const sbody=$('rt-admin-series-body'),cbody=$('rt-admin-chapters-body');if(!sbody||!cbody)return;
  const series=(window.__rtDeepSeriesCache||[]); // obtain IDs and fetch only on edit, avoiding duplicate privileged reads.
  window.__rtDeepSeriesCache=series;
+}
+let chapterObserverInstalled=false;
+function installChapterEditButtonsOnce(){
+ const body=$('rt-admin-chapters-body');if(!body||chapterObserverInstalled)return;chapterObserverInstalled=true;
+ const observer=new MutationObserver(()=>{
+  const buttons=[...body.querySelectorAll('[data-rt-chapter-action="publish"]')];
+  if(!buttons.length)return;
+  const seriesId=document.querySelector('#rt-admin-create-chapter')?.dataset.seriesId;if(!seriesId)return;
+  admin().then(async db=>{
+   const {data,error}=await db.from('rotruyen_chapters').select('id,series_id,chapter_number,title,is_published,published_at,external_url,page_manifest').eq('series_id',seriesId).order('chapter_number',{ascending:true}).limit(1000);if(error)throw error;
+   window.__rtDeepChapterCache=data||[];
+   for(const b of buttons){const row=b.closest('tr'),id=b.dataset.id;if(row&&!row.querySelector('[data-rt-chapter-action="edit-deep"]')){const edit=document.createElement('button');edit.type='button';edit.className='btn';edit.textContent='Chỉnh sâu';edit.dataset.rtChapterAction='edit-deep';edit.dataset.id=id;row.lastElementChild.append(' ',edit);}}
+  }).catch(err=>console.warn('[RoTruyen deep admin]',err));
+ });observer.observe(body,{childList:true,subtree:true});
 }
 function installChapterEditButtons(){
  const body=$('rt-admin-chapters-body');if(!body)return;
@@ -128,5 +186,5 @@ function installChapterEditButtons(){
   }
  });observer.observe(body,{childList:true,subtree:true});
 }
-document.addEventListener('DOMContentLoaded',()=>{install();installChapterEditButtons();});
+document.addEventListener('DOMContentLoaded',()=>{install();});
 })();
