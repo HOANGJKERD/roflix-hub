@@ -58,7 +58,7 @@ async function run(){
  await Promise.all([
   checkApi('Nguồn phim KKPhim','https://phimapi.com/v1/api/danh-sach/phim-moi-cap-nhat?page=1'),
   checkApi('Nguồn phim VSMOV','https://vsmov.com/api/danh-sach/phim-moi-cap-nhat?page=1'),
-  checkApi('Nguồn truyện MangaDex','https://api.mangadex.org/manga?limit=1&includes[]=cover_art')
+  checkApi('Nguồn truyện MangaDex qua RoHub','/api/mangadex/manga?limit=1&includes%5B%5D=cover_art')
  ]);
  state.running=false;state.lastRun=new Date().toISOString();render();
 }
