@@ -528,7 +528,8 @@ async function loadPublicGenres(){
     $('#genre-filter').addEventListener('change',e=>{state.genre=e.target.value;render();});
     $('#status-filter')?.addEventListener('change',e=>{state.status=e.target.value;render();});
     $('#rating-filter')?.addEventListener('change',e=>{state.rating=e.target.value;render();});
-    $('#source-filter')?.addEventListener('change',e=>{state.catalogSource=e.target.value;render();});\n    $('#content-type-filter')?.addEventListener('change',e=>{state.contentType=e.target.value;render();});
+    $('#source-filter')?.addEventListener('change',e=>{state.catalogSource=e.target.value;render();});
+    $('#content-type-filter')?.addEventListener('change',e=>{state.contentType=e.target.value;render();});
     $('#reset-filters').addEventListener('click',resetFilters);$('#empty-reset').addEventListener('click',resetFilters);
     $$('[data-sort]').forEach(b=>b.addEventListener('click',()=>{state.sort=b.dataset.sort;$$('[data-sort]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b));});render();}));
     $('#story-grid').addEventListener('click',e=>{const save=e.target.closest('[data-save]');if(save){e.preventDefault();e.stopPropagation();requireSignedIn('tủ truyện yêu thích').then(ok=>{if(!ok)return;const id=save.dataset.save;state.saved.has(id)?state.saved.delete(id):state.saved.add(id);memory.write('saved:v1',[...state.saved]);render();scheduleCloudSync();notify(state.saved.has(id)?'Đã lưu truyện vào tủ.':'Đã bỏ lưu truyện.');});return;}const open=e.target.closest('[data-open]');if(open){openDetail(open.dataset.open);}});
