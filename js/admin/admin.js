@@ -22,12 +22,12 @@
   async function ensureAdmin(){
     if(!sb){showAccess('Supabase chưa sẵn sàng','Kiểm tra js/config/supabase.config.js.');return false;}
     const user=await getUser();
-    if(!user){showAccess('Chưa đăng nhập','Hãy đăng nhập tài khoản RoFlix có quyền admin trước.');return false;}
+    if(!user){$('admin-login-open').style.display='inline-flex';$('logout-btn').style.display='none';$('admin-email').textContent='Chưa đăng nhập';showAccess('Chưa đăng nhập','Hãy đăng nhập tài khoản RoFlix có quyền admin trước.');return false;}
     const {data,error}=await sb.from('profiles').select('id,display_name,role,account_status').eq('id',user.id).maybeSingle();
     if(error){showAccess('Không đọc được quyền','Chạy setup.sql + admin_analytics.sql + v2_release_comments_realtime.sql rồi thử lại.');return false;}
     if(data?.role!=='admin'){showAccess('Không có quyền Admin','Tài khoản hiện tại không có role admin.','⛔');return false;}
     if(data?.account_status && data.account_status!=='active'){showAccess('Tài khoản bị hạn chế','Tài khoản admin hiện không ở trạng thái active.','🚫');return false;}
-    state.user=user;$('admin-email').textContent=user.email||user.id;hideAccess();return true;
+    state.user=user;$('admin-email').textContent=user.email||user.id;$('admin-login-open').style.display='none';$('logout-btn').style.display='inline-flex';hideAccess();return true;
   }
 
   function renderStats(s){
@@ -110,6 +110,7 @@
   });
   document.querySelectorAll('#admin-nav button').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.page)));
   $('refresh-btn').addEventListener('click',loadAll);
+  $('admin-login-open')?.addEventListener('click',()=>{showAccess('Chưa đăng nhập','Hãy đăng nhập tài khoản RoFlix có quyền admin trước.');$('access').scrollIntoView({behavior:'smooth',block:'start'});$('admin-login-email')?.focus();});
   $('logout-btn').addEventListener('click',async()=>{await sb.auth.signOut();location.href='index.html';});
   $('modal-close').addEventListener('click',window.rfCloseUser);$('user-modal').addEventListener('click',e=>{if(e.target.id==='user-modal')window.rfCloseUser();});
   $('user-search').addEventListener('input',renderUsers);$('user-role-filter').addEventListener('change',renderUsers);$('user-status-filter').addEventListener('change',renderUsers);
