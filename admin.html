@@ -6,6 +6,16 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="css/admin/admin.css"><link rel="stylesheet" href="css/admin/system-health.css"><link rel="stylesheet" href="css/admin/admin-v3.css"><link rel="stylesheet" href="css/admin/movie-control.css"><link rel="stylesheet" href="css/mobile-3.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config/supabase.config.js"></script><script src="js/core/supabase.js"></script>
+<style>
+/* Login trực tiếp trong RoHub Admin */
+.admin-login-card{width:min(480px,100%);padding:clamp(24px,5vw,42px);text-align:left;border-color:rgba(245,158,11,.25);box-shadow:0 24px 90px rgba(0,0,0,.38)}
+.admin-login-mark{width:58px;height:58px;display:grid;place-items:center;border-radius:18px;background:linear-gradient(135deg,rgba(245,158,11,.22),rgba(139,92,246,.2));border:1px solid rgba(245,158,11,.3);font-size:28px;margin-bottom:18px}
+.admin-login-kicker{color:#fbbf24;font-size:10px;font-weight:900;letter-spacing:.18em;margin:0 0 8px}
+.admin-login-card h2{font-size:26px;margin:0 0 10px}.admin-login-card>.muted{line-height:1.65}
+.admin-login-form{margin-top:20px}.admin-login-form .form-row{margin-top:15px}.admin-login-form .form-row label{color:#cbd5e1;font-size:13px}
+.admin-login-submit{width:100%;display:flex;justify-content:center;gap:12px;padding:12px;margin-top:12px}.admin-login-submit:disabled{opacity:.65;cursor:wait}
+.admin-login-error{min-height:18px;color:#fca5a5;font-size:12px;line-height:1.5;margin:12px 0 0}.admin-login-foot{font-size:11px;margin-top:20px}
+</style>
 </head>
 <body>
   <div id="app"><div class="admin-shell"><aside class="sidebar"><div class="brand"><div class="brand-mark"><i class="fa-solid fa-play"></i></div><span>RoHub <span style="color:#f59e0b">Admin</span></span><span class="badge">PRO</span></div><nav class="nav" id="admin-nav">
@@ -74,6 +84,6 @@
 </form><div class="table-wrap"><table class="table"><thead><tr><th>Chương</th><th>Tên chương</th><th>Ngày xuất bản</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="rt-admin-chapters-body"><tr><td colspan="5" class="empty">Chưa chọn tác phẩm.</td></tr></tbody></table></div></div>
 </section>
 </div></main></div><div class="modal" id="user-modal"><div class="modal-card"><div class="modal-head"><h3 id="modal-title">Quản lý tài khoản</h3><button class="close" id="modal-close">×</button></div><div id="modal-body"></div></div></div></div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script><script src="js/admin/admin.js"></script><script src="js/admin/system-health.js?v=1"></script><script src="js/admin/release-schedule-admin.js"></script><script src="js/admin/admin-v3.js"></script><script src="js/admin/gacha-admin.js"></script><script src="js/admin/admin-v4-enhancements.js?v=1"></script><script src="js/admin/rotruyen-admin.js?v=2"></script><script src="js/admin/movie-control-admin.js?v=5" id="roflix-movie-control-admin"></script><script src="js/features/roflix-suite-50.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script><script src="js/admin/admin.js?v=2"></script><script src="js/admin/system-health.js?v=1"></script><script src="js/admin/release-schedule-admin.js"></script><script src="js/admin/admin-v3.js"></script><script src="js/admin/gacha-admin.js"></script><script src="js/admin/admin-v4-enhancements.js?v=1"></script><script src="js/admin/rotruyen-admin.js?v=2"></script><script src="js/admin/movie-control-admin.js?v=5" id="roflix-movie-control-admin"></script><script src="js/features/roflix-suite-50.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script><script src="js/admin/rotruyen-bulk-import.js?v=7"></script>
 </body></html>
