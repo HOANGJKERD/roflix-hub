@@ -23,7 +23,7 @@ function seriesEditor(s){
  selectField('Tình trạng','rt-deep-status',s.status||'ongoing',[['ongoing','Đang ra'],['completed','Hoàn thành'],['hiatus','Tạm ngưng'],['cancelled','Đã hủy']])+
  selectField('Phân loại độ tuổi','rt-deep-rating',s.content_rating||'safe',[['safe','Phù hợp mọi lứa tuổi'],['suggestive','Có yếu tố trưởng thành nhẹ'],['erotica','18+ / người trưởng thành']])+
  field('Thứ tự ưu tiên','rt-deep-sort',String(s.sort_order??0),'number')+
- field('Thể loại (mỗi dòng một thể loại)','rt-deep-genres',(Array.isArray(s.genres)?s.genres:[]).join('\\n'),'textarea',true)+
+ field('Thể loại (mỗi dòng một thể loại)','rt-deep-genres',(Array.isArray(s.genres)?s.genres:[]).join('\n'),'textarea',true)+
  field('Tóm tắt / mô tả','rt-deep-synopsis',s.synopsis||'','textarea',true)+
  field('MangaDex: tìm theo tên','rt-md-query',s.title||'','text',true)+
  '<div class="rt-deep-field full"><button type="button" class="btn" id="rt-md-search">🔎 Tìm trên MangaDex</button><div id="rt-md-status" class="rt-deep-hint">Tìm tác phẩm để tự điền ID, tên, mô tả, thể loại và bìa nếu API cung cấp.</div><div id="rt-md-results" class="rt-md-results"></div></div>'+
@@ -53,7 +53,7 @@ function applyMangaDex(m){
  if(desc)$('rt-deep-synopsis').value=desc;
  if(file)$('rt-deep-cover').value='https://uploads.mangadex.org/covers/'+m.id+'/'+file+'.256.jpg';
  const tags=(a.tags||[]).map(t=>t.attributes?.name?.en).filter(Boolean);
- if(tags.length)$('rt-deep-genres').value=[...new Set(tags)].join('\\n');
+ if(tags.length)$('rt-deep-genres').value=[...new Set(tags)].join('\n');
  const status=$('rt-md-status');status.textContent='Đã điền metadata cho '+title+'. Bấm “Lưu toàn bộ thay đổi” để ghi vào catalog.';status.className='rt-deep-hint rt-deep-ok';
 }
 async function saveSeries(e){
