@@ -48,7 +48,7 @@ async function checkTable(db,table){
 async function run(){
  if(state.running)return;state.running=true;state.results=[];state.lastRun=new Date().toISOString();checks.startedAt=performance.now();const runButton=$('health-run-btn');if(runButton){runButton.disabled=true;runButton.textContent='Đang kiểm tra…';}render();
  const db=client();
- if(!db){add('Supabase client','fail','window.rfSupabase chưa được khởi tạo.','Kiểm tra CDN, cấu hình Supabase và js/core/supabase.js');state.running=false;render();return;}
+ if(!db){add('Supabase client','fail','window.rfSupabase chưa được khởi tạo.','Kiểm tra CDN, cấu hình Supabase và js/core/supabase.js');state.running=false;if(runButton){runButton.disabled=false;runButton.textContent='▶ Chạy kiểm tra';}render();return;}
  add('Supabase client','ok','Client JavaScript đã được khởi tạo.','Chưa đồng nghĩa backend đã truy cập được');
  try{
   const auth=await db.auth.getUser();
