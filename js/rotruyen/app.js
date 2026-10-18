@@ -219,7 +219,7 @@
         const {data,error}=await sb.from('rotruyen_chapters').select('id,series_id,chapter_number,title,external_url,page_manifest,is_published,published_at').eq('series_id',s.id).eq('is_published',true).order('chapter_number',{ascending:true}).limit(500);
         if(error)throw error;state.chapters=data||[];
         if(!state.chapters.length){list.innerHTML='<p>Tác phẩm này chưa có chương được xuất bản.</p>';return;}
-        list.innerHTML=state.chapters.map((c,i)=>'<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.chapter_number)+' '+esc(c.title||'')+'</span><small>Đọc</small></button>').join('');return;
+        list.innerHTML=state.chapters.map((c,i)=>'<button class="chapter-row" data-chapter="'+i+'"><span class="chapter-row-title"><span class="chapter-number">Chương '+esc(c.chapter_number)+'</span><span class="chapter-name">'+esc(c.title||'')+'</span></span><span class="chapter-row-meta"><small>Đọc</small></span></button>').join('');return;
       }
       // Chỉ lấy chương có bản dịch tiếng Việt. Không hiển thị English, ka hoặc ngôn ngữ khác.
       const params=new URLSearchParams({limit:'100','order[chapter]':'asc'});
@@ -230,7 +230,7 @@
       const data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+params.toString());
       state.chapters=(data.data||[]).filter(c=>Number(c.attributes?.pages)>0 && c.attributes?.translatedLanguage==='vi');
       if(!state.chapters.length){list.innerHTML='<p>Truyện này hiện chưa có chương tiếng Việt công khai có trang đọc.</p>';return;}
-      list.innerHTML=state.chapters.map((c,i)=>{const group=(c.relationships||[]).find(r=>r.type==='scanlation_group')?.attributes?.name;return '<button class="chapter-row" data-chapter="'+i+'"><span>Chương '+esc(c.attributes.chapter||'?')+' '+esc(c.attributes.title||'')+(group?'<small>Nhóm dịch: '+esc(group)+'</small>':'')+'</span><small>vi</small></button>';}).join('');
+      list.innerHTML=state.chapters.map((c,i)=>{const group=(c.relationships||[]).find(r=>r.type==='scanlation_group')?.attributes?.name;return '<button class="chapter-row" data-chapter="'+i+'"><span class="chapter-row-title"><span class="chapter-number">Chương '+esc(c.attributes.chapter||'?')+'</span><span class="chapter-name">'+esc(c.attributes.title||'')+'</span></span><span class="chapter-row-meta">'+(group?'<span class="chapter-group">Nhóm dịch: '+esc(group)+'</span>':'')+'<small>vi</small></span></button>';}).join('');
     } catch(e){list.innerHTML='<p>Không tải được chương. '+esc(e.message)+'</p>';}
   }
   async function openReader(index) {
