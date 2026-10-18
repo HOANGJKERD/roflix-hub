@@ -92,12 +92,33 @@
     return {id:item.id,source:'mangadex',title:titleOf(item),author:(item.relationships||[]).find(r=>r.type==='author')?.attributes?.name||'Chưa rõ tác giả',genre,kind:tags.slice(0,2).join(' · ')||'Manga',chapters:null,rating:null,pop:0,updated:0,cover:coverOf(item),description:a.description?.vi||a.description?.en||'Chưa có mô tả.',status:a.status||'unknown',contentRating:a.contentRating||'safe',raw:item};
   }
   async function fetchJSON(url, options={}) {
-    const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),12000);
+    const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),18000);
     try {
       const response=await fetch(url,{...options,signal:controller.signal,headers:{Accept:'application/json',...(options.headers||{})}});
-      if(!response.ok) throw new Error('Nguồn truyện trả về HTTP '+response.status);
+      if(!response.ok) {
+        let detail='';
+        try { detail=(await response.clone().text()).slice(0,220); } catch (_) {}
+        throw new Error('HTTP '+response.status+' tại '+url+(detail?' · '+detail:''));
+      }
       return await response.json();
+    } catch(error) {
+      if(error && error.name==='AbortError') throw new Error('Hết thời gian chờ khi gọi '+url);
+      throw error;
     } finally { clearTimeout(timer); }
+  }
+  async function fetchMangaDexCatalog(params) {
+    const query=params.toString();
+    try {
+      return await fetchJSON(API+'/manga?'+query);
+    } catch(proxyError) {
+      // Dự phòng trực tiếp từ API công khai nếu proxy của RoHub đang lỗi.
+      // MangaDex là nguồn catalog; đây không phải API của TruyenDex.
+      try {
+        return await fetchJSON('https://api.mangadex.org/manga?'+query);
+      } catch(directError) {
+        throw new Error('Proxy RoHub: '+proxyError.message+'; API MangaDex trực tiếp: '+directError.message);
+      }
+    }
   }
   async function searchMangaDex() {
     const buildParams = (preferVietnamese) => {
@@ -120,7 +141,7 @@
     // thử lại không giới hạn ngôn ngữ để catalog không bị trắng chỉ vì bộ lọc này.
     let vietnameseError = null;
     try {
-      const data = await fetchJSON(API+'/manga?'+buildParams(true).toString());
+      const data = await fetchMangaDexCatalog(buildParams(true));
       const results = Array.isArray(data.data) ? data.data : [];
       if (results.length) return results.map(mapManga);
     } catch (error) {
@@ -128,7 +149,7 @@
     }
 
     try {
-      const fallback = await fetchJSON(API+'/manga?'+buildParams(false).toString());
+      const fallback = await fetchMangaDexCatalog(buildParams(false));
       const results = Array.isArray(fallback.data) ? fallback.data : [];
       if (results.length) return results.map(mapManga);
       if (vietnameseError) {
@@ -370,9 +391,11 @@
       else if(!external.length)notify('Đã tải truyện RoTruyện. MangaDex hiện chưa trả về truyện Vietsub.');
       render();
     } catch(e) {
+      console.error('[RoTruyen MangaDex catalog]', e);
       state.items=ownItems;
       render();
-      notify(ownItems.length?'Đã tải truyện RoTruyện; MangaDex tạm thời chưa kết nối được.':'Không tải được catalog tự động: '+e.message);
+      const detail=(e && e.message) ? e.message : 'Lỗi không xác định';
+      notify(ownItems.length?'Đã tải truyện RoTruyện; MangaDex lỗi: '+detail:'Không tải được catalog tự động: '+detail);
     }
   }
 
