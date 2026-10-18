@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const source = fs.readFileSync(path.join(__dirname, '..', 'api', 'rotruyen-sources.js'), 'utf8');
-assert.match(source, /module\\.exports = async function handler/);
+assert.match(source, /module\.exports = async function handler/);
 assert.match(source, /noThirdPartyScrapingByDefault: true/);
 assert.match(source, /id: 'mangadex'/);
 assert.match(source, /id: 'truyenviet-adapters'/);
