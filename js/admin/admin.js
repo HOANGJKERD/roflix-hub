@@ -8,8 +8,12 @@
   const state = {user:null,stats:null,users:[],audit:[],charts:{visitors:null,analytics:null},currentPage:'dashboard',refreshTimer:null,realtime:null,realtimeTimer:null};
 
   function showAccess(title,text,icon='🔐'){
-    $('access').innerHTML=`<div class="card access-card"><div style="font-size:46px">${icon}</div><h2>${esc(title)}</h2><p class="muted">${esc(text)}</p><p style="margin-top:16px"><a class="btn btn-primary" href="index.html">Về RoFlix</a></p></div>`;
+    const login=title==='Chưa đăng nhập';
+    $('access').innerHTML=login
+      ? `<div class="card access-card admin-login-card"><div class="admin-login-mark">🔐</div><p class="admin-login-kicker">ROHUB ADMIN CENTER</p><h2>Đăng nhập quản trị</h2><p class="muted">Đăng nhập trực tiếp tại đây bằng tài khoản RoFlix có quyền <b>admin</b>. Không cần quay về trang RoFlix.</p><form id="admin-login-form" class="admin-login-form"><div class="form-row"><label for="admin-login-email">Email</label><input class="input" id="admin-login-email" name="email" type="email" autocomplete="username" required placeholder="Email quản trị"></div><div class="form-row"><label for="admin-login-password">Mật khẩu</label><input class="input" id="admin-login-password" name="password" type="password" autocomplete="current-password" required placeholder="Nhập mật khẩu"></div><p id="admin-login-error" class="admin-login-error" role="status" aria-live="polite"></p><button class="btn btn-primary admin-login-submit" id="admin-login-submit" type="submit">Đăng nhập Admin <span aria-hidden="true">→</span></button></form><p class="muted admin-login-foot">Phiên đăng nhập sử dụng Supabase Auth chung với RoFlix.</p></div>`
+      : `<div class="card access-card"><div style="font-size:46px">${icon}</div><h2>${esc(title)}</h2><p class="muted">${esc(text)}</p><p style="margin-top:16px"><button class="btn" type="button" id="admin-access-retry">Kiểm tra lại quyền</button> <a class="btn" href="index.html">Về RoHub</a></p></div>`;
     $('access').style.display='grid'; document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    $('admin-access-retry')?.addEventListener('click',()=>loadAll());
   }
   function hideAccess(){ $('access').style.display='none'; }
   function setTopTitle(t){ $('top-title').textContent=t; }
@@ -86,6 +90,24 @@
   function switchPage(page){state.currentPage=page;document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===page));document.querySelectorAll('#admin-nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));const titles={dashboard:'Dashboard 5.0',users:'Quản lý tài khoản','movie-control':'Quản lý phim 5.0',analytics:'Truy cập & người xem realtime',schedule:'Lịch ra phim 3.0',moderation:'Kiểm duyệt & quyền',audit:'Nhật ký quản trị','game-center':'Gacha 4.0','live-comments':'Comment realtime 3.0','content-tools':'Content Tools',rotruyen:'RoTruyện · Quản trị nội dung','system-health':'System Health Center'};setTopTitle('RoHub Admin · '+(titles[page]||page));if(page==='analytics')loadActiveSessions();if(page==='users')loadUsers();if(page==='moderation')loadModeration();if(page==='schedule'&&window.rfLoadAdminSchedule)window.rfLoadAdminSchedule();if(page==='game-center'&&window.rfAdminLoadGameCenter)window.rfAdminLoadGameCenter();if(page==='live-comments'&&window.rfAdminLoadLiveComments)window.rfAdminLoadLiveComments();if(page==='content-tools'&&window.rfAdminLoadContentTools)window.rfAdminLoadContentTools();if(page==='system-health'&&window.rfRunSystemHealth)window.rfRunSystemHealth();}
   async function loadAll(){if(!(await ensureAdmin()))return;await Promise.all([loadDashboard(),loadUsers(),loadActiveSessions(),loadAudit(),loadModeration()]);subscribeRealtime();}
 
+  $('access').addEventListener('submit',async e=>{
+    if(e.target.id!=='admin-login-form')return;
+    e.preventDefault();
+    const button=$('admin-login-submit'),error=$('admin-login-error');
+    const email=$('admin-login-email').value.trim(),password=$('admin-login-password').value;
+    if(!sb){error.textContent='Supabase chưa sẵn sàng. Hãy tải lại trang sau ít phút.';return;}
+    button.disabled=true;button.textContent='Đang xác thực…';error.textContent='';
+    try{
+      const {error:signInError}=await sb.auth.signInWithPassword({email,password});
+      if(signInError)throw signInError;
+      const ok=await ensureAdmin();
+      if(ok){switchPage('dashboard');await loadAll();}
+    }catch(err){
+      error.textContent=err?.message==='Invalid login credentials'?'Email hoặc mật khẩu chưa chính xác.':(err?.message||'Đăng nhập thất bại. Vui lòng thử lại.');
+    }finally{
+      const b=$('admin-login-submit');if(b){b.disabled=false;b.innerHTML='Đăng nhập Admin <span aria-hidden="true">→</span>';}
+    }
+  });
   document.querySelectorAll('#admin-nav button').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.page)));
   $('refresh-btn').addEventListener('click',loadAll);
   $('logout-btn').addEventListener('click',async()=>{await sb.auth.signOut();location.href='index.html';});
