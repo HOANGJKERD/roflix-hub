@@ -262,6 +262,14 @@
     const save=()=>{memory.write('read-progress:v1',readProgress);};
     if(force)save();else progressSaveTimer=setTimeout(save,250);
   }
+  function restoreReadProgress() {
+    const saved=readProgress[String(state.selected?.id||'')];
+    if(!saved || Number(saved.chapterIndex)!==state.chapterIndex)return;
+    const modal=$('#reader-modal'),container=$('#reader-content');
+    if(!modal)return;
+    const apply=()=>{const max=Math.max(0,modal.scrollHeight-modal.clientHeight);if(max>0)modal.scrollTop=Math.round(max*Math.min(1,Math.max(0,Number(saved.scrollRatio)||0)));};
+    requestAnimationFrame(()=>{apply();container?.querySelectorAll('img').forEach(img=>img.addEventListener('load',apply,{once:true}));});
+  }
   function rememberChapter() {
     if(!state.selected || !state.chapters[state.chapterIndex]) return;
     const chapter=state.chapters[state.chapterIndex];
@@ -287,7 +295,7 @@
   }
   async function openReader(index) {
     const chapter=state.chapters[index];if(!chapter)return;
-    state.chapterIndex=index;const title=chapter.attributes?.chapter||chapter.chapter_number||'?';persistReadProgress(true);rememberChapter();
+    persistReadProgress(true);state.chapterIndex=index;const title=chapter.attributes?.chapter||chapter.chapter_number||'?';rememberChapter();
     $('#reader-title').textContent=(state.selected?.title||'RoTruyện')+' · Chương '+title;
     const prev=$('#reader-prev'),next=$('#reader-next'),position=$('#reader-chapter-position');
     if(prev)prev.disabled=index<=0;
@@ -306,7 +314,7 @@
         }
         if(pages.length){
           const urls=pages.map(p=>typeof p==='string'?p:p?.url).filter(u=>{try{return new URL(u).protocol==='https:'}catch(_){return false}});
-          if(urls.length){$('#reader-content').innerHTML=urls.map((url,i)=>'<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(url)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">').join('');wireReaderImages();return;}
+          if(urls.length){$('#reader-content').innerHTML=urls.map((url,i)=>'<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(url)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">').join('');wireReaderImages();restoreReadProgress();return;}
         }
         if(chapter.external_url&&/^https:\/\//i.test(chapter.external_url)){ $('#reader-content').innerHTML='<div class="reader-error"><h3>Chương nằm ở nguồn ngoài</h3><p>Để tôn trọng cách phân phối của nguồn, chương này sẽ mở trong tab riêng.</p><a class="btn" href="'+esc(chapter.external_url)+'" target="_blank" rel="noopener noreferrer">Mở chương ↗</a></div>';return; }
         throw new Error('Chương chưa có danh sách trang HTTPS hoặc URL nguồn hợp lệ.');
@@ -323,7 +331,7 @@
       const pageSrc=(kind, file)=>'/api/mangadex-image?host='+encodeURIComponent(imageHost)+'&path='+encodeURIComponent('/'+kind+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file));
       const container=$('#reader-content');
       container.innerHTML=files.map((file,i)=>{const fallback=saverFiles[i]?pageSrc('data-saver', saverFiles[i]):'';return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pageSrc('data', file))+'" data-saver="'+esc(fallback)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
-      container.querySelectorAll('img[data-saver]').forEach(img=>{img.addEventListener('error',()=>{const next=img.getAttribute('data-saver');if(next&&!img.dataset.fallback){img.dataset.fallback='1';img.src=next;}});});wireReaderImages();
+      container.querySelectorAll('img[data-saver]').forEach(img=>{img.addEventListener('error',()=>{const next=img.getAttribute('data-saver');if(next&&!img.dataset.fallback){img.dataset.fallback='1';img.src=next;}});});wireReaderImages();restoreReadProgress();
     }catch(e){$('#reader-content').innerHTML='<div class="reader-error"><h3>Không thể tải chương</h3><p>'+esc(e.message)+'</p><p>Thử lại sau hoặc chọn chương khác.</p><button class="btn" id="retry-chapter">Thử lại</button></div>';$('#retry-chapter')?.addEventListener('click',()=>openReader(index));}
   }
   async function requireSignedIn(feature){const sb=window.rfSupabase;if(!sb){notify('Dịch vụ tài khoản chưa sẵn sàng.');return false;}try{const {data,error}=await sb.auth.getUser();if(error)throw error;if(!data?.user){notify('Đăng nhập RoHub để dùng '+feature+'.');location.href='rotruyen-account.html';return false;}return true;}catch(e){notify('Không kiểm tra được tài khoản: '+e.message);return false;}}
