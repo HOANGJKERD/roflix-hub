@@ -101,7 +101,7 @@
   }
   async function searchMangaDex() {
     const buildParams = (preferVietnamese) => {
-      const params=new URLSearchParams({limit:'24',offset:'0'});
+      const params=new URLSearchParams({limit:'100',offset:'0'});
       params.set('order[followedCount]','desc');
       params.append('includes[]','cover_art');
       params.append('includes[]','author');
@@ -116,7 +116,7 @@
       }
       return params;
     };
-    // Chỉ lấy tác phẩm có bản dịch tiếng Việt. Không fallback sang catalog đa ngôn ngữ.
+    // Lấy trang catalog lớn nhất MangaDex cho phép; giữ bộ lọc ngôn ngữ Việt để ưu tiên chương Vietsub.
     let data;
     try {
       data=await fetchJSON(API+'/manga?'+buildParams(true).toString());
