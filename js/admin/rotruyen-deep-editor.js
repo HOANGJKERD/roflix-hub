@@ -122,7 +122,7 @@ async function importMangaDexChapters(){
     const at=await atRes.json();if(!atRes.ok)throw Error(at.error||'Không lấy được server ảnh');
     const base=at.baseUrl,hash=at.chapter?.hash,files=at.chapter?.dataSaver?.length?at.chapter.dataSaver:at.chapter?.data;
     if(!base||!hash||!Array.isArray(files)||!files.length)throw Error('Manifest ảnh rỗng');
-    const pages=files.map((file,index)=>({url:'/api/mangadex-image?host='+encodeURIComponent(new URL(base).hostname)+'&path='+encodeURIComponent('/'+(at.chapter?.dataSaver?.length?'data-saver':'data')+'/'+hash+'/'+file),alt:'Chapter '+rawNum+' · trang '+(index+1),source:'mangadex',page:index+1}));
+    const pages=files.map((file,index)=>({url:window.location.origin+'/api/mangadex-image?host='+encodeURIComponent(new URL(base).hostname)+'&path='+encodeURIComponent('/'+(at.chapter?.dataSaver?.length?'data-saver':'data')+'/'+hash+'/'+file),alt:'Chapter '+rawNum+' · trang '+(index+1),source:'mangadex',page:index+1}));
     batch.push({series_id:activeSeries.id,chapter_number:chapterNum,title:a.title||('Chapter '+rawNum),external_url:'https://mangadex.org/chapter/'+ch.id,page_manifest:pages,is_published:false,published_at:null});
    }catch(err){failed++;console.warn('[RoTruyen MangaDex import]',ch.id,err);}
    done++;status.textContent='Đang lấy ảnh trang: '+done+'/'+candidates.length+' · chuẩn bị lưu '+batch.length+' · lỗi '+failed;
