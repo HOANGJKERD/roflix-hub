@@ -34,6 +34,10 @@ function absolute(base, path) {
   try { const u = new URL(path, base); return u.protocol === 'https:' && ALLOWED_HOSTS.has(u.hostname) ? u.href : ''; }
   catch (_) { return ''; }
 }
+function imageUrl(base, path) {
+  try { const u = new URL(path, base); return u.protocol === 'https:' && !u.username && !u.password ? u.href : ''; }
+  catch (_) { return ''; }
+}
 async function fetchPage(url, referer) {
   const target = new URL(url);
   if (target.protocol !== 'https:' || !ALLOWED_HOSTS.has(target.hostname)) throw new Error('Nguồn truyện không nằm trong danh sách cho phép.');
@@ -60,8 +64,9 @@ function parseSearch(source, html) {
       if (!/truyen-title|itemprop/i.test(m[1])) continue;
       const a = m[2].match(/<a\b[^>]*>/i)?.[0] || '';
       const href = attr(a, 'href'), title = attr(a, 'title') || stripTags(m[2]);
-      const before = html.slice(Math.max(0, m.index - 6000), m.index), imgs = [...before.matchAll(/data-image=["']([^"']+)["']/gi)];
-      const cover = imgs.length ? absolute(source.base, imgs[imgs.length - 1][1]) : '', story = absolute(source.base, href);
+      const before = html.slice(Math.max(0, m.index - 1800), m.index + 900);
+      const imgs = [...before.matchAll(/(?:data-image|data-src|data-original|src)=["']([^"']+)["']/gi)];
+      const cover = imgs.length ? imageUrl(source.base, imgs[imgs.length - 1][1]) : '', story = absolute(source.base, href);
       if (story && title) rows.push({ id: story, source: 'truyenviet', provider: source.id, title, author: 'Chưa rõ tác giả', kind: 'Tiểu thuyết', contentType: 'novel', cover, description: '', status: 'unknown', externalUrl: story });
     }
   } else {
@@ -69,7 +74,7 @@ function parseSearch(source, html) {
     while ((m = re.exec(html))) {
       const attrs = m[1] + ' ' + m[3], body = m[4], image = body.match(/<img\b[^>]*>/i)?.[0] || '';
       const title = attr(attrs, 'title') || attr(image, 'alt').replace(/^Ảnh bìa truyện\s*/i, '') || stripTags(body);
-      const cover = absolute(source.base, attr(image, 'src') || attr(image, 'data-src')), story = absolute(source.base, m[2]);
+      const cover = imageUrl(source.base, attr(image, 'src') || attr(image, 'data-src')), story = absolute(source.base, m[2]);
       if (story && title) rows.push({ id: story, source: 'truyenviet', provider: source.id, title, author: 'Chưa rõ tác giả', kind: 'Tiểu thuyết', contentType: 'novel', cover, description: '', status: 'unknown', externalUrl: story });
     }
   }
