@@ -3,7 +3,7 @@
 const sb=window.rfSupabase;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={series:[],selected:null,chapters:[],ready:false};
+const state={series:[],genres:[],selected:null,chapters:[],ready:false};
 function message(text,bad=false){const el=$('rt-admin-message');if(el){el.textContent=text;el.style.color=bad?'#fca5a5':'#a7f3d0';}}
 async function authorized(){
  if(!sb)throw new Error('Supabase chưa sẵn sàng.');
@@ -26,13 +26,32 @@ function renderStats(){
 }
 function renderSeries(){
  const rows=filtered(),body=$('rt-admin-series-body');
- body.innerHTML=rows.length?rows.map(s=>'<tr><td><b>'+esc(s.title||'Chưa có tên')+'</b><br><span class="muted">'+esc(s.author||'Chưa rõ tác giả')+' · '+esc(s.slug||s.id)+'</span></td><td>'+esc(s.source_key||'manual')+'</td><td>'+esc(s.content_rating||'safe')+' · '+esc(s.status||'ongoing')+'</td><td><span class="pill '+(s.is_published?'pill-active':'pill-user')+'">'+(s.is_published?'Đã xuất bản':'Bản nháp')+'</span></td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" data-rt-action="chapters" data-id="'+esc(s.id)+'">Chương</button><button class="btn" data-rt-action="edit" data-id="'+esc(s.id)+'">Sửa</button><button class="btn '+(s.is_published?'btn-danger':'btn-primary')+'" data-rt-action="publish" data-id="'+esc(s.id)+'">'+(s.is_published?'Gỡ xuất bản':'Xuất bản')+'</button><button class="btn btn-danger" data-rt-action="delete" data-id="'+esc(s.id)+'">Xóa</button></div></td></tr>').join(''):'<tr><td colspan="5" class="empty">Không có tác phẩm phù hợp hoặc catalog chưa có dữ liệu.</td></tr>';
+ body.innerHTML=rows.length?rows.map(s=>'<tr><td><b>'+esc(s.title||'Chưa có tên')+'</b><br><span class="muted">'+esc(s.author||'Chưa rõ tác giả')+' · '+esc(s.slug||s.id)+'</span></td><td>'+esc(s.source_key||'manual')+'</td><td>'+esc(s.content_rating||'safe')+' · '+esc(s.status||'ongoing')+'</td><td><span class="pill '+(s.is_published?'pill-active':'pill-user')+'">'+(s.is_published?'Đã xuất bản':'Bản nháp')+'</span>'+(s.is_locked?'<br><span class="pill pill-user">🔒 Đã khóa</span>':'')+'</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" data-rt-action="chapters" data-id="'+esc(s.id)+'">Chương</button><button class="btn" data-rt-action="edit" data-id="'+esc(s.id)+'">Sửa</button><button class="btn '+(s.is_locked?'btn-primary':'btn-danger')+'" data-rt-action="lock" data-id="'+esc(s.id)+'">'+(s.is_locked?'Mở khóa truyện':'🔒 Khóa truyện')+'</button><button class="btn '+(s.is_published?'btn-danger':'btn-primary')+'" data-rt-action="publish" data-id="'+esc(s.id)+'">'+(s.is_published?'Gỡ xuất bản':'Xuất bản')+'</button><button class="btn btn-danger" data-rt-action="delete" data-id="'+esc(s.id)+'">Xóa</button></div></td></tr>').join(''):'<tr><td colspan="5" class="empty">Không có tác phẩm phù hợp hoặc catalog chưa có dữ liệu.</td></tr>';
 }
 async function loadSeries(){
  if(!state.ready)return;
  $('rt-admin-series-body').innerHTML='<tr><td colspan="5" class="empty">Đang tải catalog RoTruyện...</td></tr>';
- const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,content_rating,status,is_published,sort_order').order('sort_order',{ascending:true}).limit(500);
- if(error)throw error;state.series=data||[];renderStats();renderSeries();message('Đã tải '+state.series.length+' tác phẩm từ rotruyen_series.');
+ const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,content_rating,status,is_published,is_locked,lock_reason,genres,sort_order').order('sort_order',{ascending:true}).limit(500);
+ if(error)throw error;state.series=data||[];renderStats();renderSeries();await loadGenres();message('Đã tải '+state.series.length+' tác phẩm từ rotruyen_series.');
+}
+async function loadGenres(){
+ const wrap=$('rt-admin-genres');if(!wrap)return;
+ const {data,error}=await sb.from('rotruyen_genres').select('id,name,slug,is_active,sort_order').order('sort_order',{ascending:true}).limit(200);
+ if(error)throw error;state.genres=data||[];
+ wrap.innerHTML=state.genres.length?state.genres.map(g=>'<div class="genre-admin-row"><span><b>'+esc(g.name)+'</b><small>'+esc(g.slug)+'</small></span><span class="pill '+(g.is_active?'pill-active':'pill-user')+'">'+(g.is_active?'Đang dùng':'Đã ẩn')+'</span><button class="btn" data-genre-edit="'+esc(g.id)+'">Sửa</button><button class="btn '+(g.is_active?'btn-danger':'btn-primary')+'" data-genre-toggle="'+esc(g.id)+'">'+(g.is_active?'Ẩn':'Hiện')+'</button></div>').join(''):'<p class="muted">Chưa có thể loại.</p>';
+ const select=$('rt-new-genre');if(select){const current=select.value;select.innerHTML=state.genres.filter(g=>g.is_active).map(g=>'<option value="'+esc(g.slug)+'">'+esc(g.name)+'</option>').join('')+'<option value="other">Khác</option>';if([...select.options].some(o=>o.value===current))select.value=current;}
+}
+async function addGenre(){
+ await authorized();const name=prompt('Tên thể loại mới (ví dụ: 18+, Đam mỹ, Isekai):');if(name===null)return;if(!name.trim())throw new Error('Tên thể loại không được để trống.');
+ const slug=/^18\s*\+?$/i.test(name.trim())?'adult':slugify(name);const max=Math.max(0,...state.genres.map(g=>Number(g.sort_order)||0))+10;
+ const {error}=await sb.from('rotruyen_genres').upsert({name:name.trim(),slug,is_active:true,sort_order:max},{onConflict:'slug'});if(error)throw error;
+ await loadGenres();message('Đã thêm thể loại '+name.trim()+'.');
+}
+async function genreAction(type,id){
+ await authorized();const g=state.genres.find(x=>String(x.id)===String(id));if(!g)return;
+ if(type==='toggle'){const {error}=await sb.from('rotruyen_genres').update({is_active:!g.is_active}).eq('id',g.id);if(error)throw error;}
+ else {const name=prompt('Tên thể loại:',g.name);if(name===null)return;if(!name.trim())throw new Error('Tên thể loại không được để trống.');const slug=/^18\s*\+?$/i.test(name.trim())?'adult':slugify(name);const {error}=await sb.from('rotruyen_genres').update({name:name.trim(),slug}).eq('id',g.id);if(error)throw error;}
+ await loadGenres();message('Đã cập nhật thể loại.');
 }
 async function loadChapters(series){
  state.selected=series;
@@ -49,6 +68,7 @@ async function loadChapters(series){
 async function action(action,id){
  const s=state.series.find(x=>String(x.id)===String(id));if(!s)return;
  if(action==='chapters'){await loadChapters(s);return;}
+ if(action==='lock'){const next=!s.is_locked;const reason=next?(prompt('Lý do khóa (chỉ admin nhìn thấy):',s.lock_reason||'')??null):'';if(reason===null)return;const {error}=await sb.from('rotruyen_series').update({is_locked:next,lock_reason:reason}).eq('id',s.id);if(error)throw error;message(next?'Đã khóa truyện. Ảnh bìa sẽ mờ và người đọc không thể mở truyện.':'Đã mở khóa truyện.');await loadSeries();return;}
  if(action==='publish'){
   const next=!s.is_published;if(!confirm((next?'Xuất bản':'Gỡ xuất bản')+' tác phẩm “'+s.title+'”?'))return;
   const patch={is_published:next};
@@ -59,7 +79,9 @@ async function action(action,id){
   const title=prompt('Tên tác phẩm:',s.title||'');if(title===null)return;if(!title.trim())throw new Error('Tên tác phẩm không được để trống.');
   const author=prompt('Tác giả / bút danh:',s.author||'');if(author===null)return;
   const synopsis=prompt('Tóm tắt truyện:',s.synopsis||'');if(synopsis===null)return;
-  const {error}=await sb.from('rotruyen_series').update({title:title.trim(),author:author.trim(),synopsis:synopsis.trim()}).eq('id',s.id);if(error)throw error;
+  const genre=prompt('Thể loại (slug, nhiều thể loại cách nhau bằng dấu phẩy):',(s.genres||[]).join(', ')||'fantasy');if(genre===null)return;
+  const rating=prompt('Phân loại nội dung: safe, suggestive, adult hoặc erotica',s.content_rating||'safe');if(rating===null)return;
+  const {error}=await sb.from('rotruyen_series').update({title:title.trim(),author:author.trim(),synopsis:synopsis.trim(),genres:genre.split(',').map(x=>x.trim()).filter(Boolean),content_rating:rating.trim()||'safe'}).eq('id',s.id);if(error)throw error;
   message('Đã cập nhật thông tin tác phẩm.');await loadSeries();return;
  }
  if(action==='delete'){
@@ -123,7 +145,7 @@ async function createSeries(event){
  try{
   const title=$('rt-new-title').value.trim();if(title.length<2)throw new Error('Tên truyện cần ít nhất 2 ký tự.');
   const cover=httpsUrl($('rt-new-cover').value,'Ảnh bìa');
-  const payload={title,slug:slugify(title)+'-'+Date.now().toString(36).slice(-5),author:$('rt-new-author').value.trim()||'Chưa rõ tác giả',synopsis:$('rt-new-synopsis').value.trim(),cover_url:cover,source_key:'manual',genres:[$('rt-new-genre').value==='other'?'Khác':$('rt-new-genre').value],content_rating:$('rt-new-rating').value,status:$('rt-new-status').value,is_published:false,created_by:(await sb.auth.getUser()).data.user.id,sort_order:0};
+  const payload={title,slug:slugify(title)+'-'+Date.now().toString(36).slice(-5),author:$('rt-new-author').value.trim()||'Chưa rõ tác giả',synopsis:$('rt-new-synopsis').value.trim(),cover_url:cover,source_key:'manual',genres:[$('rt-new-genre').value==='other'?'Khác':$('rt-new-genre').value],content_rating:$('rt-new-rating').value,status:$('rt-new-status').value,is_published:false,is_locked:false,lock_reason:'',created_by:(await sb.auth.getUser()).data.user.id,sort_order:0};
   const {data,error}=await sb.from('rotruyen_series').insert(payload).select('id,title,slug,synopsis,cover_url,author,source_key,content_rating,status,is_published,sort_order').single();
   if(error)throw error;
   form.reset();message('Đã tạo bản nháp “'+data.title+'”. Chọn truyện trong danh sách để thêm chương, rồi xuất bản khi sẵn sàng.');
@@ -170,6 +192,8 @@ function init(){
  if(autoPublish){try{autoPublish.checked=localStorage.getItem('rotruyen-auto-publish-import')==='true';}catch(_){}autoPublish.addEventListener('change',()=>{try{localStorage.setItem('rotruyen-auto-publish-import',String(autoPublish.checked));}catch(_){}message(autoPublish.checked?'Đã bật tự động xuất bản chương mới khi nhập hàng loạt.':'Đã tắt tự động xuất bản; chương mới sẽ là bản nháp.');});}
 
  $('rt-admin-series-body')?.addEventListener('click',e=>{const b=e.target.closest('[data-rt-action]');if(b)run(()=>action(b.dataset.rtAction,b.dataset.id));});
+ $('rt-genre-add')?.addEventListener('click',()=>run(addGenre));
+ $('rt-admin-genres')?.addEventListener('click',e=>{const edit=e.target.closest('[data-genre-edit]'),toggle=e.target.closest('[data-genre-toggle]');if(edit)run(()=>genreAction('edit',edit.dataset.genreEdit));if(toggle)run(()=>genreAction('toggle',toggle.dataset.genreToggle));});
  $('rt-admin-chapters-body')?.addEventListener('click',e=>{const b=e.target.closest('[data-rt-chapter-action]');if(b)run(()=>chapterAction(b.dataset.rtChapterAction,b.dataset.id));});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
