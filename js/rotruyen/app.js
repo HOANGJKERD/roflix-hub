@@ -82,7 +82,7 @@
   }
   function coverOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
-    return id && file ? 'https://uploads.mangadex.org/covers/'+encodeURIComponent(id)+'/'+encodeURIComponent(file)+'.256.jpg' : '';
+    return id && file ? 'https://uploads.mangadex.org/covers/'+encodeURIComponent(id)+'/'+encodeURIComponent(file)+'.512.jpg' : '';
   }
   function mapManga(item) {
     const a=item.attributes||{};
@@ -172,7 +172,7 @@
   }
   function coverMarkup(s) {
     const style='--cover:'+esc(s.coverColor||'#282449')+';--glow:'+esc(s.glow||'#8c6ce0')+';--accent:'+esc(s.accent||'#d3b9ff');
-    const visual=s.cover && ['mangadex','database','longbook'].includes(s.source) && s.cover ? '<img loading="lazy" src="'+esc(s.cover)+'" alt="">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
+    const visual=s.cover && ['mangadex','database','longbook'].includes(s.source) && s.cover ? '<img loading="lazy" src="'+esc(s.cover)+'" alt="" onerror="this.onerror=null;this.style.display=\'none\';this.parentElement.classList.add(\'cover-missing\');this.insertAdjacentHTML(\'beforeend\',\'<i class=&quot;fa-solid fa-book-open&quot; aria-hidden=&quot;true&quot;></i>\')">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     return '<div class="cover" style="'+style+'">'+visual+'<small>'+esc(s.kind||'Truyện')+'</small><button data-save="'+esc(s.id)+'" class="'+(state.saved.has(s.id)?'saved':'')+'" aria-label="'+(state.saved.has(s.id)?'Bỏ lưu':'Lưu truyện')+'"><i class="fa-'+(state.saved.has(s.id)?'solid':'regular')+' fa-bookmark"></i></button></div>';
   }
   function render() {
@@ -288,7 +288,7 @@
       try { const parsedBase=new URL(base); if(parsedBase.protocol!=='https:')throw new Error(); imageHost=parsedBase.hostname; }
       catch (_) { throw new Error('MangaDex @Home trả về baseUrl không hợp lệ.'); }
       const hostQuery='?host='+encodeURIComponent(imageHost);
-      const container=$('#reader-content');container.innerHTML=files.map((file,i)=>{const pagePath=base+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file)+hostQuery;return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pagePath)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
+      const container=$('#reader-content');container.innerHTML=files.map((file,i)=>{const pagePath=base.replace(/\/$/,'')+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file);return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pagePath)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
       const saved={mangaId:state.selected.id,title:state.selected.title,chapterId:chapter.id,chapter:title,updatedAt:Date.now()};requireSignedIn('lịch sử đọc').then(ok=>{if(!ok)return;state.history=[saved,...state.history.filter(x=>x.mangaId!==saved.mangaId)].slice(0,100);memory.write('history:v1',state.history);scheduleCloudSync();});
     }catch(e){$('#reader-content').innerHTML='<div class="reader-error"><h3>Không thể tải chương</h3><p>'+esc(e.message)+'</p><p>Thử lại sau hoặc chọn chương khác.</p><button class="btn" id="retry-chapter">Thử lại</button></div>';$('#retry-chapter')?.addEventListener('click',()=>openReader(index));}
   }
