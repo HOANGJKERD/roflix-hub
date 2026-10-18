@@ -6,7 +6,7 @@
   // TruyenDex is a MangaDex-powered frontend project, not a separate public REST API.
   // RoTruyen integrates MangaDex's documented public API directly.
   // Public catalogue only uses published database records or the explicitly selected external API.
-  const state = {source:'database',query:'',genre:'all',sort:'featured',items:[],saved:new Set(),history:[],selected:null,chapters:[],chapterIndex:0,chapterPages:[],apiBusy:false,readerBusy:false};
+  const state = {source:'database',query:'',genre:'all',sort:'featured',items:[],saved:new Set(),history:[],selected:null,chapters:[],chapterIndex:0,chapterPages:[],apiBusy:false,readerBusy:false,chapterRequestId:0};
   const memory = {
     read(key, fallback) { try { const v=JSON.parse(localStorage.getItem('rotruyen:'+key)); return v ?? fallback; } catch (_) { return fallback; } },
     write(key, value) { try { localStorage.setItem('rotruyen:'+key, JSON.stringify(value)); return true; } catch (_) { return false; } }
@@ -207,31 +207,46 @@
     const s=state.items.find(x=>String(x.id)===String(id));if(!s)return;state.selected=s;
     $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&['mangadex','database','longbook'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     $('#detail-meta').textContent=(s.kind||'Truyện')+' · '+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':s.source==='database'?'Catalog RoTruyện':s.source==='longbook'?'LongBook API':'Bản demo');
-    const read=$('#detail-read');read.disabled=!['mangadex','database'].includes(s.source);read.textContent=s.source==='mangadex'?'Xem chương có sẵn':s.source==='database'?'Xem chương đã xuất bản':'Bản demo chưa có nội dung chương';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');
+    const read=$('#detail-read');read.disabled=!['mangadex','database'].includes(s.source);read.textContent=s.source==='mangadex'?'Tải lại danh sách chương':s.source==='database'?'Tải lại chương đã xuất bản':'Bản demo chưa có nội dung chương';$('#chapter-list').innerHTML=['mangadex','database'].includes(s.source)?'<p>Đang tải danh sách chương…</p>':'';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');if(['mangadex','database'].includes(s.source))loadChapters();
   }
   function closeModal(id){const m=$('#'+id);if(m)m.hidden=true;if(!$$('.modal:not([hidden])').length)document.body.classList.remove('modal-open');}
   async function loadChapters() {
-    const s=state.selected;if(!s||!['mangadex','database'].includes(s.source))return;
-    const list=$('#chapter-list');list.innerHTML='<p>Đang tải danh sách chương…</p>';
+    const selected=state.selected;if(!selected||!['mangadex','database'].includes(selected.source))return;
+    const requestId=++state.chapterRequestId;
+    const list=$('#chapter-list'),read=$('#detail-read');
+    read.disabled=true;read.textContent='Đang tải chương…';
+    list.innerHTML='<p>Đang tải danh sách chương…</p>';
+    const isCurrent=()=>requestId===state.chapterRequestId&&state.selected===selected&&$('#detail-modal')&&!$('#detail-modal').hidden;
     try {
-      if(s.source==='database'){
+      if(selected.source==='database'){
         const sb=window.rfSupabase;if(!sb)throw new Error('Supabase chưa sẵn sàng.');
-        const {data,error}=await sb.from('rotruyen_chapters').select('id,series_id,chapter_number,title,external_url,page_manifest,is_published,published_at').eq('series_id',s.id).eq('is_published',true).order('chapter_number',{ascending:true}).limit(500);
+        const {data,error}=await sb.from('rotruyen_chapters').select('id,series_id,chapter_number,title,external_url,page_manifest,is_published,published_at').eq('series_id',selected.id).eq('is_published',true).order('chapter_number',{ascending:true}).limit(500);
+        if(!isCurrent())return;
         if(error)throw error;state.chapters=data||[];
         if(!state.chapters.length){list.innerHTML='<p>Tác phẩm này chưa có chương được xuất bản.</p>';return;}
         list.innerHTML=state.chapters.map((c,i)=>'<button class="chapter-row" data-chapter="'+i+'"><span class="chapter-row-title"><span class="chapter-number">Chương '+esc(c.chapter_number)+'</span><span class="chapter-name">'+esc(c.title||'')+'</span></span><span class="chapter-row-meta"><small>Đọc</small></span></button>').join('');return;
       }
-      // Chỉ lấy chương có bản dịch tiếng Việt. Không hiển thị English, ka hoặc ngôn ngữ khác.
-      const params=new URLSearchParams({limit:'100','order[chapter]':'asc'});
-      params.append('translatedLanguage[]','vi');
-      params.append('contentRating[]','safe');
-      params.append('contentRating[]','suggestive');
-      params.append('includes[]','scanlation_group');
-      const data=await fetchJSON(API+'/manga/'+encodeURIComponent(s.id)+'/feed?'+params.toString());
-      state.chapters=(data.data||[]).filter(c=>Number(c.attributes?.pages)>0 && c.attributes?.translatedLanguage==='vi');
-      if(!state.chapters.length){list.innerHTML='<p>Truyện này hiện chưa có chương tiếng Việt công khai có trang đọc.</p>';return;}
-      list.innerHTML=state.chapters.map((c,i)=>{const group=(c.relationships||[]).find(r=>r.type==='scanlation_group')?.attributes?.name;return '<button class="chapter-row" data-chapter="'+i+'"><span class="chapter-row-title"><span class="chapter-number">Chương '+esc(c.attributes.chapter||'?')+'</span><span class="chapter-name">'+esc(c.attributes.title||'')+'</span></span><span class="chapter-row-meta">'+(group?'<span class="chapter-group">Nhóm dịch: '+esc(group)+'</span>':'')+'<small>vi</small></span></button>';}).join('');
-    } catch(e){list.innerHTML='<p>Không tải được chương. '+esc(e.message)+'</p>';}
+      // MangaDex: chỉ chương tiếng Việt; phân trang để không bỏ sót chương do giới hạn 100 kết quả.
+      const rows=[];let offset=0,total=Infinity;
+      while(offset<total&&rows.length<1000){
+        const params=new URLSearchParams({limit:'100',offset:String(offset),'order[chapter]':'asc'});
+        params.append('translatedLanguage[]','vi');
+        params.append('contentRating[]','safe');params.append('contentRating[]','suggestive');
+        params.append('includes[]','scanlation_group');
+        const data=await fetchJSON(API+'/manga/'+encodeURIComponent(selected.id)+'/feed?'+params.toString());
+        if(!isCurrent())return;
+        const batch=Array.isArray(data.data)?data.data:[];
+        rows.push(...batch.filter(c=>c.attributes?.translatedLanguage==='vi'&&Number(c.attributes?.pages)>0));
+        total=Number(data.total||0);
+        if(!batch.length||batch.length<100)break;
+        offset+=batch.length;
+      }
+      if(!isCurrent())return;
+      state.chapters=rows;
+      if(!rows.length){list.innerHTML='<p>Truyện này hiện chưa có chương tiếng Việt công khai có trang đọc.</p>';return;}
+      list.innerHTML=rows.map((c,i)=>{const group=(c.relationships||[]).find(r=>r.type==='scanlation_group')?.attributes?.name;return '<button class="chapter-row" data-chapter="'+i+'"><span class="chapter-row-title"><span class="chapter-number">Chương '+esc(c.attributes.chapter||'?')+'</span><span class="chapter-name">'+esc(c.attributes.title||'')+'</span></span><span class="chapter-row-meta">'+(group?'<span class="chapter-group">Nhóm dịch: '+esc(group)+'</span>':'')+'<small>vi</small></span></button>';}).join('');
+    } catch(e){if(isCurrent())list.innerHTML='<p>Không tải được chương. '+esc(e.message)+'</p>';}
+    finally{if(isCurrent()){read.disabled=false;read.textContent=selected.source==='mangadex'?'Tải lại danh sách chương':'Tải lại chương đã xuất bản';}}
   }
   async function openReader(index) {
     const chapter=state.chapters[index];if(!chapter)return;
