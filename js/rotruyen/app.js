@@ -82,7 +82,7 @@
   }
   function coverOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
-    return id && file ? '/api/mangadex-image/covers/'+encodeURIComponent(id)+'/'+encodeURIComponent(file)+'.256.jpg?host=uploads.mangadex.org' : '';
+    return id && file ? 'https://uploads.mangadex.org/covers/'+encodeURIComponent(id)+'/'+encodeURIComponent(file)+'.256.jpg' : '';
   }
   function mapManga(item) {
     const a=item.attributes||{};
@@ -109,7 +109,7 @@
   async function fetchMangaDexCatalog(params) {
     const query=params.toString();
     try {
-      return await fetchJSON(API+'/manga?'+query);
+      return await fetchJSON('/api/mangadex/manga?'+query);
     } catch(proxyError) {
       // Dự phòng trực tiếp từ API công khai nếu proxy của RoHub đang lỗi.
       // MangaDex là nguồn catalog; đây không phải API của TruyenDex.
@@ -288,7 +288,7 @@
       try { const parsedBase=new URL(base); if(parsedBase.protocol!=='https:')throw new Error(); imageHost=parsedBase.hostname; }
       catch (_) { throw new Error('MangaDex @Home trả về baseUrl không hợp lệ.'); }
       const hostQuery='?host='+encodeURIComponent(imageHost);
-      const container=$('#reader-content');container.innerHTML=files.map((file,i)=>{const pagePath='/api/mangadex-image/data/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file)+hostQuery;return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pagePath)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
+      const container=$('#reader-content');container.innerHTML=files.map((file,i)=>{const pagePath=base+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file)+hostQuery;return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pagePath)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
       const saved={mangaId:state.selected.id,title:state.selected.title,chapterId:chapter.id,chapter:title,updatedAt:Date.now()};requireSignedIn('lịch sử đọc').then(ok=>{if(!ok)return;state.history=[saved,...state.history.filter(x=>x.mangaId!==saved.mangaId)].slice(0,100);memory.write('history:v1',state.history);scheduleCloudSync();});
     }catch(e){$('#reader-content').innerHTML='<div class="reader-error"><h3>Không thể tải chương</h3><p>'+esc(e.message)+'</p><p>Thử lại sau hoặc chọn chương khác.</p><button class="btn" id="retry-chapter">Thử lại</button></div>';$('#retry-chapter')?.addEventListener('click',()=>openReader(index));}
   }
