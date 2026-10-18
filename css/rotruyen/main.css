@@ -186,3 +186,28 @@ header>a:before{background:linear-gradient(135deg,#f59e0b,#8b5cf6);box-shadow:0 
 header button:hover,.shelf-link:hover,.toolbar button:hover{border-color:#f59e0b66;color:#fff}
 .rt-account-link{background:linear-gradient(110deg,#f59e0b,#8b5cf6)!important;color:#100e16!important;border:0!important}
 @media(prefers-reduced-motion:reduce){.book{animation:none}}
+
+
+/* Chapter rows: keep title and scanlation metadata in separate columns. */
+.chapter-row{align-items:center;min-width:0;gap:16px}
+.chapter-row-title{display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;flex-wrap:wrap}
+.chapter-number{flex:0 0 auto;font-weight:600}
+.chapter-name{min-width:0;overflow-wrap:anywhere}
+.chapter-row-meta{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex:0 0 auto;max-width:45%;text-align:right}
+.chapter-group{color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.chapter-row-meta small{flex:0 0 auto;color:var(--muted);white-space:nowrap}
+.detail-copy{min-width:0}
+#chapter-list{min-width:0}
+@media(min-width:651px){
+  .modal{overflow:hidden}
+  .modal-card{max-height:min(90vh,900px);overflow-y:auto;overscroll-behavior:contain}
+  .detail-card .chapter-list{max-height:none;overflow:visible}
+}
+@media(max-width:650px){
+  .chapter-row{align-items:flex-start;gap:8px}
+  .chapter-row-title{gap:5px}
+  .chapter-row-meta{max-width:38%;flex-wrap:wrap;gap:5px}
+  .chapter-group{font-size:10px}
+  .modal-card{overflow-y:auto;overscroll-behavior:contain}
+  .detail-card .chapter-list{max-height:none;overflow:visible}
+}
