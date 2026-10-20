@@ -136,7 +136,7 @@
 
   function openCinemaPage(prefill) {
     if (!w.__RF_VIDSRC_WARNING_ACCEPTED__) {
-      var accepted = w.confirm('Cảnh báo: VidSrc là trình phát bên thứ ba, có thể mở tab quảng cáo, chuyển hướng hoặc trang cài ứng dụng. RoFlix không thể chặn hoàn toàn những hành vi này. Không tải ứng dụng lạ và không nhập thông tin cá nhân.\\n\\nBạn có muốn tiếp tục không?');
+      var accepted = w.confirm('Cảnh báo: VidSrc là trình phát bên thứ ba, có thể mở tab quảng cáo, chuyển hướng hoặc trang cài ứng dụng. RoFlix không thể chặn hoàn toàn những hành vi này. Không tải ứng dụng lạ và không nhập thông tin cá nhân.\n\nBạn có muốn tiếp tục không?');
       if (!accepted) return;
       w.__RF_VIDSRC_WARNING_ACCEPTED__ = true;
     }
