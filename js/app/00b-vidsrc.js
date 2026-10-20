@@ -46,12 +46,13 @@
     var player = document.getElementById('movie-player');
     if (!player) return false;
     try { if (w.roflixAnimePlayer && w.roflixAnimePlayer.stop) w.roflixAnimePlayer.stop(); } catch (_) {}
-    // Sandbox hạn chế popup và điều hướng top-level. Nếu player lỗi, người xem có thể chủ động bật chế độ tương thích.
+    // VidSrc từ chối chạy trong iframe sandbox. Không sandbox để giữ tương thích;
+    // chỉ cảnh báo người xem và cung cấp hướng dẫn giảm popup ở trình duyệt.
     try {
-      player.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
+      player.removeAttribute('sandbox');
       player.setAttribute('referrerpolicy', 'no-referrer');
       player.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
-      player.dataset.rfVidsrcSandboxed = '1';
+      delete player.dataset.rfVidsrcSandboxed;
     } catch (_) {}
     player.src = url;
     return true;
@@ -170,7 +171,7 @@
             '<strong>Đang chờ phát</strong>' +
             '<span>Nhập IMDb / TMDB rồi bấm Phát</span>' +
           '</div>' +
-          '<iframe id="rf-vs-frame" src="" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" referrerpolicy="no-referrer" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" style="display:none"></iframe>' +
+          '<iframe id="rf-vs-frame" src="" referrerpolicy="no-referrer" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" style="display:none"></iframe>' +
         '</div>' +
         '<div class="rf-vs-meta">' +
           '<div>' +
@@ -261,8 +262,8 @@
       var ph = document.getElementById('rf-vs-placeholder');
       frame.style.display = 'block';
       if (ph) ph.style.display = 'none';
-      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
-      frame.dataset.rfVidsrcSandboxed = '1';
+      frame.removeAttribute('sandbox');
+      delete frame.dataset.rfVidsrcSandboxed;
       frame.src = url;
       setNowPlaying(label);
       try { frame.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
