@@ -161,6 +161,12 @@ async function playMovieByIndex(index, options = {}) {
             return;
         }
     } else if (player) {
+        // Gỡ sandbox riêng của VidSrc khi quay lại server mặc định.
+        try {
+            player.removeAttribute('sandbox');
+            player.removeAttribute('referrerpolicy');
+            player.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
+        } catch (_) {}
         player.src = ep.link;
     }
 
