@@ -25,9 +25,6 @@ async function playMovie(slug, preferredSrc) {
         }
         if (currentEpisodeList.length > 0) {
             playMovieByIndex(0);
-        } else if (window.RoflixVidSrc && window.RoflixVidSrc.hasIds(currentMovieData)) {
-            // Không có link KKPhim/VSMOV nhưng có ID → cho mở VidSrc (user vẫn có lối ra)
-            playOnVidSrc();
         } else {
             if (typeof showToastPro === 'function') {
                 showToastPro('error', 'Chưa có tập', 'Phim này chưa có link phát trên API.');
@@ -72,17 +69,20 @@ function renderPlayerServerBar() {
         grid.parentElement.insertBefore(bar, grid);
     }
 
-    const canVid = window.RoflixVidSrc && window.RoflixVidSrc.hasIds(currentMovieData);
     bar.innerHTML =
         `<span class="text-[10px] text-gray-500 self-center mr-1">Server:</span>` +
-        `<button type="button" onclick="playMovieByIndex(window.__RF_LAST_EP_INDEX__||0)" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-black">Mặc định</button>` +
-        (canVid
-            ? `<button type="button" onclick="playOnVidSrc()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white">VidSrc</button>`
-            : `<button type="button" disabled class="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-800 text-gray-500 cursor-not-allowed" title="Cần IMDb/TMDB">VidSrc</button>`);
+        `<button type="button" onclick="playMovieByIndex(window.__RF_LAST_EP_INDEX__||0)" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-black">Mặc định</button>`;
 }
 
 /** Phát bằng embed VidSrc (giống tester https://vidsrc.sh/#tester) */
 function playOnVidSrc(season, episode) {
+    if (typeof showToastPro === 'function') {
+        showToastPro('warning', 'VidSrc tạm ngưng', 'Nguồn này đang bị popup quảng cáo gây phiền. Hãy dùng server Mặc định trong lúc chờ nguồn thay thế.');
+    } else if (typeof showToast === 'function') {
+        showToast('error', 'VidSrc tạm ngưng', 'Nguồn này đang bị popup quảng cáo gây phiền. Hãy dùng server Mặc định trong lúc chờ nguồn thay thế.');
+    }
+    return;
+    /* VidSrc được giữ lại trong mã nguồn nhưng tạm khóa cho đến khi có cách chặn popup tương thích. */
     if (!window.RoflixVidSrc) {
         if (typeof showToast === 'function') showToast('error', 'VidSrc', 'Helper chưa tải xong, thử lại sau 1 giây.');
         return;
