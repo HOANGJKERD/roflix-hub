@@ -46,10 +46,10 @@
     var player = document.getElementById('movie-player');
     if (!player) return false;
     try { if (w.roflixAnimePlayer && w.roflixAnimePlayer.stop) w.roflixAnimePlayer.stop(); } catch (_) {}
-    // Hạn chế pop-up / chuyển hướng top-level do quảng cáo trong embed.
-    // Không cấp allow-popups hoặc allow-top-navigation.
+    // VidSrc cần quyền nhúng riêng của player; không sandbox iframe vì sẽ chặn phát video.
+    // Giữ referrerpolicy và allow ở mức cần thiết, nhưng lưu ý không thể chặn tuyệt đối quảng cáo từ bên thứ ba.
     try {
-      player.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock allow-pointer-lock allow-downloads');
+      player.removeAttribute('sandbox');
       player.setAttribute('referrerpolicy', 'no-referrer');
       player.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
     } catch (_) {}
@@ -164,7 +164,7 @@
             '<strong>Đang chờ phát</strong>' +
             '<span>Nhập IMDb / TMDB rồi bấm Phát</span>' +
           '</div>' +
-          '<iframe id="rf-vs-frame" src="" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock allow-pointer-lock allow-downloads" referrerpolicy="no-referrer" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" style="display:none"></iframe>' +
+          '<iframe id="rf-vs-frame" src="" referrerpolicy="no-referrer" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" style="display:none"></iframe>' +
         '</div>' +
         '<div class="rf-vs-meta">' +
           '<div>' +
