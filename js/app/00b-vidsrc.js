@@ -62,9 +62,6 @@
   }
 
   function injectSourcePill() {
-    // Tạm ẩn VidSrc khỏi giao diện vì popup quảng cáo phát sinh bên trong iframe cross-origin
-    // không thể được chặn an toàn từ trang RoFlix mà vẫn bảo đảm player hoạt động.
-    return;
     var box = document.getElementById('source-switch');
     if (!box) return;
     if (box.querySelector('[data-source="vidsrc"]')) return;
