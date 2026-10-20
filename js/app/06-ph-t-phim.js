@@ -71,7 +71,8 @@ function renderPlayerServerBar() {
 
     bar.innerHTML =
         `<span class="text-[10px] text-gray-500 self-center mr-1">Server:</span>` +
-        `<button type="button" onclick="playMovieByIndex(window.__RF_LAST_EP_INDEX__||0)" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-black">Mặc định</button>`;
+        `<button type="button" onclick="playMovieByIndex(window.__RF_LAST_EP_INDEX__||0)" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-black">Mặc định</button>` +
+        `<button type="button" onclick="window.rfVidsrcCompatibilityMode && window.rfVidsrcCompatibilityMode()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-800 text-gray-200 border border-gray-700">VidSrc: chế độ tương thích</button>`;
 }
 
 /** Phát bằng embed VidSrc (giống tester https://vidsrc.sh/#tester) */
@@ -105,6 +106,19 @@ function playOnVidSrc(season, episode) {
     renderPlayerServerBar();
 
     const ok = window.RoflixVidSrc.loadIntoPlayer(movie, season, episode);
+    window.rfVidsrcCompatibilityMode = function () {
+        const frame = document.getElementById('movie-player');
+        if (!frame || !frame.dataset.rfVidsrcSandboxed) {
+            if (typeof showToast === 'function') showToast('warning', 'VidSrc', 'Hãy mở VidSrc trước khi bật chế độ tương thích.');
+            return;
+        }
+        const src = frame.src;
+        frame.removeAttribute('sandbox');
+        frame.dataset.rfVidsrcSandboxed = '0';
+        frame.src = src;
+        if (typeof showToastPro === 'function') showToastPro('warning', 'Chế độ tương thích', 'Đã bỏ giới hạn popup. Chỉ dùng nếu player bị lỗi ở chế độ an toàn.');
+        else if (typeof showToast === 'function') showToast('warning', 'Chế độ tương thích', 'Đã bỏ giới hạn popup. Chỉ dùng nếu player bị lỗi ở chế độ an toàn.');
+    };
     if (!ok) {
         if (typeof showToast === 'function') showToast('error', 'VidSrc', 'Không tạo được link embed.');
         return;
@@ -168,6 +182,7 @@ async function playMovieByIndex(index, options = {}) {
         // Gỡ sandbox riêng của VidSrc khi quay lại server mặc định.
         try {
             player.removeAttribute('sandbox');
+            delete player.dataset.rfVidsrcSandboxed;
             player.removeAttribute('referrerpolicy');
             player.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
         } catch (_) {}
