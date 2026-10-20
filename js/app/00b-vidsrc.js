@@ -46,12 +46,12 @@
     var player = document.getElementById('movie-player');
     if (!player) return false;
     try { if (w.roflixAnimePlayer && w.roflixAnimePlayer.stop) w.roflixAnimePlayer.stop(); } catch (_) {}
-    // VidSrc cần quyền nhúng riêng của player; không sandbox iframe vì sẽ chặn phát video.
-    // Giữ referrerpolicy và allow ở mức cần thiết, nhưng lưu ý không thể chặn tuyệt đối quảng cáo từ bên thứ ba.
+    // Sandbox hạn chế popup và điều hướng top-level. Nếu player lỗi, người xem có thể chủ động bật chế độ tương thích.
     try {
-      player.removeAttribute('sandbox');
+      player.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
       player.setAttribute('referrerpolicy', 'no-referrer');
       player.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
+      player.dataset.rfVidsrcSandboxed = '1';
     } catch (_) {}
     player.src = url;
     return true;
@@ -161,7 +161,7 @@
       '<div class="rf-vs-top">' +
         '<button type="button" class="rf-vs-back" id="rf-vs-back">← Quay lại</button>' +
         '<div class="rf-vs-brand">Ro<span>Flix</span></div>' +
-        '<button type="button" class="rf-vs-fs" id="rf-vs-fs">Toàn màn hình</button>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button type="button" class="rf-vs-compat" id="rf-vs-compat">Chế độ tương thích</button><button type="button" class="rf-vs-fs" id="rf-vs-fs">Toàn màn hình</button></div>' +
       '</div>' +
       '<div class="rf-vs-main">' +
         '<div class="rf-vs-stage">' +
@@ -169,7 +169,7 @@
             '<strong>Đang chờ phát</strong>' +
             '<span>Nhập IMDb / TMDB rồi bấm Phát</span>' +
           '</div>' +
-          '<iframe id="rf-vs-frame" src="" referrerpolicy="no-referrer" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" style="display:none"></iframe>' +
+          '<iframe id="rf-vs-frame" src="" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" referrerpolicy="no-referrer" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" style="display:none"></iframe>' +
         '</div>' +
         '<div class="rf-vs-meta">' +
           '<div>' +
@@ -260,6 +260,8 @@
       var ph = document.getElementById('rf-vs-placeholder');
       frame.style.display = 'block';
       if (ph) ph.style.display = 'none';
+      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
+      frame.dataset.rfVidsrcSandboxed = '1';
       frame.src = url;
       setNowPlaying(label);
       try { frame.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
@@ -277,6 +279,19 @@
     document.getElementById('rf-vs-id').addEventListener('input', updateIdHint);
     document.getElementById('rf-vs-load').addEventListener('click', function () { loadPlayer(); });
     document.getElementById('rf-vs-back').addEventListener('click', closeCinemaPage);
+    document.getElementById('rf-vs-compat').addEventListener('click', function () {
+      var frame = document.getElementById('rf-vs-frame');
+      if (!frame) return;
+      frame.removeAttribute('sandbox');
+      frame.dataset.rfVidsrcSandboxed = '0';
+      var idValue = (document.getElementById('rf-vs-id').value || '').trim();
+      var t = currentType();
+      var s = document.getElementById('rf-vs-season').value;
+      var e = document.getElementById('rf-vs-episode').value;
+      frame.src = buildEmbedUrlFromParts(t, idValue, t === 'tv' ? s : null, t === 'tv' ? e : null) || '';
+      if (typeof showToastPro === 'function') showToastPro('warning', 'Chế độ tương thích', 'Đã bỏ giới hạn popup cho VidSrc. Chỉ dùng nếu chế độ an toàn không phát được.');
+      else if (typeof showToast === 'function') showToast('warning', 'Chế độ tương thích', 'Đã bỏ giới hạn popup cho VidSrc. Chỉ dùng nếu chế độ an toàn không phát được.');
+    });
     document.getElementById('rf-vs-fs').addEventListener('click', function () {
       var stage = page.querySelector('.rf-vs-stage');
       if (!stage) return;
