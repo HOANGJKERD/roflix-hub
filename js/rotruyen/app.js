@@ -217,6 +217,62 @@
     const empty=$('#empty-state'); if(empty)empty.hidden=!!items.length;
     const rank=$('#ranking-list'); if(rank)rank.innerHTML=[...state.items].sort((a,b)=>(b.pop||0)-(a.pop||0)).slice(0,4).map((s,i)=>'<div class="ranking"><span class="rank">0'+(i+1)+'</span><span class="rank-info"><b>'+esc(s.title)+'</b><small>'+esc(s.kind||'Truyện')+'</small></span><span>'+(s.rating?'★ '+s.rating.toFixed(1):'↗')+'</span></div>').join('')||'<p class="muted">Chưa có dữ liệu xếp hạng từ nguồn này.</p>';
     renderSavedCount();
+    renderRecommend(items);
+  }
+  const reel = {ids:"", index:0, timer:0, ms:5600};
+  function renderRecommend(items){
+    const box = $("#rt-recommend");
+    if(!box) return;
+    const slides = (items||[]).filter(s=>s.cover && !isStoryLocked(s)).slice(0,12);
+    const sig = slides.map(s=>String(s.id)).join("|");
+    if(!slides.length){
+      clearInterval(reel.timer);
+      box.innerHTML = "<p class='rt-reel-empty'>Chưa có bìa để đề xuất.</p>";
+      reel.ids = "";
+      return;
+    }
+    if(sig !== reel.ids){
+      reel.ids = sig;
+      reel.index = 0;
+      box.innerHTML = "<button type='button' class='rt-reel-hit' id='rt-reel-hit'><img id='rt-reel-img' alt=''><div class='rt-reel-copy'><span id='rt-reel-kind'></span><strong id='rt-reel-title'></strong></div><div class='rt-reel-bar'><i id='rt-reel-bar'></i></div></button><div class='rt-reel-dots' id='rt-reel-dots'></div>";
+      const dots = $("#rt-reel-dots");
+      dots.innerHTML = slides.map((_,i)=>"<button type='button' data-reel='"+i+"' aria-label='Truyện "+(i+1)+"'></button>").join("");
+      dots.onclick = (e)=>{
+        const b = e.target.closest("[data-reel]");
+        if(!b) return;
+        showReel(slides, Number(b.dataset.reel));
+        armReel(slides);
+      };
+      $("#rt-reel-hit").onclick = ()=>{
+        const s = slides[reel.index];
+        if(s) openDetail(s.id);
+      };
+      box.onmouseenter = ()=>clearInterval(reel.timer);
+      box.onmouseleave = ()=>armReel(slides);
+      showReel(slides, 0);
+      armReel(slides);
+      return;
+    }
+    showReel(slides, reel.index);
+  }
+  function showReel(slides, index){
+    reel.index = (index + slides.length) % slides.length;
+    const s = slides[reel.index];
+    const img = $("#rt-reel-img");
+    if(!img) return;
+    img.src = s.cover;
+    img.alt = s.title || "";
+    $("#rt-reel-kind").textContent = s.kind || "Đề xuất";
+    $("#rt-reel-title").textContent = s.title || "";
+    const bar = $("#rt-reel-bar");
+    bar.style.animation = "none";
+    void bar.offsetWidth;
+    bar.style.animation = "rtreel "+reel.ms+"ms linear";
+    $$("#rt-reel-dots button").forEach((b,i)=>b.classList.toggle("on", i===reel.index));
+  }
+  function armReel(slides){
+    clearInterval(reel.timer);
+    reel.timer = setInterval(()=>showReel(slides, reel.index+1), reel.ms);
   }
   function renderSavedCount(){const el=$('#saved-count');if(el)el.textContent=state.saved.size;}
   async function loadOwnCatalog() {
