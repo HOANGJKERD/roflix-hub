@@ -219,60 +219,60 @@
     renderSavedCount();
     renderRecommend(state.items);
   }
-  const reel = {ids:"", index:0, timer:0, ms:5600};
+  const reel = {ids:"", index:0, timer:0, ms:6500, slides:[]};
+  function bannerCover(s){
+    return String(s.cover||"").replace(".256.jpg",".512.jpg");
+  }
   function renderRecommend(items){
     const box = $("#rt-recommend");
     if(!box) return;
-    const slides = (items||[]).filter(s=>s.cover && !isStoryLocked(s)).slice(0,12);
-    const sig = slides.map(s=>String(s.id)).join("|");
-    if(!slides.length){
-      clearInterval(reel.timer);
-      box.innerHTML = "<p class='rt-reel-empty'>Chưa có bìa để đề xuất.</p>";
-      reel.ids = "";
-      return;
-    }
+    const ranked = [...(items||[])].filter(s => s.cover && !isStoryLocked(s));
+    ranked.sort((a,b) => (a.source==="mangadex"?0:1) - (b.source==="mangadex"?0:1));
+    const slides = ranked.filter(s => !/w60|w80|-h85/.test(String(s.cover))).slice(0,8);
+    const picked = slides.length ? slides : ranked.slice(0,8);
+    const sig = picked.map(s => String(s.id)).join("|");
+    if(!picked.length) return;
     if(sig !== reel.ids){
       reel.ids = sig;
+      reel.slides = picked;
       reel.index = 0;
-      box.innerHTML = "<button type='button' class='rt-reel-hit' id='rt-reel-hit'><img id='rt-reel-img' alt=''><div class='rt-reel-copy'><span id='rt-reel-kind'></span><strong id='rt-reel-title'></strong></div><div class='rt-reel-bar'><i id='rt-reel-bar'></i></div></button><div class='rt-reel-dots' id='rt-reel-dots'></div>";
-      const dots = $("#rt-reel-dots");
-      dots.innerHTML = slides.map((_,i)=>"<button type='button' data-reel='"+i+"' aria-label='Truyện "+(i+1)+"'></button>").join("");
-      dots.onclick = (e)=>{
-        const b = e.target.closest("[data-reel]");
-        if(!b) return;
-        showReel(slides, Number(b.dataset.reel));
-        armReel(slides);
+      const rail = $("#rt-banner-rail");
+      rail.innerHTML = picked.map((s,i) => '<button type="button" data-reel="'+i+'"><img src="'+esc(bannerCover(s))+'" alt=""></button>').join("");
+      rail.onclick = (e) => {
+        const hit = e.target.closest("[data-reel]");
+        if(!hit) return;
+        showBanner(Number(hit.dataset.reel));
+        armBanner();
       };
-      $("#rt-reel-hit").onclick = ()=>{
-        const s = slides[reel.index];
-        if(s) openDetail(s.id);
-      };
-      box.onmouseenter = ()=>clearInterval(reel.timer);
-      box.onmouseleave = ()=>armReel(slides);
-      showReel(slides, 0);
-      armReel(slides);
+      const open = $("#rt-banner-open");
+      open.onclick = () => { const s = reel.slides[reel.index]; if(s) openDetail(s.id); };
+      box.onmouseenter = () => clearInterval(reel.timer);
+      box.onmouseleave = () => armBanner();
+      showBanner(0);
+      armBanner();
       return;
     }
-    showReel(slides, reel.index);
   }
-  function showReel(slides, index){
+  function showBanner(index){
+    const slides = reel.slides;
+    if(!slides.length) return;
     reel.index = (index + slides.length) % slides.length;
     const s = slides[reel.index];
-    const img = $("#rt-reel-img");
-    if(!img) return;
-    img.src = s.cover;
-    img.alt = s.title || "";
-    $("#rt-reel-kind").textContent = s.kind || "Đề xuất";
-    $("#rt-reel-title").textContent = s.title || "";
-    const bar = $("#rt-reel-bar");
+    const media = $("#rt-banner-media");
+    media.style.backgroundImage = 'url("'+bannerCover(s).replace(/"/g,"")+'")';
+    $("#rt-banner-kicker").textContent = (s.kind || "Đề xuất").toUpperCase();
+    $("#rt-banner-title").textContent = s.title || "";
+    const desc = String(s.description || s.author || "").replace(/\s+/g," ").trim();
+    $("#rt-banner-desc").textContent = desc ? desc.slice(0,180) : (s.author || "");
+    const bar = $("#rt-banner-bar");
     bar.style.animation = "none";
     void bar.offsetWidth;
-    bar.style.animation = "rtreel "+reel.ms+"ms linear";
-    $$("#rt-reel-dots button").forEach((b,i)=>b.classList.toggle("on", i===reel.index));
+    bar.style.animation = "rtbanner "+reel.ms+"ms linear";
+    $$("#rt-banner-rail button").forEach((b,i) => b.classList.toggle("on", i===reel.index));
   }
-  function armReel(slides){
+  function armBanner(){
     clearInterval(reel.timer);
-    reel.timer = setInterval(()=>showReel(slides, reel.index+1), reel.ms);
+    reel.timer = setInterval(() => showBanner(reel.index+1), reel.ms);
   }
   function renderSavedCount(){const el=$('#saved-count');if(el)el.textContent=state.saved.size;}
   async function loadOwnCatalog() {

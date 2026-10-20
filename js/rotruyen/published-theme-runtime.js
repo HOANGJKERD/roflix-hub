@@ -20,16 +20,6 @@ async function applyPublishedTheme(){
   else if(c.density==='spacious')root.style.setProperty('--rt-density','24px');
   else root.style.setProperty('--rt-density','16px');
 
-  const home=c.home||{};
-  if(target==="rotruyen"||row.target==="both"||row.target==="rotruyen"){
-    const eye=document.querySelector(".hero .eyebrow");
-    const h1=document.querySelector(".hero h1");
-    const p=document.querySelector(".hero p");
-    if(eye&&home.kicker) eye.textContent=home.kicker;
-    if(h1&&home.title) h1.innerHTML=String(home.title).replace(/\n/g,"<br>");
-    if(p&&home.subtitle) p.textContent=home.subtitle;
-  }
-
   root.dataset.rohubThemeVersion=String(row.version_number||'');
  }catch(err){console.warn('[RoHub Theme Runtime] Giữ giao diện mặc định do chưa đọc được theme published:',err.message)}
 }

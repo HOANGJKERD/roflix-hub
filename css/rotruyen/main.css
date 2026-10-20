@@ -274,3 +274,26 @@ body[data-theme="light"] #active-filter-count{color:#92400e}
 .rt-reel-dots button.on{background:var(--amber,#f4b84f);width:18px}
 .rt-reel-empty{margin:0;padding:40px 16px;color:#a0a7b8;text-align:center}
 @media(max-width:760px){.rt-reel,.rt-reel-hit{min-height:220px}.rt-reel-hit img{height:220px}}
+
+section.hero.rt-banner{display:block;position:relative;min-height:520px;margin:18px 0 8px;padding:0;overflow:hidden;border:0;border-radius:28px;background:#0b0e16;box-shadow:0 30px 80px #0008}
+section.hero.rt-banner .rt-banner-media,section.hero.rt-banner .rt-banner-shade{position:absolute;inset:0}
+section.hero.rt-banner .rt-banner-media{background:#141824 center/cover no-repeat;transform:scale(1.04);filter:saturate(1.05);transition:opacity .45s ease}
+section.hero.rt-banner .rt-banner-shade{background:linear-gradient(90deg,#07090f 0%,#07090fe8 34%,#07090f66 62%,#07090f22 100%),linear-gradient(180deg,#0000 55%,#07090fe6 100%)}
+section.hero.rt-banner .rt-banner-copy{position:relative;z-index:2;max-width:560px;min-height:520px;display:flex;flex-direction:column;justify-content:flex-end;padding:48px 40px 118px}
+section.hero.rt-banner .eyebrow{color:#f6c56b;letter-spacing:2.4px}
+section.hero.rt-banner h1{max-width:14ch;margin:10px 0 12px;font-size:clamp(36px,4.6vw,62px);line-height:1.02;letter-spacing:-1.8px;color:#fff;background:none;-webkit-text-fill-color:#fff}
+section.hero.rt-banner p{max-width:46ch;margin:0 0 18px;color:#d5d8e2;font-size:15px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+section.hero.rt-banner .btn{align-self:flex-start;border:0;cursor:pointer;color:#1a140c}
+section.hero.rt-banner .rt-banner-rail{position:absolute;z-index:2;right:22px;bottom:22px;display:flex;gap:10px}
+section.hero.rt-banner .rt-banner-rail button{width:72px;height:102px;padding:0;border:2px solid #ffffff33;border-radius:12px;overflow:hidden;background:#111;cursor:pointer;opacity:.78}
+section.hero.rt-banner .rt-banner-rail button.on{border-color:#f6c56b;opacity:1;transform:translateY(-6px)}
+section.hero.rt-banner .rt-banner-rail img{width:100%;height:100%;object-fit:cover;display:block}
+section.hero.rt-banner .rt-banner-bar{position:absolute;left:0;bottom:0;z-index:3;height:3px;width:0;background:#f6c56b}
+@keyframes rtbanner{to{width:100%}}
+@media(max-width:760px){
+ section.hero.rt-banner{min-height:460px;border-radius:18px}
+ section.hero.rt-banner .rt-banner-shade{background:linear-gradient(180deg,#07090f22 0%,#07090fe8 62%,#07090f 100%)}
+ section.hero.rt-banner .rt-banner-copy{min-height:460px;padding:28px 20px 126px}
+ section.hero.rt-banner .rt-banner-rail{left:16px;right:auto}
+ section.hero.rt-banner .rt-banner-rail button{width:54px;height:76px}
+}
