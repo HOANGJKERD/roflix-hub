@@ -76,13 +76,17 @@ function renderPlayerServerBar() {
 
 /** Phát bằng embed VidSrc (giống tester https://vidsrc.sh/#tester) */
 function playOnVidSrc(season, episode) {
-    if (typeof showToastPro === 'function') {
-        showToastPro('warning', 'VidSrc tạm ngưng', 'Nguồn này đang bị popup quảng cáo gây phiền. Hãy dùng server Mặc định trong lúc chờ nguồn thay thế.');
-    } else if (typeof showToast === 'function') {
-        showToast('error', 'VidSrc tạm ngưng', 'Nguồn này đang bị popup quảng cáo gây phiền. Hãy dùng server Mặc định trong lúc chờ nguồn thay thế.');
+    const warning = 'Cảnh báo: VidSrc là trình phát bên thứ ba và có thể mở tab quảng cáo, chuyển hướng hoặc trang cài ứng dụng. RoFlix không kiểm soát được popup bên trong trình phát này. Chỉ tiếp tục nếu bạn chấp nhận rủi ro; không tải ứng dụng lạ và không nhập thông tin cá nhân.';
+    if (!window.__RF_VIDSRC_WARNING_ACCEPTED__) {
+        const accepted = window.confirm(warning + '\\n\\nBạn có muốn tiếp tục mở VidSrc không?');
+        if (!accepted) return;
+        window.__RF_VIDSRC_WARNING_ACCEPTED__ = true;
     }
-    return;
-    /* VidSrc được giữ lại trong mã nguồn nhưng tạm khóa cho đến khi có cách chặn popup tương thích. */
+    if (typeof showToastPro === 'function') {
+        showToastPro('warning', 'Cảnh báo quảng cáo', 'VidSrc có thể bật popup/chuyển hướng. Đóng tab lạ, không tải ứng dụng hoặc nhập thông tin cá nhân.');
+    } else if (typeof showToast === 'function') {
+        showToast('warning', 'Cảnh báo quảng cáo', 'VidSrc có thể bật popup/chuyển hướng. Đóng tab lạ, không tải ứng dụng hoặc nhập thông tin cá nhân.');
+    }
     if (!window.RoflixVidSrc) {
         if (typeof showToast === 'function') showToast('error', 'VidSrc', 'Helper chưa tải xong, thử lại sau 1 giây.');
         return;
