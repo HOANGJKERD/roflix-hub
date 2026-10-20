@@ -7,38 +7,60 @@
   <title>RoHub | Chọn nền tảng</title>
   <meta name="description" content="Chọn trải nghiệm bạn muốn khám phá cùng RoHub: RoFlix hoặc RoTruyện.">
   <style>
-    :root{color-scheme:dark;--bg:#080b14;--panel:#111827;--line:#ffffff18;--muted:#a7b0c2;--text:#f7f8fc}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 15% 8%,#5b3aa52c,transparent 35%),radial-gradient(ellipse at 88% 85%,#176da82c,transparent 35%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
-    .shell{width:min(1100px,100%);margin:auto;padding:36px 22px 28px}.brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:54px;text-align:left}.mark{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,#fbbf24,#8b5cf6 60%,#60a5fa);color:#0a0c14;font-weight:1000;font-size:20px;box-shadow:0 12px 36px #8b5cf633}.brand-name{font-weight:950;font-size:28px;letter-spacing:-1px}.brand-name span{color:#a78bfa}.brand small{display:block;margin-top:3px;color:var(--muted);font-size:10px;letter-spacing:3px;font-weight:700}
-    .intro{text-align:center;max-width:720px;margin:0 auto 36px}.eyebrow{font-size:11px;font-weight:850;letter-spacing:3px;color:#a5b4fc}.intro h1{font-size:clamp(32px,6vw,54px);letter-spacing:-2px;line-height:1.08;margin:14px 0}.intro h1 span{background:linear-gradient(90deg,#fbbf24,#c4b5fd,#7dd3fc);-webkit-background-clip:text;background-clip:text;color:transparent}.intro p{color:var(--muted);font-size:15px;line-height:1.8;margin:0}
-    .choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.admin-choice{grid-column:1/-1;min-height:155px;padding:22px 26px;flex-direction:row;align-items:center;gap:22px}.admin-choice .icon{flex:0 0 58px;margin:0}.admin-choice .admin-copy{flex:1}.admin-choice h2{font-size:23px}.admin-choice p{margin:0;max-width:unset}.admin-choice .go{margin:0;white-space:nowrap}.choice{position:relative;display:flex;flex-direction:column;min-height:300px;padding:30px;border:1px solid var(--line);border-radius:26px;text-decoration:none;color:inherit;background:linear-gradient(145deg,#ffffff0b,#ffffff03);overflow:hidden;transition:transform .2s,border-color .2s,background .2s}.choice:hover{transform:translateY(-5px);border-color:#ffffff48;background:linear-gradient(145deg,#ffffff12,#ffffff05)}.choice:focus-visible{outline:3px solid #a5b4fc;outline-offset:4px}.orb{position:absolute;width:210px;height:210px;right:-60px;top:-75px;border-radius:50%;filter:blur(1px);opacity:.17}.flix .orb{background:#f59e0b}.story .orb{background:#60a5fa}.admin .orb{background:#f59e0b}.admin .icon{color:#fbbf24}.admin .go{color:#fbbf24}.icon{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;font-size:27px;margin-bottom:28px;background:#ffffff10;border:1px solid #ffffff18}.flix .icon{color:#fbbf24}.story .icon{color:#93c5fd}.choice h2{font-size:29px;letter-spacing:-.8px;margin:0 0 10px}.choice p{color:var(--muted);line-height:1.7;font-size:14px;margin:0 0 28px;max-width:420px}.go{margin-top:auto;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:850}.flix .go{color:#fbbf24}.story .go{color:#93c5fd}.arrow{font-size:20px;transition:transform .2s}.choice:hover .arrow{transform:translateX(5px)}footer{text-align:center;color:#657087;font-size:11px;padding:20px}
-    @media(max-width:680px){.shell{padding:26px 16px}.brand{margin-bottom:38px}.choices{grid-template-columns:1fr}.choice{min-height:250px;padding:24px}.intro{margin-bottom:26px}.intro h1{letter-spacing:-1.2px}}
+    :root{color-scheme:dark;--bg:#080b14;--panel:#111827;--line:#ffffff18;--muted:#a7b0c2;--text:#f7f8fc;--accent:#f59e0b;--accent2:#8b5cf6;--radius:26px}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 15% 8%,color-mix(in srgb,var(--accent2) 22%,transparent),transparent 35%),radial-gradient(ellipse at 88% 85%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 35%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
+    .shell{width:min(1100px,100%);margin:auto;padding:36px 22px 28px}.brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px;text-align:left}.mark{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2) 60%,#60a5fa);color:#0a0c14;font-weight:1000;font-size:20px;box-shadow:0 12px 36px color-mix(in srgb,var(--accent2) 35%,transparent)}.brand-name{font-weight:950;font-size:28px;letter-spacing:-1px}.brand-name span{color:var(--accent2)}.brand small{display:block;margin-top:3px;color:var(--muted);font-size:10px;letter-spacing:3px;font-weight:700}
+    .intro{text-align:center;max-width:720px;margin:0 auto 18px}.eyebrow{font-size:11px;font-weight:850;letter-spacing:3px;color:var(--accent)}.intro h1{font-size:clamp(32px,6vw,54px);letter-spacing:-2px;line-height:1.08;margin:14px 0}.intro p{color:var(--muted);font-size:15px;line-height:1.8;margin:0}
+    .hub-stage{margin:8px 0 28px}
+    .hub-hero{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);min-height:320px;background:var(--panel)}
+    .hub-hero-link{display:grid;grid-template-columns:1.1fr .9fr;min-height:340px;color:inherit;text-decoration:none}
+    .hub-hero img{width:100%;height:100%;object-fit:cover;min-height:340px}
+    .hub-hero-copy{display:flex;flex-direction:column;justify-content:flex-end;padding:28px;background:linear-gradient(180deg,#0000,color-mix(in srgb,var(--bg) 88%,black))}
+    .hub-hero-copy span{font-size:11px;letter-spacing:2px;font-weight:800;color:var(--accent)}
+    .hub-hero-copy h2{margin:8px 0 16px;font-size:clamp(26px,4vw,40px);letter-spacing:-1px;line-height:1.15}
+    .hub-hero-copy b{align-self:flex-start;background:var(--accent);color:#111;border-radius:999px;padding:10px 16px;font-size:13px}
+    .hub-progress{position:absolute;left:0;right:0;bottom:0;height:3px;background:#ffffff22}
+    .hub-progress i{display:block;height:100%;width:0;background:var(--accent)}
+    @keyframes hubbar{to{width:100%}}
+    .hub-rail{display:flex;gap:10px;overflow:auto;padding:12px 2px 4px}
+    .hub-rail button{flex:0 0 148px;border:1px solid var(--line);background:var(--panel);color:inherit;border-radius:16px;padding:0 0 8px;text-align:left;cursor:pointer}
+    .hub-rail button.on{border-color:var(--accent)}
+    .hub-rail img{width:100%;height:84px;object-fit:cover;border-radius:16px 16px 0 0;display:block}
+    .hub-rail span{display:block;padding:8px 8px 0;font-size:12px;line-height:1.3;height:2.6em;overflow:hidden}
+    .hub-empty{color:var(--muted);text-align:center}
+    .choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.admin-choice{grid-column:1/-1;min-height:155px;padding:22px 26px;flex-direction:row;align-items:center;gap:22px}.admin-choice .icon{flex:0 0 58px;margin:0}.admin-choice .admin-copy{flex:1}.admin-choice h2{font-size:23px}.admin-choice p{margin:0;max-width:unset}.admin-choice .go{margin:0;white-space:nowrap}.choice{position:relative;display:flex;flex-direction:column;min-height:220px;padding:30px;border:1px solid var(--line);border-radius:var(--radius);text-decoration:none;color:inherit;background:linear-gradient(145deg,#ffffff0b,#ffffff03);overflow:hidden;transition:transform .2s,border-color .2s}.choice:hover{transform:translateY(-5px);border-color:#ffffff48}.icon{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;font-size:27px;margin-bottom:18px;background:#ffffff10;border:1px solid #ffffff18}.flix .icon{color:var(--accent)}.story .icon{color:#93c5fd}.admin .icon{color:var(--accent)}.choice h2{font-size:29px;letter-spacing:-.8px;margin:0 0 10px}.choice p{color:var(--muted);line-height:1.7;font-size:14px;margin:0 0 18px;max-width:420px}.go{margin-top:auto;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:850}.flix .go,.admin .go{color:var(--accent)}.story .go{color:#93c5fd}footer{text-align:center;color:#657087;font-size:11px;padding:20px}
+    @media(max-width:760px){.hub-hero-link{grid-template-columns:1fr}.hub-hero img{min-height:210px;max-height:240px}.choices{grid-template-columns:1fr}.shell{padding:26px 16px}}
   </style>
 </head>
 <body>
   <main class="shell">
     <a class="brand" href="index.html" style="color:inherit;text-decoration:none" aria-label="RoHub trang chủ"><span class="mark">R</span><span class="brand-name">Ro<span>Hub</span><small>ONE HUB. MANY WORLDS.</small></span></a>
     <section class="intro">
-      <span class="eyebrow">CHÀO MỪNG ĐẾN VỚI ROHUB</span>
-      <h1>Một điểm đến.<br><span>Hai thế giới để khám phá.</span></h1>
-      <p>Chọn nơi bạn muốn bắt đầu. Xem phim cùng RoFlix hoặc đắm mình trong những câu chuyện tại RoTruyện.</p>
+      <span class="eyebrow">ĐỀ XUẤT CHO BẠN</span>
+      <h1>Đang mở. Đang đọc. Đang chờ.</h1>
+      <p>Truyện tranh và truyện chữ luân phiên, giống rạp đề xuất của RoFlix.</p>
     </section>
+    <section class="hub-stage" id="hub-stage" aria-label="Truyện đề xuất"><p class="hub-empty">Đang xếp truyện…</p></section>
     <section class="choices" aria-label="Chọn nền tảng">
       <a class="choice flix" href="roflix.html">
-        <span class="orb"></span><span class="icon" aria-hidden="true">▶</span>
+        <span class="icon" aria-hidden="true">▶</span>
         <h2>RoFlix</h2>
-        <p>Thế giới phim ảnh trong tầm tay. Khám phá phim yêu thích và tiếp tục hành trình giải trí của bạn.</p>
-        <span class="go">Khám phá RoFlix <span class="arrow">→</span></span>
+        <p>Thế giới phim ảnh trong tầm tay.</p>
+        <span class="go">Khám phá RoFlix →</span>
       </a>
       <a class="choice story" href="rotruyen.html">
-        <span class="orb"></span><span class="icon" aria-hidden="true">▤</span>
+        <span class="icon" aria-hidden="true">▤</span>
         <h2>RoTruyện</h2>
-        <p>Mở trang sách, mở một thế giới. Tìm truyện mới, theo dõi hành trình đọc và lưu lại những tác phẩm yêu thích.</p>
-        <span class="go">Khám phá RoTruyện <span class="arrow">→</span></span>
+        <p>Mở trang sách, mở một thế giới.</p>
+        <span class="go">Khám phá RoTruyện →</span>
       </a>
-      <a class="choice admin admin-choice" href="admin.html"><span class="orb"></span><span class="icon" aria-hidden="true">⚙</span><span class="admin-copy"><h2>RoHub Admin</h2><p>Khu vực quản trị riêng dành cho quản trị viên. Quản lý RoFlix, RoTruyện và tùy biến giao diện trong RoHub Studio.</p></span><span class="go">Mở trung tâm quản trị <span class="arrow">→</span></span></a>
+      <a class="choice admin admin-choice" href="rohub-studio.html"><span class="icon" aria-hidden="true">⚙</span><span class="admin-copy"><h2>RoHub Studio</h2><p>Chỉnh banner, màu, nhịp đề xuất và xuất bản giao diện cho cả hub.</p></span><span class="go">Mở studio →</span></a>
     </section>
   </main>
   <footer>© 2026 RoHub · Một hệ sinh thái, nhiều trải nghiệm.</footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config/supabase.config.js"></script>
+  <script src="js/core/supabase.js"></script>
+  <script src="js/core/hub-home.js?v=20261020-reel"></script>
 </body>
 </html>
