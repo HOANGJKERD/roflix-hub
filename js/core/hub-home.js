@@ -47,7 +47,12 @@
 
   function esc(s) {
     return String(s || "").replace(/[&<>"]/g, function (c) {
-      return { "&": "&", "<": "<", ">": ">", '"': """ }[c];
+      var map={};
+      map["&"]="&amp;";
+      map["<"]="&lt;";
+      map[">"]="&gt;";
+      map["\""]="&quot;";
+      return map[c];
     });
   }
 
