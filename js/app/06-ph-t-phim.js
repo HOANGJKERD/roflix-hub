@@ -78,7 +78,7 @@ function renderPlayerServerBar() {
 function playOnVidSrc(season, episode) {
     const warning = 'Cảnh báo: VidSrc là trình phát bên thứ ba và có thể mở tab quảng cáo, chuyển hướng hoặc trang cài ứng dụng. RoFlix không kiểm soát được popup bên trong trình phát này. Chỉ tiếp tục nếu bạn chấp nhận rủi ro; không tải ứng dụng lạ và không nhập thông tin cá nhân.';
     if (!window.__RF_VIDSRC_WARNING_ACCEPTED__) {
-        const accepted = window.confirm(warning + '\\n\\nBạn có muốn tiếp tục mở VidSrc không?');
+        const accepted = window.confirm(warning + '\n\nBạn có muốn tiếp tục mở VidSrc không?');
         if (!accepted) return;
         window.__RF_VIDSRC_WARNING_ACCEPTED__ = true;
     }
