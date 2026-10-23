@@ -278,7 +278,7 @@
   async function loadOwnCatalog() {
     const sb=window.rfSupabase;
     if(!sb){state.source='database';state.items=[];render();notify('Supabase chưa sẵn sàng. Không hiển thị truyện mẫu.');return;}
-    const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải catalog RoTruyện…</p></div>';
+    const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải catalog RoTruyen…</p></div>';
     try{
       const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,source_id,genres,content_rating,content_type,status,is_published,is_locked,lock_reason,sort_order').eq('is_published',true).order('sort_order',{ascending:true}).limit(100);
       if(error)throw error;
@@ -286,10 +286,10 @@
       state.source='database';
       if(!state.items.length){notify('Catalog chưa có truyện thật đã xuất bản.');}
       render();
-    }catch(e){state.items=[];state.source='database';render();notify('Không tải được catalog RoTruyện: '+e.message+'. Đã tắt dữ liệu mẫu.');}
+    }catch(e){state.items=[];state.source='database';render();notify('Không tải được catalog RoTruyen: '+e.message+'. Đã tắt dữ liệu mẫu.');}
   }
   async function loadCatalog() {
-    try{const sb=window.rfSupabase;if(sb){const {data:cfg}=await sb.from('rotruyen_settings').select('value').eq('key','public.sources').maybeSingle();if(cfg?.value?.mangadex?.enabled===false){notify('MangaDex đã bị tắt trong RoTruyện Admin.');return;}}}catch(_){}
+    try{const sb=window.rfSupabase;if(sb){const {data:cfg}=await sb.from('rotruyen_settings').select('value').eq('key','public.sources').maybeSingle();if(cfg?.value?.mangadex?.enabled===false){notify('MangaDex đã bị tắt trong RoTruyen Admin.');return;}}}catch(_){}
     if(state.source==='database'){await loadOwnCatalog();return;}
     state.apiBusy=true; const btn=$('#load-source');if(btn){btn.disabled=true;btn.textContent='Đang kết nối…';}
     const grid=$('#story-grid');if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải danh mục từ MangaDex…</p></div>';
@@ -318,7 +318,7 @@
       const {data:cfg,error}=await sb.from('rotruyen_settings').select('value').eq('key','public.sources').maybeSingle();
       if(error)throw error;
       const source=cfg?.value?.longbook;
-      if(!source?.enabled){notify('LongBookApi đang tắt. Hãy bật trong RoTruyện Admin.');return;}
+      if(!source?.enabled){notify('LongBookApi đang tắt. Hãy bật trong RoTruyen Admin.');return;}
       const base=String(source.baseUrl||'').replace(/\/+$/,'');
       if(!/^https:\/\/[^/]+/i.test(base))throw new Error('Base URL chưa được cấu hình bằng HTTPS.');
       const params=new URLSearchParams({start:'0',limit:'24'});
@@ -349,7 +349,7 @@
     if(!(await canOpenAdultContent(s)))return;
     state.selected=s;
     $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&['mangadex','database','longbook','truyenviet'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
-    $('#detail-meta').textContent=(s.kind||'Truyện')+' · '+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':s.source==='database'?'Catalog RoTruyện':s.source==='longbook'?'LongBook API':s.source==='truyenviet'?'Truyện Việt':'Bản demo');
+    $('#detail-meta').textContent=(s.kind||'Truyện')+' · '+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':s.source==='database'?'Catalog RoTruyen':s.source==='longbook'?'LongBook API':s.source==='truyenviet'?'Truyện Việt':'Bản demo');
     const read=$('#detail-read');read.disabled=!['mangadex','database','truyenviet'].includes(s.source);read.textContent=['mangadex','database','truyenviet'].includes(s.source)?'Xem chương / Tải lại':'Bản demo chưa có nội dung chương';
     if(isAdultOnly(s))$('#detail-meta').textContent+=' · 🔞 18+ · Yêu cầu đăng nhập';
     $('#chapter-list').innerHTML=['mangadex','database','truyenviet'].includes(s.source)?'<p>Đang tải danh sách chương…</p>':'';$('#detail-modal').hidden=false;document.body.classList.add('modal-open');if(['mangadex','database','truyenviet'].includes(s.source))loadChapters();
@@ -410,7 +410,7 @@
     const key=String(state.selected.id);
     const max=Math.max(0,(modal?.scrollHeight||0)-(modal?.clientHeight||0));
     const ratio=max>0?Math.min(1,Math.max(0,(modal.scrollTop||0)/max)):0;
-    readProgress[key]={mangaId:key,title:state.selected.title||'RoTruyện',source:state.selected.source||'unknown',chapterId:String(chapter.id||chapter.chapter_number||state.chapterIndex),chapter:String(chapter.attributes?.chapter||chapter.chapter_number||'?'),chapterIndex:state.chapterIndex,scrollRatio:ratio,updatedAt:Date.now()};
+    readProgress[key]={mangaId:key,title:state.selected.title||'RoTruyen',source:state.selected.source||'unknown',chapterId:String(chapter.id||chapter.chapter_number||state.chapterIndex),chapter:String(chapter.attributes?.chapter||chapter.chapter_number||'?'),chapterIndex:state.chapterIndex,scrollRatio:ratio,updatedAt:Date.now()};
     if(progressSaveTimer)clearTimeout(progressSaveTimer);
     const save=()=>{memory.write('read-progress:v1',readProgress);};
     if(force)save();else progressSaveTimer=setTimeout(save,250);
@@ -451,7 +451,7 @@
     if(isStoryLocked(state.selected)){closeModal('reader-modal');notify('Truyện này hiện đã bị khóa bởi quản trị viên.');return;}
     if(!(await canOpenAdultContent(state.selected)))return;
     persistReadProgress(true);state.chapterIndex=index;const title=chapter.attributes?.chapter||chapter.chapter_number||'?';rememberChapter();
-    $('#reader-title').textContent=(state.selected?.title||'RoTruyện')+' · Chương '+title;
+    $('#reader-title').textContent=(state.selected?.title||'RoTruyen')+' · Chương '+title;
     const prev=$('#reader-prev'),next=$('#reader-next'),position=$('#reader-chapter-position');
     if(prev)prev.disabled=index<=0;
     if(next)next.disabled=index>=state.chapters.length-1;
@@ -575,7 +575,7 @@
 
   async function loadAutomaticCatalog() {
     const grid=$('#story-grid');
-    if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải truyện tự động từ RoTruyện và MangaDex…</p></div>';
+    if(grid)grid.innerHTML='<div class="loading-state"><span class="spinner"></span><p>Đang tải truyện tự động từ RoTruyen và MangaDex…</p></div>';
     // Tải truyện người dùng/admin đã xuất bản trước, sau đó bổ sung catalog Vietsub từ MangaDex.
     let ownItems=[];
     try {
@@ -585,7 +585,7 @@
         if(error)throw error;
         ownItems=(data||[]).map(s=>({id:s.id,source:'database',title:s.title,author:s.author,genre:(s.genres||[])[0]||'all',kind:(s.genres||[]).join(' · ')||'Truyện',chapters:null,rating:null,pop:0,updated:0,cover:s.cover_url,description:s.synopsis,status:s.status,contentRating:s.content_rating,sourceId:s.source_id}));
       }
-    } catch(e) { console.warn('[RoTruyện catalog]',e.message||e); }
+    } catch(e) { console.warn('[RoTruyen catalog]',e.message||e); }
     state.source='mixed';
     state.items=ownItems;
     render();
