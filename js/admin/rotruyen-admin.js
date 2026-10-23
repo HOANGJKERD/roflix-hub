@@ -19,7 +19,7 @@ function filtered(){
 function renderStats(){
  const total=state.series.length,pub=state.series.filter(x=>x.is_published).length,drafts=total-pub;
  $('rt-admin-stats').innerHTML=[
- ['📚','Tổng tác phẩm',total,'Catalog RoTruyện'],
+ ['📚','Tổng tác phẩm',total,'Catalog RoTruyen'],
  ['🌐','Đang xuất bản',pub,'Hiển thị cho độc giả'],
  ['📝','Bản nháp / chờ duyệt',drafts,'Chưa hiển thị công khai']
  ].map(x=>'<div class="card"><div class="stat-label">'+x[0]+' '+x[1]+'</div><div class="stat-value accent-amber">'+x[2].toLocaleString('vi-VN')+'</div><div class="stat-sub">'+x[3]+'</div></div>').join('');
@@ -30,7 +30,7 @@ function renderSeries(){
 }
 async function loadSeries(){
  if(!state.ready)return;
- $('rt-admin-series-body').innerHTML='<tr><td colspan="5" class="empty">Đang tải catalog RoTruyện...</td></tr>';
+ $('rt-admin-series-body').innerHTML='<tr><td colspan="5" class="empty">Đang tải catalog RoTruyen...</td></tr>';
  const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,content_rating,content_type,status,is_published,is_locked,lock_reason,genres,sort_order').order('sort_order',{ascending:true}).limit(500);
  if(error)throw error;state.series=data||[];renderStats();renderSeries();await loadGenres();message('Đã tải '+state.series.length+' tác phẩm từ rotruyen_series.');
 }
