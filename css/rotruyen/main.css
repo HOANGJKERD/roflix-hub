@@ -297,3 +297,73 @@ section.hero.rt-banner .rt-banner-bar{position:absolute;left:0;bottom:0;z-index:
  section.hero.rt-banner .rt-banner-rail{left:16px;right:auto}
  section.hero.rt-banner .rt-banner-rail button{width:54px;height:76px}
 }
+
+
+/* RoTruyen visual repair: cinematic full-bleed banner + stable responsive search */
+section.hero.rt-banner{
+  display:block;position:relative;isolation:isolate;
+  min-height:520px;margin:18px 0 8px;padding:0;overflow:hidden;
+  border:1px solid #ffffff16;border-radius:24px;
+  background:#090b12;box-shadow:0 24px 70px #0007;
+}
+section.hero.rt-banner .rt-banner-media{
+  position:absolute;inset:0;z-index:0;
+  background-position:center 28%;background-size:cover;background-repeat:no-repeat;
+  transform:none;filter:saturate(1.05);
+}
+section.hero.rt-banner .rt-banner-shade{
+  position:absolute;inset:0;z-index:1;
+  background:linear-gradient(90deg,#07090ff2 0%,#07090fce 34%,#07090f70 62%,#07090f20 100%),
+             linear-gradient(0deg,#07090ff2 0%,transparent 48%,#07090f25 100%);
+}
+section.hero.rt-banner .rt-banner-copy{
+  position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-start;
+  justify-content:center;min-height:520px;max-width:610px;
+  padding:54px 40px 150px;
+}
+section.hero.rt-banner h1{max-width:12ch;color:#fff;-webkit-text-fill-color:#fff;text-shadow:0 2px 24px #0008}
+section.hero.rt-banner p{color:#f0f1f6;text-shadow:0 1px 10px #0009}
+section.hero.rt-banner .rt-banner-rail{
+  position:absolute;z-index:3;left:auto;right:22px;bottom:20px;
+  display:flex;align-items:flex-end;gap:9px;max-width:calc(100% - 44px);
+  overflow-x:auto;overscroll-behavior-x:contain;padding:8px 3px 7px;
+  scrollbar-width:thin;scrollbar-color:#f6c56b66 transparent;
+}
+section.hero.rt-banner .rt-banner-rail button{flex:0 0 62px;width:62px;height:88px}
+section.hero.rt-banner .rt-banner-rail button.on{transform:translateY(-4px)}
+section.hero.rt-banner .rt-banner-bar{z-index:4}
+.filter-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;gap:10px;width:100%;min-width:0}
+.filter-search-row .search{
+  display:flex;align-items:center;gap:10px;width:100%;min-width:0;min-height:44px;
+  padding:0 13px;border:1px solid var(--line);border-radius:12px;
+  background:#0d111c;color:var(--muted);
+}
+.filter-search-row .search input{
+  display:block;flex:1 1 auto;width:100%;min-width:0;height:42px;padding:0;
+  border:0;outline:0;background:transparent;color:var(--text);
+  font:inherit;font-size:13px;
+}
+.filter-search-row .search input::placeholder{color:#8992a6;opacity:1}
+.filter-reset{white-space:nowrap;align-self:stretch}
+.filter-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.filter-control{min-width:0}
+.filter-control select{width:100%;min-width:0}
+@media(max-width:760px){
+ section.hero.rt-banner{min-height:470px;border-radius:18px}
+ section.hero.rt-banner .rt-banner-shade{
+  background:linear-gradient(0deg,#07090ff5 0%,#07090fce 42%,#07090f42 100%),
+             linear-gradient(90deg,#07090f55,transparent)
+ }
+ section.hero.rt-banner .rt-banner-copy{min-height:470px;max-width:100%;justify-content:flex-end;padding:28px 20px 132px}
+ section.hero.rt-banner .rt-banner-rail{left:16px;right:16px;bottom:14px;max-width:calc(100% - 32px)}
+ section.hero.rt-banner .rt-banner-rail button{flex-basis:52px;width:52px;height:72px}
+ .filter-search-row{grid-template-columns:minmax(0,1fr) auto}
+ .filter-controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:420px){
+ section.hero.rt-banner{min-height:440px}
+ section.hero.rt-banner .rt-banner-copy{min-height:440px;padding:22px 16px 120px}
+ .filter-search-row{grid-template-columns:minmax(0,1fr)}
+ .filter-reset{min-height:40px}
+ .filter-controls{grid-template-columns:minmax(0,1fr)}
+}
