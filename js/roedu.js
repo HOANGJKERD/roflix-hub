@@ -26,8 +26,19 @@
     const card=event.target.closest("[data-subject]");
     if(!card)return;
     const name=card.dataset.subject;
-    alert(name+" · Lớp "+selectedGrade+"\n\nĐây là khung điều hướng ban đầu. Chương, bài học và tài liệu sẽ chỉ được xuất bản sau khi nguồn được kiểm tra.");
+    openSubjectDetail(name);
   });
+  const subjectDialog=document.getElementById("subject-dialog");
+  const detailTitle=document.getElementById("subject-dialog-title"),detailGrade=document.getElementById("subject-dialog-grade"),detailNote=document.getElementById("subject-dialog-note"),viewBook=document.getElementById("subject-view-book"),viewCurriculum=document.getElementById("subject-view-curriculum");
+  function openSubjectDetail(name){
+    detailTitle.textContent=name; detailGrade.textContent="Lớp "+selectedGrade+" · Nguồn sách giáo khoa";
+    viewBook.href="https://hoclieuso.nxbgd.vn/digital-books?grade="+selectedGrade;
+    viewCurriculum.href=name==="Lịch sử"?"https://moet.gov.vn/content/vanban/Lists/VBPQ/Attachments/1483/vbhn-chuong-trinh-mon-lich-su.pdf":"https://moet.gov.vn/content/tintuc/Lists/News/Attachments/8421/chuong-trinh-tong-the-ctgdpt-2018.pdf";
+    detailNote.textContent="Đã xác định cổng sách chính thức theo khối lớp. Tên đầu sách và mục lục chương/bài của môn này chưa được xác minh riêng trong RoEdu; hãy chọn đúng đầu sách trên cổng NXBGDVN. Chỉ sau khi đối chiếu sách và mục lục thực tế mới xuất bản lộ trình học.";
+    if(subjectDialog.showModal) subjectDialog.showModal(); else window.open(viewBook.href,"_blank","noopener");
+  }
+  document.getElementById("subject-dialog-close").addEventListener("click",()=>subjectDialog.close());
+  subjectDialog.addEventListener("click",event=>{if(event.target===subjectDialog)subjectDialog.close();});
   const start=document.getElementById("start-quiz"),panel=document.getElementById("quiz-panel"),feedback=document.getElementById("quiz-feedback");
   start.addEventListener("click",function(){panel.hidden=!panel.hidden;start.innerHTML=panel.hidden?'Bắt đầu <span>→</span>':'Ẩn câu hỏi <span>↑</span>';if(!panel.hidden)panel.scrollIntoView({behavior:"smooth",block:"nearest"});});
   document.querySelectorAll("[data-answer]").forEach(btn=>btn.addEventListener("click",function(){
