@@ -27,7 +27,7 @@
 ## Phát hiện cần ưu tiên tiếp theo
 1. **P1 · Theme Publish/Rollback:** luồng Studio hiện thực hiện nhiều lần ghi database riêng lẻ. Nếu bước cập nhật bản mới thất bại sau khi lưu trạng thái bản cũ, trạng thái published có thể không như mong muốn. Nên chuyển publish/rollback sang RPC/transaction phía database và kiểm thử cạnh tranh.
 2. **P1 · Theme runtime:** cần kiểm tra lại cách chọn phiên bản khi có theme mục tiêu `both`, `roflix` và `rotruyen`; số phiên bản theo từng target không nên được so sánh như một chuỗi phiên bản toàn cục nếu không có quy tắc ưu tiên rõ ràng.
-3. **P1 · Bảo mật dữ liệu:** xác minh trực tiếp RLS cho các bảng admin, theme và RoTruyện; UI xác thực không thay thế chính sách database.
+3. **P1 · Bảo mật dữ liệu:** xác minh trực tiếp RLS cho các bảng admin, theme và RoTruyen; UI xác thực không thay thế chính sách database.
 4. **P2 · Tự động hóa:** bổ sung lệnh test chuẩn và CI để chạy `node --test` khi push/PR; cân nhắc browser smoke test cho các luồng đăng nhập, chuyển trang và kiểm tra sức khỏe.
 5. **P2 · RoFlix nguồn phát:** health check API chỉ là thăm dò cơ bản; vẫn cần test luồng tìm phim → tập → server → URL phát, ưu tiên nguồn ANIMEVIETSUB theo yêu cầu dự án.
 
