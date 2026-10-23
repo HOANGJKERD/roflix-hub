@@ -92,7 +92,7 @@
     'sci-fi':'Khoa học viễn tưởng', 'science fiction':'Khoa học viễn tưởng',
     'slice of life':'Đời thường', sports:'Thể thao', supernatural:'Siêu nhiên',
     thriller:'Giật gân', tragedy:'Bi kịch', historical:'Lịch sử', psychological:'Tâm lý',
-    'martial arts':'Võ thuật', music:'Âm nhạc', school life:'Học đường',
+    'martial arts':'Võ thuật', music:'Âm nhạc', 'school life':'Học đường',
     'girls love':'Bách hợp', 'boys love':'Đam mỹ', mecha:'Robot', medical:'Y khoa',
     crime:'Tội phạm', survival:'Sinh tồn', adaptation:'Chuyển thể', monsters:'Quái vật',
     vampires:'Ma cà rồng', 'video games':'Trò chơi điện tử', reincarnation:'Chuyển sinh'
