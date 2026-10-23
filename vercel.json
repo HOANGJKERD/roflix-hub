@@ -1,8 +1,6 @@
 {
   "rewrites": [
-    {
-      "source": "/roedu",
-      "destination": "/roedu.html"
-    }
+    { "source": "/roedu", "destination": "/roedu.html" },
+    { "source": "/roedu-reader", "destination": "/roedu-reader.html" }
   ]
 }
