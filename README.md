@@ -1,7 +1,7 @@
 # 🌌 RoHUB — Một hệ sinh thái, nhiều cách khám phá
 
 <p align="center">
-  <strong>RoFlix · RoTruyện · RoHub Admin · RoHub Studio</strong><br>
+  <strong>RoFlix · RoTruyen · RoHub Admin · RoHub Studio</strong><br>
   <em>Được xây dựng từng bước bằng sự tò mò, thử nghiệm và mong muốn tạo ra một sản phẩm của riêng mình.</em>
 </p>
 
@@ -52,7 +52,7 @@ Mình không xem việc làm ra một trang web có thể mở được là đí
 | Thành phần | Vai trò |
 |---|---|
 | **RoFlix** | Trải nghiệm khám phá và xem nội dung phim |
-| **RoTruyện** | Nền tảng khám phá và đọc truyện, hướng tới các tính năng tài khoản và cộng đồng |
+| **RoTruyen** | Nền tảng khám phá và đọc truyện, hướng tới các tính năng tài khoản và cộng đồng |
 | **RoHub Admin** | Trung tâm quản trị tập trung cho các nền tảng |
 | **RoHub Studio** | Định hướng công cụ tùy biến theme và template, xem trước và quản lý phiên bản giao diện |
 
@@ -74,9 +74,9 @@ Những khu vực chức năng được định hướng hoặc đang phát tri�
 
 > Lưu ý: danh sách trên mô tả phạm vi sản phẩm, không phải cam kết rằng mọi tính năng đều đã hoàn thiện hoặc hoạt động ổn định trong môi trường production.
 
-### 📚 RoTruyện — Một không gian dành cho người đọc truyện
+### 📚 RoTruyen — Một không gian dành cho người đọc truyện
 
-RoTruyện được phát triển như nhánh truyện của RoHUB. Định hướng không dừng lại ở danh sách bìa truyện: trải nghiệm mong muốn bao gồm khám phá, đọc, quản lý thư viện cá nhân và từng bước mở rộng sang cộng đồng.
+RoTruyen được phát triển như nhánh truyện của RoHUB. Định hướng không dừng lại ở danh sách bìa truyện: trải nghiệm mong muốn bao gồm khám phá, đọc, quản lý thư viện cá nhân và từng bước mở rộng sang cộng đồng.
 
 Các nhóm tính năng mục tiêu:
 
@@ -89,14 +89,14 @@ Các nhóm tính năng mục tiêu:
 - **Gamification:** điểm kinh nghiệm, cấp bậc, thành tích, điểm danh và trò chơi ghép hình.
 - **Quản trị:** quản lý truyện, chương, trạng thái xuất bản và hoạt động kiểm duyệt.
 
-Những tính năng này không nhất thiết đã hoàn tất cùng lúc. Chúng là phạm vi phát triển để RoTruyện tiến dần từ một website đọc truyện thành một nền tảng có nhiều trải nghiệm liên kết với nhau.
+Những tính năng này không nhất thiết đã hoàn tất cùng lúc. Chúng là phạm vi phát triển để RoTruyen tiến dần từ một website đọc truyện thành một nền tảng có nhiều trải nghiệm liên kết với nhau.
 
 ### 🔗 Truy cập mã nguồn
 
 - [Repository RoHUB trên GitHub](https://github.com/HOANGJKERD/roflix-hub)
 - [Trang chọn nền tảng](./index.html)
 - [RoFlix](./roflix.html)
-- [RoTruyện](./rotruyen.html)
+- [RoTruyen](./rotruyen.html)
 - [RoHub Admin](./admin.html)
 - [RoHub Studio](./rohub-studio.html)
 
@@ -112,25 +112,25 @@ RoHUB phát triển theo hướng mở rộng dần: từ các trang web riêng 
 
 **Mục tiêu:** tổ chức các nhánh sản phẩm thành một điểm vào chung.
 
-- Xây dựng trang chọn giữa RoFlix và RoTruyện.
+- Xây dựng trang chọn giữa RoFlix và RoTruyen.
 - Tách trải nghiệm của từng nền tảng thành các trang riêng.
 - Giữ cấu trúc để tiếp tục bổ sung giao diện và tính năng mà không biến trang đầu thành một ứng dụng duy nhất quá phức tạp.
 
-### Giai đoạn 2 — Phát triển trải nghiệm RoTruyện
+### Giai đoạn 2 — Phát triển trải nghiệm RoTruyen
 
 **Mục tiêu:** tạo nền tảng cho nội dung truyện và trải nghiệm đọc.
 
-- Xây dựng trang RoTruyện và stylesheet riêng.
+- Xây dựng trang RoTruyen và stylesheet riêng.
 - Phát triển các thành phần hiển thị nội dung truyện.
 - Định hướng tích hợp dữ liệu truyện, chương và nguồn.
-- Bắt đầu tổ chức luồng tài khoản dành cho RoTruyện.
+- Bắt đầu tổ chức luồng tài khoản dành cho RoTruyen.
 
 ### Giai đoạn 3 — Đưa quản trị vào cùng một hệ thống
 
 **Mục tiêu:** giảm việc phải quản lý từng sản phẩm theo những cách hoàn toàn khác nhau.
 
 - Phát triển RoHub Admin dựa trên phong cách dashboard tối của RoFlix Admin.
-- Bổ sung khu vực quản lý nội dung RoTruyện.
+- Bổ sung khu vực quản lý nội dung RoTruyen.
 - Hướng tới quản lý dữ liệu, tài khoản, hoạt động và các trạng thái nội dung từ một trung tâm.
 - Phân biệt rõ giao diện quản trị với trải nghiệm người dùng thông thường.
 
@@ -161,9 +161,9 @@ Nguyên tắc kiến trúc đang hướng tới:
 
 Đây là nguyên tắc quan trọng của RoHub Studio. Việc hoàn thành nó cần cả giao diện quản trị, lưu phiên bản, quyền truy cập dữ liệu và runtime trên website. Không nên xem một nút “Publish” hoặc “Rollback” trên giao diện là bằng chứng rằng toàn bộ quy trình đã an toàn.
 
-### Giai đoạn 6 — Mở rộng RoTruyện thành nền tảng cộng đồng
+### Giai đoạn 6 — Mở rộng RoTruyen thành nền tảng cộng đồng
 
-**Mục tiêu:** phát triển các trải nghiệm được gợi ý từ nghiên cứu giao diện website truyện, đồng thời xây dựng thiết kế và cách triển khai phù hợp với RoTruyện.
+**Mục tiêu:** phát triển các trải nghiệm được gợi ý từ nghiên cứu giao diện website truyện, đồng thời xây dựng thiết kế và cách triển khai phù hợp với RoTruyen.
 
 Các hướng đang được ưu tiên gồm:
 
@@ -182,7 +182,7 @@ Các mục này là lộ trình phát triển; tình trạng triển khai cần 
 
 ### Một trung tâm quản trị cho nhiều sản phẩm
 
-Mục tiêu của RoHub Admin là giúp quản trị viên quản lý RoFlix và RoTruyện trong cùng một khu vực, nhưng không trộn lẫn dữ liệu hoặc quyền hạn giữa các tính năng.
+Mục tiêu của RoHub Admin là giúp quản trị viên quản lý RoFlix và RoTruyen trong cùng một khu vực, nhưng không trộn lẫn dữ liệu hoặc quyền hạn giữa các tính năng.
 
 Những nhóm công cụ được định hướng gồm:
 
@@ -251,8 +251,8 @@ Repository hiện có các trang HTML, stylesheet CSS và mã JavaScript phía t
 
 Đây là các ưu tiên dự kiến. Thứ tự có thể thay đổi tùy kết quả kiểm thử và tình trạng backend.
 
-- [ ] Kiểm tra luồng truy cập chính của RoFlix và RoTruyện.
-- [ ] Hoàn thiện tìm kiếm và bộ lọc nâng cao của RoTruyện.
+- [ ] Kiểm tra luồng truy cập chính của RoFlix và RoTruyen.
+- [ ] Hoàn thiện tìm kiếm và bộ lọc nâng cao của RoTruyen.
 - [ ] Hoàn thiện trải nghiệm tài khoản, lịch sử đọc và theo dõi truyện.
 - [ ] Xây dựng quy trình đăng truyện, quản lý chương và kiểm duyệt.
 - [ ] Hoàn thiện quản lý nguồn truyện và xử lý chương lỗi.
@@ -269,7 +269,7 @@ Repository hiện có các trang HTML, stylesheet CSS và mã JavaScript phía t
 
 ### Giao diện có cá tính, nhưng không đánh đổi khả năng sử dụng
 
-RoFlix Admin là nguồn cảm hứng cho phong cách quản trị: nền tối, tương phản rõ, thẻ nội dung bo góc và màu nhấn amber/vàng kết hợp tím. RoTruyện có thể giữ sắc thái riêng cho trải nghiệm đọc, nhưng các công cụ quản trị nên có ngôn ngữ thiết kế thống nhất.
+RoFlix Admin là nguồn cảm hứng cho phong cách quản trị: nền tối, tương phản rõ, thẻ nội dung bo góc và màu nhấn amber/vàng kết hợp tím. RoTruyen có thể giữ sắc thái riêng cho trải nghiệm đọc, nhưng các công cụ quản trị nên có ngôn ngữ thiết kế thống nhất.
 
 ### Tính năng phải có hành vi thật
 
@@ -318,7 +318,7 @@ Các ý kiến giúp dự án tốt hơn, đặc biệt là phản hồi có th�
 
 RoHUB bắt đầu từ một ý tưởng, nhưng tham vọng của nó là lớn hơn một trang web đơn lẻ: **xây dựng một hệ sinh thái có trải nghiệm riêng, công cụ quản trị tập trung và nền tảng kỹ thuật có thể phát triển lâu dài.**
 
-RoFlix đại diện cho nhánh phim. RoTruyện mở rộng sang thế giới truyện và các trải nghiệm cộng đồng. RoHub Admin và RoHub Studio là nỗ lực đưa việc quản lý nội dung, giao diện và phiên bản về một nơi có tổ chức.
+RoFlix đại diện cho nhánh phim. RoTruyen mở rộng sang thế giới truyện và các trải nghiệm cộng đồng. RoHub Admin và RoHub Studio là nỗ lực đưa việc quản lý nội dung, giao diện và phiên bản về một nơi có tổ chức.
 
 Mọi thứ chưa hoàn hảo, và hành trình vẫn đang tiếp diễn. Mỗi commit là một bước tiến; mỗi lỗi được tìm ra là một cơ hội để hiểu hệ thống sâu hơn; mỗi tính năng hoàn thành cần được kiểm chứng bằng hành vi thực tế.
 
