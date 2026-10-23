@@ -5,7 +5,7 @@
 - Repository: `HOANGJKERD/roflix-hub`, nhánh chính `main`.
 - Điểm vào: thẻ riêng tại trang chọn ứng dụng RoHub và trang độc lập `/roedu` (tệp `roedu.html`).
 - Phong cách: ngôn ngữ thiết kế RoHub, giao diện học tập hiện đại, màu vàng/cyan/tím và gamification.
-- Bất biến: không thay thế hoặc xóa RoFlix, RoTruyện, RoHub Admin, RoHub Studio.
+- Bất biến: không thay thế hoặc xóa RoFlix, RoTruyen, RoHub Admin, RoHub Studio.
 
 ## Phạm vi sản phẩm
 1. Thư viện lớp 10, 11, 12, phân cấp môn → chương → bài.
@@ -40,7 +40,7 @@
 4. Tích hợp xác thực tài khoản dùng chung theo cơ chế hiện có, không tự ý làm hỏng luồng RoHub hiện hành.
 5. Xây công cụ quản trị RoEdu trong RoHub Admin, có trạng thái draft/review/published và nhật ký nguồn.
 6. Chỉ đưa XP/ranking vào vận hành khi ghi điểm được kiểm soát phía server/database và có chống gửi điểm giả.
-7. Kiểm thử hồi quy RoFlix, RoTruyện, chooser, Admin và Studio trước khi phát hành.
+7. Kiểm thử hồi quy RoFlix, RoTruyen, chooser, Admin và Studio trước khi phát hành.
 
 ## Kiểm tra phát hành
 - [ ] Tệp chooser có thẻ RoEdu và giữ nguyên các thẻ cũ.
