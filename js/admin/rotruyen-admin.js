@@ -16,6 +16,39 @@ function filtered(){
  const q=($('rt-admin-search')?.value||'').trim().toLowerCase(),filter=$('rt-admin-published-filter')?.value||'all';
  return state.series.filter(s=>(!q||[s.title,s.author,s.slug,s.source_key].some(v=>String(v||'').toLowerCase().includes(q)))&&(filter==='all'||(filter==='published'?s.is_published:!s.is_published)));
 }
+
+function ensureSourceHealthPanel(){
+ const genreCard=$('rt-admin-genres')?.closest('.card');if(!genreCard||$('rt-source-health'))return;
+ const panel=document.createElement('section');panel.className='card';panel.id='rt-source-health';panel.style.cssText='margin-top:16px;border-color:rgba(56,189,248,.3)';
+ panel.innerHTML='<div class="page-title"><div><h2>🩺 Trung tâm nguồn & lỗi RoTruyen</h2><p class="muted">Kiểm tra endpoint, Storage, dữ liệu trùng và trạng thái catalog trước khi xuất bản.</p></div><button type="button" class="btn btn-primary" id="rt-source-health-run">▶ Kiểm tra ngay</button></div><div id="rt-source-health-summary" class="grid three"><div class="notice">Chưa chạy kiểm tra.</div></div><div id="rt-source-health-details" style="display:grid;gap:8px;margin-top:12px"></div><p class="muted" id="rt-source-health-time" style="margin-top:12px"></p>';
+ genreCard.insertAdjacentElement('afterend',panel);
+ $('rt-source-health-run').addEventListener('click',()=>runSourceHealth().catch(e=>renderSourceHealth([{title:'Kiểm tra nguồn',status:'fail',detail:e.message} ])));
+}
+function renderSourceHealth(items){
+ const host=$('rt-source-health-details');if(!host)return;
+ const counts={ok:items.filter(x=>x.status==='ok').length,warn:items.filter(x=>x.status==='warn').length,fail:items.filter(x=>x.status==='fail').length};
+ $('rt-source-health-summary').innerHTML=[['Đạt',counts.ok,'#4ade80'],['Cảnh báo',counts.warn,'#fbbf24'],['Lỗi',counts.fail,'#f87171']].map(x=>'<div class="card"><div class="muted">'+x[0]+'</div><div style="font-size:28px;font-weight:900;color:'+x[2]+'">'+x[1]+'</div></div>').join('');
+ host.innerHTML=items.map(x=>'<article class="notice" style="margin:0;border-color:'+(x.status==='ok'?'rgba(74,222,128,.25)':x.status==='warn'?'rgba(251,191,36,.3)':'rgba(248,113,113,.35)')+'"><b>'+(x.status==='ok'?'✓':x.status==='warn'?'!':'×')+' '+esc(x.title)+'</b><div style="margin-top:5px;line-height:1.5">'+esc(x.detail)+'</div></article>').join('');
+ $('rt-source-health-time').textContent='Kiểm tra lúc '+new Date().toLocaleString('vi-VN')+'. Kết quả là chẩn đoán từ trình duyệt, không thay thế log máy chủ.';
+}
+async function runSourceHealth(){
+ await authorized();const results=[];
+ const checkApi=async(title,url,valid)=>{const started=performance.now();try{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);let res;try{res=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'},signal:controller.signal});}finally{clearTimeout(timer);}if(!res.ok){results.push({title,status:'warn',detail:'HTTP '+res.status+' · '+Math.round(performance.now()-started)+' ms'});return;}const type=res.headers.get('content-type')||'';if(!type.includes('json')){results.push({title,status:'warn',detail:'Endpoint phản hồi nhưng không phải JSON ('+type+'). Có thể bị CORS hoặc trang chặn.'});return;}const data=await res.json();results.push({title,status:valid(data)?'ok':'warn',detail:'HTTP '+res.status+' · '+Math.round(performance.now()-started)+' ms'+(valid(data)?' · cấu trúc JSON hợp lệ':' · JSON thiếu trường dữ liệu mong đợi')});}catch(e){results.push({title,status:'warn',detail:(e.name==='AbortError'?'Quá thời gian chờ.':e.message)+' Đây chưa đủ bằng chứng để kết luận nguồn đã ngừng hoạt động.'});}};
+ await Promise.all([
+ checkApi('MangaDex qua proxy RoHub','/api/mangadex/manga?limit=1&includes%5B%5D=cover_art',d=>Array.isArray(d?.data)),
+ checkApi('Nguồn KKPhim','https://phimapi.com/v1/api/danh-sach/phim-moi-cap-nhat?page=1',d=>Array.isArray(d?.data)||Array.isArray(d?.items)),
+ ]);
+ try{const {data,error}=await sb.storage.from('rotruyen-pages').list('series',{limit:1});if(error)throw error;results.push({title:'Supabase Storage · rotruyen-pages',status:'ok',detail:'Bucket truy cập được. Có thể xem danh sách đối tượng theo quyền hiện tại.'});}catch(e){results.push({title:'Supabase Storage · rotruyen-pages',status:'fail',detail:e.message+' Kiểm tra bucket và Storage policy; không tự nới quyền công khai.'});}
+ try{
+  const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,is_published,is_locked').limit(1000);if(error)throw error;
+  const rows=data||[],byTitle=new Map(),bySlug=new Map();for(const x of rows){const t=String(x.title||'').trim().toLocaleLowerCase('vi'),s=String(x.slug||'').trim().toLowerCase();if(t)byTitle.set(t,(byTitle.get(t)||0)+1);if(s)bySlug.set(s,(bySlug.get(s)||0)+1);}
+  const duplicateTitles=[...byTitle].filter(([,n])=>n>1).length,duplicateSlugs=[...bySlug].filter(([,n])=>n>1).length;
+  results.push({title:'Catalog & phát hành',status:duplicateSlugs?'fail':duplicateTitles?'warn':'ok',detail:rows.length+' tác phẩm kiểm tra được · '+rows.filter(x=>x.is_published).length+' đã xuất bản · '+rows.filter(x=>x.is_locked).length+' đang khóa · '+duplicateTitles+' nhóm tên trùng · '+duplicateSlugs+' nhóm slug trùng.'});
+ }catch(e){results.push({title:'Catalog & phát hành',status:'fail',detail:e.message});}
+ try{const {data,error}=await sb.from('rotruyen_chapters').select('id,series_id,chapter_number,is_published').limit(2000);if(error)throw error;const rows=data||[],keys=new Set(),dups=new Set();for(const x of rows){const k=String(x.series_id)+'|'+Number(x.chapter_number);if(keys.has(k))dups.add(k);keys.add(k);}results.push({title:'Chương & trùng lặp',status:dups.size?'warn':'ok',detail:rows.length+' chương kiểm tra được · '+rows.filter(x=>x.is_published).length+' đã xuất bản · '+dups.size+' khóa tác phẩm/chương bị trùng trong mẫu dữ liệu.'});}catch(e){results.push({title:'Chương & trùng lặp',status:'fail',detail:e.message});}
+ renderSourceHealth(results);
+}
+
 function renderStats(){
  const total=state.series.length,pub=state.series.filter(x=>x.is_published).length,drafts=total-pub;
  $('rt-admin-stats').innerHTML=[
@@ -29,6 +62,7 @@ function renderSeries(){
  body.innerHTML=rows.length?rows.map(s=>'<tr><td><b>'+esc(s.title||'Chưa có tên')+'</b><br><span class="muted">'+esc(s.author||'Chưa rõ tác giả')+' · '+esc(s.slug||s.id)+'</span></td><td>'+esc(s.source_key||'manual')+'</td><td>'+esc(s.content_rating||'safe')+' · '+esc(s.status||'ongoing')+'</td><td><span class="pill '+(s.is_published?'pill-active':'pill-user')+'">'+(s.is_published?'Đã xuất bản':'Bản nháp')+'</span>'+(s.is_locked?'<br><span class="pill pill-user">🔒 Đã khóa</span>':'')+'</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" data-rt-action="chapters" data-id="'+esc(s.id)+'">Chương</button><button class="btn" data-rt-action="edit" data-id="'+esc(s.id)+'">Sửa</button><button class="btn '+(s.is_locked?'btn-primary':'btn-danger')+'" data-rt-action="lock" data-id="'+esc(s.id)+'">'+(s.is_locked?'Mở khóa truyện':'🔒 Khóa truyện')+'</button><button class="btn '+(s.is_published?'btn-danger':'btn-primary')+'" data-rt-action="publish" data-id="'+esc(s.id)+'">'+(s.is_published?'Gỡ xuất bản':'Xuất bản')+'</button><button class="btn btn-danger" data-rt-action="delete" data-id="'+esc(s.id)+'">Xóa</button></div></td></tr>').join(''):'<tr><td colspan="5" class="empty">Không có tác phẩm phù hợp hoặc catalog chưa có dữ liệu.</td></tr>';
 }
 async function loadSeries(){
+ ensureSourceHealthPanel();
  if(!state.ready)return;
  $('rt-admin-series-body').innerHTML='<tr><td colspan="5" class="empty">Đang tải catalog RoTruyen...</td></tr>';
  const {data,error}=await sb.from('rotruyen_series').select('id,title,slug,synopsis,cover_url,author,source_key,content_rating,content_type,status,is_published,is_locked,lock_reason,genres,sort_order').order('sort_order',{ascending:true}).limit(500);
