@@ -4,7 +4,7 @@
   window.__rohubLegalModalLoaded = true;
 
   const style = document.createElement("style");
-  style.textContent = \`
+  style.textContent = `
     .rohub-legal-footer{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;margin:18px auto 8px;padding:0 14px}
     .rohub-legal-trigger{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:42px;padding:10px 17px;border:1px solid rgba(245,158,11,.48);border-radius:999px;background:linear-gradient(135deg,rgba(245,158,11,.13),rgba(139,92,246,.13));color:#f8fafc;font:inherit;font-size:13px;font-weight:700;line-height:1.35;letter-spacing:.15px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.18);transition:transform .18s ease,border-color .18s ease,background .18s ease}
     .rohub-legal-trigger:hover{transform:translateY(-1px);border-color:#f59e0b;background:linear-gradient(135deg,rgba(245,158,11,.22),rgba(139,92,246,.2))}
@@ -28,7 +28,7 @@
     .rohub-legal-footer-note{margin:20px 0 0;padding-top:14px;border-top:1px solid rgba(255,255,255,.09);color:#858da0;font-size:11px;line-height:1.7}
     @media(max-width:560px){.rohub-legal-head{padding:18px 17px 15px}.rohub-legal-body{padding:16px 17px 20px}.rohub-legal-title{font-size:22px}.rohub-legal-subtitle{font-size:12px}.rohub-legal-trigger{width:100%;max-width:340px}.rohub-legal-dialog{border-radius:18px}}
     @media(prefers-reduced-motion:reduce){.rohub-legal-trigger{transition:none}}
-  \`;
+  `;
   document.head.appendChild(style);
 
   const footer = document.querySelector("footer");
@@ -43,7 +43,7 @@
   dialog.id = "rohub-legal-dialog";
   dialog.className = "rohub-legal-dialog";
   dialog.setAttribute("aria-labelledby", "rohub-legal-title");
-  dialog.innerHTML = \`
+  dialog.innerHTML = `
     <div class="rohub-legal-head">
       <div>
         <p class="rohub-legal-eyebrow">ROHUB · TRANSPARENCY CENTER</p>
@@ -84,7 +84,7 @@
       </section>
       <p class="rohub-legal-footer-note">Thông tin này giải thích mục đích và nguyên tắc của dự án, không phải tư vấn pháp lý và không thay thế giấy phép hoặc xác nhận quyền sử dụng cho từng tác phẩm. Tình trạng nguồn và điều kiện sử dụng có thể thay đổi theo thời gian.</p>
     </div>
-  \`;
+  `;
   document.body.appendChild(dialog);
 
   const trigger = document.querySelector(".rohub-legal-trigger");
