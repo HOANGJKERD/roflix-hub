@@ -367,3 +367,104 @@ section.hero.rt-banner .rt-banner-bar{z-index:4}
  .filter-reset{min-height:40px}
  .filter-controls{grid-template-columns:minmax(0,1fr)}
 }
+
+
+/* RoTruyen cinematic showcase v2: enforce full-bleed media and a stronger RoFlix-scale composition */
+#catalog{width:min(1560px,calc(100% - 56px));max-width:none;margin-inline:auto}
+section.hero.rt-banner{
+  width:100%;min-height:600px;margin:20px 0 34px;
+  border-radius:30px;border:1px solid #ffffff20;
+  background:#080a12;box-shadow:0 34px 100px #0009,0 0 0 1px #a78bfa0a;
+}
+section.hero.rt-banner .rt-banner-media{
+  display:block!important;position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;max-width:none!important;
+  background-position:center 24%!important;background-size:cover!important;
+  background-repeat:no-repeat!important;transform:scale(1.015)!important;
+  filter:saturate(1.12) contrast(1.04)!important;
+}
+section.hero.rt-banner .rt-banner-shade{
+  display:block!important;position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;
+  background:
+   linear-gradient(90deg,#070910f5 0%,#070910df 26%,#0709108c 48%,#07091020 78%,#07091035 100%),
+   linear-gradient(0deg,#070910fa 0%,#07091075 24%,transparent 58%,#07091042 100%)!important;
+}
+section.hero.rt-banner .rt-banner-copy{
+  min-height:600px;width:min(680px,58%);max-width:680px;
+  justify-content:center;padding:58px 48px 142px;
+}
+section.hero.rt-banner .eyebrow{font-size:11px;font-weight:900;letter-spacing:3px;text-transform:uppercase}
+section.hero.rt-banner h1{
+  max-width:11ch;margin:14px 0 18px;font-size:clamp(44px,5.3vw,76px);
+  line-height:.99;letter-spacing:-2.7px;text-wrap:balance;
+}
+section.hero.rt-banner p{max-width:48ch;font-size:16px;line-height:1.75;color:#f1f2f8}
+section.hero.rt-banner .btn{
+  min-height:48px;padding:0 24px;border-radius:14px;
+  background:linear-gradient(115deg,#ffc857,#ff9d3d 58%,#a78bfa);
+  box-shadow:0 10px 28px #ffad3d28;font-weight:800;
+}
+section.hero.rt-banner .rt-banner-rail{
+  right:26px;bottom:24px;left:auto;max-width:calc(100% - 52px);
+  gap:11px;padding:10px 5px 8px;
+}
+section.hero.rt-banner .rt-banner-rail button{
+  flex:0 0 76px;width:76px;height:108px;border-radius:14px;
+  border:1px solid #ffffff38;box-shadow:0 8px 24px #0008;opacity:.72;
+  transition:transform .22s ease,border-color .22s ease,opacity .22s ease;
+}
+section.hero.rt-banner .rt-banner-rail button.on{
+  border:2px solid #ffc857;opacity:1;transform:translateY(-8px);
+  box-shadow:0 0 0 4px #ffc85720,0 14px 32px #000a;
+}
+section.hero.rt-banner .rt-banner-bar{height:4px;background:linear-gradient(90deg,#ffc857,#a78bfa)}
+section.catalog{margin-top:0}
+section.catalog .section-heading{align-items:flex-end;gap:24px;margin-bottom:22px}
+section.catalog .section-heading h2{font-size:clamp(24px,2.4vw,32px);letter-spacing:-.7px}
+section.catalog .filter-panel{
+  padding:18px;border-radius:20px;border:1px solid #ffffff17;
+  background:linear-gradient(145deg,#171a25ed,#10121bed);
+  box-shadow:0 18px 50px #0004;
+}
+section.catalog .filter-search-row{grid-template-columns:minmax(0,1fr) auto;gap:12px}
+section.catalog .filter-search-row .search{
+  min-height:48px;border-radius:13px;background:#0b0e17;
+  border-color:#ffffff20;padding:0 16px;font-size:18px;
+}
+section.catalog .filter-search-row .search input{
+  height:46px;font-size:14px;letter-spacing:.1px;
+}
+section.catalog .filter-reset{min-height:48px;padding-inline:18px;border-radius:13px}
+section.catalog .filter-controls{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+section.catalog .filter-control select{min-height:46px;border-radius:12px}
+@media(max-width:900px){
+ #catalog{width:calc(100% - 32px)}
+ section.hero.rt-banner{min-height:540px}
+ section.hero.rt-banner .rt-banner-copy{min-height:540px;width:min(620px,72%);padding:42px 30px 142px}
+ section.hero.rt-banner .rt-banner-rail{left:18px;right:18px;max-width:calc(100% - 36px)}
+ section.hero.rt-banner .rt-banner-rail button{flex-basis:62px;width:62px;height:88px}
+ section.catalog .filter-controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+ #catalog{width:calc(100% - 24px)}
+ section.hero.rt-banner{min-height:570px;border-radius:22px;margin-top:12px}
+ section.hero.rt-banner .rt-banner-media{background-position:58% center!important}
+ section.hero.rt-banner .rt-banner-shade{
+  background:linear-gradient(0deg,#070910ff 0%,#070910f2 30%,#070910a8 58%,#07091025 100%)!important
+ }
+ section.hero.rt-banner .rt-banner-copy{
+  width:100%;min-height:570px;max-width:none;justify-content:flex-end;
+  padding:30px 20px 132px;
+ }
+ section.hero.rt-banner h1{font-size:clamp(38px,11vw,54px);letter-spacing:-1.5px}
+ section.hero.rt-banner p{font-size:14px;line-height:1.6}
+ section.hero.rt-banner .rt-banner-rail{left:12px;right:12px;bottom:12px;gap:8px;max-width:calc(100% - 24px)}
+ section.hero.rt-banner .rt-banner-rail button{flex-basis:52px;width:52px;height:74px;border-radius:10px}
+ section.catalog .section-heading{align-items:flex-start;flex-direction:column}
+ section.catalog .section-actions{width:100%;display:flex;justify-content:space-between;align-items:center}
+ section.catalog .filter-panel{padding:12px;border-radius:16px}
+ section.catalog .filter-search-row{grid-template-columns:minmax(0,1fr) auto;gap:8px}
+ section.catalog .filter-reset{padding-inline:12px}
+ section.catalog .filter-controls{grid-template-columns:minmax(0,1fr);gap:10px}
+}
