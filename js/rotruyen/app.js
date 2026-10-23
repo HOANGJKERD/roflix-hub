@@ -524,7 +524,17 @@
         restoreReadProgress();return;
       }
       if(state.selected?.source==='database'){
-        const pages=Array.isArray(chapter.page_manifest)?chapter.page_manifest:[];
+        let pages=Array.isArray(chapter.page_manifest)?chapter.page_manifest:[];
+        // Compatibility stage: prefer server-authorized signed URLs, but retain the legacy
+        // public URLs until the reader has been tested and the Storage bucket is made private.
+        if(pages.some(p=>typeof p==='string'||(p&&typeof p==='object'&&typeof p.url==='string'))){
+          const sb=window.rfSupabase;
+          if(sb){
+            const {data:signedData,error:signedError}=await sb.functions.invoke('rotruyen-image-url',{body:{chapterId:chapter.id}});
+            if(!signedError&&Array.isArray(signedData?.pages))pages=signedData.pages;
+            else if(signedError?.context?.status===403)throw new Error('Bạn không có quyền đọc chương này hoặc truyện đã bị khóa.');
+          }
+        }
         const textBlocks=pages.filter(p=>p&&typeof p==='object'&&p.type==='text'&&typeof p.text==='string');
         if(textBlocks.length){
           $('#reader-content').innerHTML=textBlocks.map(p=>'<article class="reader-text" style="max-width:820px;margin:0 auto;padding:24px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.95;font-size:1.08rem">'+esc(p.text)+'</article>').join('');
