@@ -6,7 +6,7 @@
   const style = document.createElement("style");
   style.textContent = \`
     .rohub-legal-footer{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;margin:18px auto 8px;padding:0 14px}
-    .rohub-legal-trigger{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:42px;padding:10px 17px;border:1px solid rgba(245,158,11,.48);border-radius:999px;background:linear-gradient(135deg,rgba(245,158,11,.13),rgba(139,92,246,.13));color:#f8fafc;font:700 13px/1.35 inherit;letter-spacing:.15px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.18);transition:transform .18s ease,border-color .18s ease,background .18s ease}
+    .rohub-legal-trigger{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:42px;padding:10px 17px;border:1px solid rgba(245,158,11,.48);border-radius:999px;background:linear-gradient(135deg,rgba(245,158,11,.13),rgba(139,92,246,.13));color:#f8fafc;font:inherit;font-size:13px;font-weight:700;line-height:1.35;letter-spacing:.15px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.18);transition:transform .18s ease,border-color .18s ease,background .18s ease}
     .rohub-legal-trigger:hover{transform:translateY(-1px);border-color:#f59e0b;background:linear-gradient(135deg,rgba(245,158,11,.22),rgba(139,92,246,.2))}
     .rohub-legal-trigger:focus-visible,.rohub-legal-close:focus-visible{outline:3px solid #a78bfa;outline-offset:3px}
     .rohub-legal-dialog{width:min(760px,calc(100% - 28px));max-width:760px;max-height:min(86dvh,820px);padding:0;border:1px solid rgba(167,139,250,.35);border-radius:22px;background:#0b0d14;color:#f3f4f6;box-shadow:0 28px 100px rgba(0,0,0,.68);overflow:hidden}
