@@ -32,7 +32,7 @@
   const detailTitle=document.getElementById("subject-dialog-title"),detailGrade=document.getElementById("subject-dialog-grade"),detailNote=document.getElementById("subject-dialog-note"),viewBook=document.getElementById("subject-view-book"),viewCurriculum=document.getElementById("subject-view-curriculum");
   function openSubjectDetail(name){
     detailTitle.textContent=name; detailGrade.textContent="Lớp "+selectedGrade+" · Nguồn sách giáo khoa";
-    viewBook.href="https://hoclieuso.nxbgd.vn/digital-books?grade="+selectedGrade;
+    viewBook.href="/roedu-reader?grade="+encodeURIComponent(selectedGrade)+"&subject="+encodeURIComponent(name);
     viewCurriculum.href=name==="Lịch sử"?"https://moet.gov.vn/content/vanban/Lists/VBPQ/Attachments/1483/vbhn-chuong-trinh-mon-lich-su.pdf":"https://moet.gov.vn/content/tintuc/Lists/News/Attachments/8421/chuong-trinh-tong-the-ctgdpt-2018.pdf";
     detailNote.textContent="Đã xác định cổng sách chính thức theo khối lớp. Tên đầu sách và mục lục chương/bài của môn này chưa được xác minh riêng trong RoEdu; hãy chọn đúng đầu sách trên cổng NXBGDVN. Chỉ sau khi đối chiếu sách và mục lục thực tế mới xuất bản lộ trình học.";
     if(subjectDialog.showModal) subjectDialog.showModal(); else window.open(viewBook.href,"_blank","noopener");
