@@ -479,6 +479,28 @@
     });
     applyReaderPrefs();
   }
+  const READER_PREF_KEY='reader-preferences:v1';
+  function getReaderPrefs(){return memory.read(READER_PREF_KEY,{gap:4,bg:'black',mode:'continuous'});}
+  function applyReaderPrefs(){
+    const p=getReaderPrefs(),modal=$('#reader-modal'),content=$('#reader-content');
+    if(!modal||!content)return;
+    modal.dataset.readerBg=['black','dark','paper'].includes(p.bg)?p.bg:'black';
+    content.style.setProperty('--reader-page-gap',Math.max(0,Math.min(28,Number(p.gap)||0))+'px');
+    content.dataset.readerMode=p.mode==='single'?'single':'continuous';
+    const gap=$('#reader-gap'),gapValue=$('#reader-gap-value'),bg=$('#reader-bg'),mode=$('#reader-mode');
+    if(gap)gap.value=String(p.gap??4);if(gapValue)gapValue.textContent=(p.gap??4)+' px';
+    if(bg)bg.value=modal.dataset.readerBg;if(mode)mode.value=content.dataset.readerMode;
+  }
+  function saveReaderPrefs(patch){const p={...getReaderPrefs(),...patch};memory.write(READER_PREF_KEY,p);applyReaderPrefs();}
+  function reportReaderIssue(pageNumber){
+    const chapter=state.chapters[state.chapterIndex];if(!state.selected||!chapter)return;
+    const detail=prompt('Mô tả lỗi (ví dụ: thiếu trang, ảnh trắng, sai thứ tự). Có thể để trống:','Thiếu ảnh hoặc ảnh không tải được');
+    if(detail===null)return;
+    const reports=memory.read('reader-reports:v1',[]);
+    reports.unshift({mangaId:String(state.selected.id),title:state.selected.title||'RoTruyen',chapterId:String(chapter.id||''),chapter:String(chapter.attributes?.chapter||chapter.chapter_number||'?'),page:pageNumber||null,detail:detail.trim(),reportedAt:Date.now()});
+    memory.write('reader-reports:v1',reports.slice(0,100));
+    notify('Đã ghi nhận báo lỗi trên thiết bị này. Báo cáo chưa được gửi lên máy chủ.');
+  }
   async function openReader(index) {
     const chapter=state.chapters[index];if(!chapter)return;
     if(isStoryLocked(state.selected)){closeModal('reader-modal');notify('Truyện này hiện đã bị khóa bởi quản trị viên.');return;}
