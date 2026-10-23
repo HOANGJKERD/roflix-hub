@@ -86,12 +86,35 @@
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
     return id && file ? '/api/mangadex-image?host=uploads.mangadex.org&path='+encodeURIComponent('/covers/'+id+'/'+file+'.512.jpg') : '';
   }
+  const RT_TAG_VI = {
+    action:'Hành động', adventure:'Phiêu lưu', comedy:'Hài hước', drama:'Chính kịch',
+    fantasy:'Kỳ ảo', horror:'Kinh dị', mystery:'Bí ẩn', romance:'Lãng mạn',
+    'sci-fi':'Khoa học viễn tưởng', 'science fiction':'Khoa học viễn tưởng',
+    'slice of life':'Đời thường', sports:'Thể thao', supernatural:'Siêu nhiên',
+    thriller:'Giật gân', tragedy:'Bi kịch', historical:'Lịch sử', psychological:'Tâm lý',
+    'martial arts':'Võ thuật', music:'Âm nhạc', school life:'Học đường',
+    'girls love':'Bách hợp', 'boys love':'Đam mỹ', mecha:'Robot', medical:'Y khoa',
+    crime:'Tội phạm', survival:'Sinh tồn', adaptation:'Chuyển thể', monsters:'Quái vật',
+    vampires:'Ma cà rồng', 'video games':'Trò chơi điện tử', reincarnation:'Chuyển sinh'
+  };
+  function rtLocalizeTag(tag) {
+    const names=tag?.attributes?.name||{};
+    const source=names.vi||names.en||'';
+    if(!source)return '';
+    return RT_TAG_VI[source.toLowerCase()]||source;
+  }
+  function rtLocalizeStatus(value) {
+    const status=String(value||'').toLowerCase();
+    return ({ongoing:'Đang phát hành',completed:'Đã hoàn thành',hiatus:'Tạm ngưng',cancelled:'Đã hủy',publishing:'Đang phát hành',unknown:'Nguồn chưa cung cấp trạng thái'})[status]|| (value||'Nguồn chưa cung cấp trạng thái');
+  }
   function mapManga(item) {
     const a=item.attributes||{};
-    const tags=(a.tags||[]).map(t=>t.attributes?.name?.en||'').filter(Boolean);
-    const tagText=tags.join(' ').toLowerCase();
+    const tags=(a.tags||[]).map(rtLocalizeTag).filter(Boolean);
+    const rawTags=(a.tags||[]).map(t=>(t.attributes?.name?.en||'').toLowerCase()).filter(Boolean);
+    const tagText=rawTags.join(' ');
     const genre=tagText.includes('romance')?'romance':tagText.includes('action')?'action':tagText.includes('drama')?'drama':tagText.includes('adventure')?'adventure':'fantasy';
-    return {id:item.id,source:'mangadex',title:titleOf(item),author:(item.relationships||[]).find(r=>r.type==='author')?.attributes?.name||'Chưa rõ tác giả',genre,kind:tags.slice(0,2).join(' · ')||'Manga',chapters:null,rating:null,pop:0,updated:0,cover:coverOf(item),description:a.description?.vi||a.description?.en||'Chưa có mô tả.',status:a.status||'unknown',contentRating:a.contentRating||'safe',raw:item};
+    const description=a.description?.vi||a.description?.en||'Nguồn chưa cung cấp mô tả bằng tiếng Việt hoặc tiếng Anh.';
+    return {id:item.id,source:'mangadex',title:titleOf(item),author:(item.relationships||[]).find(r=>r.type==='author')?.attributes?.name||'Chưa rõ tác giả',genre,kind:tags.slice(0,2).join(' · ')||'Chưa có thông tin thể loại',chapters:null,rating:null,pop:0,updated:0,cover:coverOf(item),description,status:rtLocalizeStatus(a.status),contentRating:a.contentRating||'safe',raw:item};
   }
   async function fetchJSON(url, options={}) {
     const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),18000);
@@ -348,7 +371,7 @@
     if(isStoryLocked(s)){notify('Truyện này hiện đã bị khóa bởi quản trị viên.');return;}
     if(!(await canOpenAdultContent(s)))return;
     state.selected=s;
-    $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả.';$('#detail-status').textContent=s.status||'Thông tin nguồn';$('#detail-cover').innerHTML=s.cover&&['mangadex','database','longbook','truyenviet'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
+    $('#detail-title').textContent=s.title;$('#detail-author').textContent=s.author||'Đang cập nhật';$('#detail-description').textContent=s.description||'Nguồn chưa cung cấp mô tả bằng tiếng Việt hoặc tiếng Anh.';$('#detail-status').textContent=s.source==='mangadex'?rtLocalizeStatus(s.status):s.status||'Nguồn chưa cung cấp trạng thái';$('#detail-cover').innerHTML=s.cover&&['mangadex','database','longbook','truyenviet'].includes(s.source)&&s.cover?'<img src="'+esc(s.cover)+'" alt="Bìa '+esc(s.title)+'">':'<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     $('#detail-meta').textContent=(s.kind||'Truyện')+' · '+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':s.source==='database'?'Catalog RoTruyen':s.source==='longbook'?'LongBook API':s.source==='truyenviet'?'Truyện Việt':'Bản demo');
     const read=$('#detail-read');read.disabled=!['mangadex','database','truyenviet'].includes(s.source);read.textContent=['mangadex','database','truyenviet'].includes(s.source)?'Xem chương / Tải lại':'Bản demo chưa có nội dung chương';
     if(isAdultOnly(s))$('#detail-meta').textContent+=' · 🔞 18+ · Yêu cầu đăng nhập';
