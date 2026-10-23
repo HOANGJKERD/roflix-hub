@@ -67,6 +67,21 @@
       "checkedAt": "2026-10-23",
       "allowedUse": "Tra cứu giới thiệu sách, tài liệu hướng dẫn/tập huấn và phiên bản sách điện tử được cung cấp trên cổng.",
       "limitations": "Từng tài liệu có thể có điều kiện truy cập/sử dụng khác nhau."
+    },
+    {
+      "id": "sgk-toan-10-kntt-tap-1",
+      "title": "SGK Toán 10, tập 1 · Kết nối tri thức với cuộc sống",
+      "publisher": "Nhà xuất bản Giáo dục Việt Nam (bộ sách Kết nối tri thức với cuộc sống)",
+      "url": "https://sqhx-hanoi.mediacdn.vn/91579363132710912/2025/11/9/sgk-ket-noi-tri-thuc-toan-10-tap-1-17627059006801362979075.pdf",
+      "format": "PDF",
+      "grade": 10,
+      "subject": "Toán học",
+      "textbookSeries": "Kết nối tri thức với cuộc sống",
+      "volume": "Tập 1",
+      "status": "userProvidedUnverified",
+      "checkedAt": null,
+      "allowedUse": "Dùng làm liên kết tham khảo do người dùng cung cấp. Chỉ nhúng/lưu trữ/phân phối khi đã xác minh quyền sử dụng; ưu tiên mở nguồn gốc trong tab riêng.",
+      "limitations": "Tệp PDF dung lượng khoảng 23 MB và công cụ kiểm tra hiện tại không đọc được nội dung tệp. Chưa xác minh trang bản quyền, ấn bản, mục lục, hay quyền tái phân phối; không tự tạo mục lục khi chưa đối chiếu PDF."
     }
   ],
   "curriculumMap": [
@@ -78,9 +93,12 @@
       "textbookUrl": "https://hoclieuso.nxbgd.vn/digital-books?grade=10",
       "curriculumSourceId": "moet-general-curriculum-2018",
       "chapterLessonInventoryStatus": "needsReview",
-      "textbookTitleStatus": "needsReview",
+      "textbookTitleStatus": "userProvidedUnverified",
       "licenseStatus": "needsReview",
-      "note": "Đây là điểm bắt đầu tra cứu theo khối/môn, chưa phải mục lục chương-bài đã xác minh. Cần mở nguồn, ghi tên bộ sách/ấn bản và nhập mục lục thực tế trước khi đánh dấu hoàn tất."
+      "note": "Đã ghi nhận liên kết PDF người dùng cung cấp cho Toán 10 tập 1, bộ Kết nối tri thức. Chưa đọc được nội dung PDF để xác minh mục lục, ấn bản và giấy phép; không coi liên kết này là nguồn chính thức đã xác minh.",
+      "specificTextbookSourceId": "sgk-toan-10-kntt-tap-1",
+      "specificTextbookTitle": "Toán 10, tập 1 · Kết nối tri thức với cuộc sống",
+      "specificTextbookUrl": "https://sqhx-hanoi.mediacdn.vn/91579363132710912/2025/11/9/sgk-ket-noi-tri-thuc-toan-10-tap-1-17627059006801362979075.pdf"
     },
     {
       "grade": 10,
