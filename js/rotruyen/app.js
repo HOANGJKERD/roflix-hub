@@ -456,9 +456,18 @@
   }
   function wireReaderImages() {
     const container=$('#reader-content');
-    container?.querySelectorAll('img').forEach((img)=>{
+    if(!container)return;
+    container.querySelectorAll('img').forEach((img)=>{
+      if(img.dataset.readerWired==='1')return;
+      img.dataset.readerWired='1';
+      const page=Number((img.alt||'').match(/(\\d+)/)?.[1]||Array.from(container.querySelectorAll('img')).indexOf(img)+1);
+      const report=document.createElement('button');
+      report.type='button';report.className='reader-page-report';report.textContent='⚑ Báo lỗi trang '+page;
+      report.addEventListener('click',()=>reportReaderIssue(page));
+      img.insertAdjacentElement('afterend',report);
       img.addEventListener('error',()=>{
-        if(img.dataset.roRetry==='1')return;
+        img.classList.add('reader-image-error');
+        if(img.dataset.roRetry==='1'){img.alt='Không tải được ảnh trang '+page;return;}
         img.dataset.roRetry='1';
         const original=img.getAttribute('src');
         if(original && original.startsWith('/api/mangadex-image?')){
@@ -468,6 +477,7 @@
         img.alt='Không tải được ảnh. Hãy tải lại chương.';
       });
     });
+    applyReaderPrefs();
   }
   async function openReader(index) {
     const chapter=state.chapters[index];if(!chapter)return;
@@ -670,6 +680,10 @@ async function loadPublicGenres(){
     $('#chapter-list').addEventListener('click',e=>{const b=e.target.closest('[data-chapter]');if(b)openReader(Number(b.dataset.chapter));});
     $('#reader-prev')?.addEventListener('click',()=>{if(state.chapterIndex>0)openReader(state.chapterIndex-1);});
     $('#reader-next')?.addEventListener('click',()=>{if(state.chapterIndex<state.chapters.length-1)openReader(state.chapterIndex+1);});
+    $('#reader-gap')?.addEventListener('input',e=>saveReaderPrefs({gap:Number(e.target.value)}));
+    $('#reader-bg')?.addEventListener('change',e=>saveReaderPrefs({bg:e.target.value}));
+    $('#reader-mode')?.addEventListener('change',e=>saveReaderPrefs({mode:e.target.value}));
+    $('#reader-report-all')?.addEventListener('click',()=>reportReaderIssue(null));
     $('#reader-modal')?.addEventListener('scroll',()=>persistReadProgress(false),{passive:true});
     $('#reader-close')?.addEventListener('click',()=>persistReadProgress(true));
     $('#mobile-menu').addEventListener('click',()=>$('#rt-nav').classList.toggle('open'));
