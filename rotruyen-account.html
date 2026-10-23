@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090b12">
-  <title>Tài khoản RoTruyện | RoHub</title>
+  <title>Tài khoản RoTruyen | RoHub</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root{color-scheme:dark;--bg:#090b12;--panel:#111522;--line:#ffffff1c;--text:#f4f7fb;--muted:#a3adbd;--blue:#fbbf24;--blue2:#8b5cf6}
@@ -17,7 +17,7 @@
 </head>
 <body>
   <main class="wrap">
-    <a class="brand" href="rotruyen.html" aria-label="Quay về RoTruyện"><span class="mark"><i class="fa-solid fa-book-open"></i></span><span>Ro<span class="accent">Truyện</span><small>BY ROHUB</small></span></a>
+    <a class="brand" href="rotruyen.html" aria-label="Quay về RoTruyen"><span class="mark"><i class="fa-solid fa-book-open"></i></span><span>Ro<span class="accent">Truyện</span><small>BY ROHUB</small></span></a>
     <section class="card">
       <span class="eyebrow">TÀI KHOẢN ROHUB</span>
       <h1 id="heading">Chào mừng trở lại</h1>
@@ -98,7 +98,7 @@
             });
             if (error) throw error;
             if (data?.session) {
-              showMessage('Đăng ký thành công! Đang chuyển về RoTruyện…', 'success');
+              showMessage('Đăng ký thành công! Đang chuyển về RoTruyen…', 'success');
               window.location.replace('rotruyen.html');
               return;
             }
@@ -108,7 +108,7 @@
             const { data, error } = await sb.auth.signInWithPassword({ email, password });
             if (error) throw error;
             if (!data?.user) throw new Error('Đăng nhập chưa hoàn tất. Vui lòng thử lại.');
-            showMessage('Đăng nhập thành công! Đang quay lại RoTruyện…', 'success');
+            showMessage('Đăng nhập thành công! Đang quay lại RoTruyen…', 'success');
             window.location.replace('rotruyen.html');
             return;
           }
@@ -125,7 +125,7 @@
         try {
           const { data, error } = await sb.auth.getUser();
           if (!error && data?.user) {
-            showMessage('Bạn đã đăng nhập. Đang quay lại RoTruyện…', 'success');
+            showMessage('Bạn đã đăng nhập. Đang quay lại RoTruyen…', 'success');
             window.location.replace('rotruyen.html');
           }
         } catch (_) {}
