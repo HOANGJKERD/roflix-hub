@@ -51,3 +51,99 @@ html.rh-world .rh-tilting{
   html.rh-world .source-card,
   html.rh-world .quest-card{transition:none}
 }
+
+
+/* Surface pass: headers, cards and actions share the hub door. */
+html.rh-world body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+html.rh-world .header-ios,
+html.rh-world .rt-site-header,
+html.rh-world header.topbar,
+html.rh-world header.top{
+  background:#080610d6 !important;
+  border-bottom:1px solid #ffffff16 !important;
+  box-shadow:0 12px 40px #0005;
+  backdrop-filter:blur(18px) saturate(140%);
+}
+html.rh-flix .header-ios a .rounded-xl,
+html.rh-story .rt-brand-mark,
+html.rh-edu .brand-mark{
+  background:linear-gradient(140deg,#ff762e,#ffb15c 36%,#a855f7 78%) !important;
+  color:#140a16 !important;
+  box-shadow:0 0 22px #a855f755, inset 0 1px #ffffff88;
+}
+html.rh-flix .text-gradient,
+html.rh-story .rt-brand-accent,
+html.rh-edu .brand-accent{
+  background:linear-gradient(100deg,#fff 10%,#ffad79 42%,#d5a0ff 78%);
+  -webkit-background-clip:text;background-clip:text;color:transparent !important;
+}
+html.rh-world .nav-link-ios,
+html.rh-world .rt-site-header nav a,
+html.rh-world .top-links a{color:#c9bfd8}
+html.rh-world .nav-link-ios.active,
+html.rh-world .rt-site-header nav a.active,
+html.rh-world .rt-site-header nav a:hover{color:#fff !important}
+html.rh-world .nav-link-ios::after,
+html.rh-world .rt-site-header nav a.active{border-color:#ff762e}
+html.rh-story .rt-icon-button,
+html.rh-story .rt-account-link,
+html.rh-edu .top-links .hub-link,
+html.rh-world header.top .btn{
+  border-radius:12px !important;
+  border-color:#ffffff20 !important;
+  background:#ffffff08 !important;
+}
+html.rh-world .movie-card-premium,
+html.rh-world .topic-card,
+html.rh-world .story,
+html.rh-world .subject-card,
+html.rh-world .source-card,
+html.rh-world .quest-card,
+html.rh-world .panel,
+html.rh-world .hero-console{
+  border-radius:20px !important;
+  border:1px solid #ffffff18 !important;
+}
+html.rh-world .story,
+html.rh-world .subject-card,
+html.rh-world .source-card,
+html.rh-world .panel,
+html.rh-world .quest-card,
+html.rh-world .hero-console{
+  background:linear-gradient(160deg,#1b1426d0,#0d0a15f0) !important;
+}
+html.rh-story .cover{border-radius:16px;border-color:#a855f744}
+html.rh-story .story h3{letter-spacing:-.2px}
+html.rh-story section.hero.rt-banner{
+  border:1px solid #a855f738 !important;
+  box-shadow:0 28px 80px #000a, 0 0 48px #a855f714;
+}
+html.rh-story .filter-panel,
+html.rh-story .toolbar,
+html.rh-edu .search,
+html.rh-edu .grade-switch{
+  border-color:#ffffff18 !important;
+  background:#ffffff08 !important;
+  border-radius:16px;
+}
+html.rh-edu .primary-btn,
+html.rh-edu .grade-btn.active,
+html.rh-story .hero .btn,
+html.rh-story #rt-banner-open{
+  background:linear-gradient(110deg,#ff762e,#ffb15c 48%,#a855f7) !important;
+  color:#160d14 !important;
+  border:0;
+  box-shadow:0 10px 28px #a855f722;
+}
+html.rh-edu .hero h1 span,
+html.rh-story .hero h1{
+  background:none;
+  -webkit-text-fill-color:unset;
+}
+html.rh-edu .eyebrow,
+html.rh-edu .section-kicker,
+html.rh-story .eyebrow,
+html.rh-story .section-heading .eyebrow{color:#ffb48a !important;letter-spacing:2px}
+html.rh-flix .movie-card-premium:hover{border-color:#ff762e88 !important}
+html.rh-story .story:hover .cover{border-color:#d5a0ff}
+html.rh-edu .subject-card:hover{border-color:#58d8ff88 !important}
