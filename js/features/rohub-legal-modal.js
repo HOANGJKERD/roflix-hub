@@ -31,14 +31,7 @@
   `;
   document.head.appendChild(style);
 
-  const footer = document.querySelector("footer");
-  if (footer) {
-    const footerActions = document.createElement("div");
-    footerActions.className = "rohub-legal-footer";
-    footerActions.innerHTML = '<button class="rohub-legal-trigger" type="button" aria-haspopup="dialog" aria-controls="rohub-legal-dialog"><span aria-hidden="true">📜</span> Pháp lý &amp; mục đích RoHub</button>';
-    footer.appendChild(footerActions);
-  }
-
+  // Buttons are declared in each page footer so they survive UI refactors.
   const dialog = document.createElement("dialog");
   dialog.id = "rohub-legal-dialog";
   dialog.className = "rohub-legal-dialog";
@@ -87,26 +80,28 @@
   `;
   document.body.appendChild(dialog);
 
-  const trigger = document.querySelector(".rohub-legal-trigger");
+  const triggers = Array.from(document.querySelectorAll(".rohub-legal-trigger"));
   const closeButton = dialog.querySelector(".rohub-legal-close");
+  let activeTrigger = null;
   const closeDialog = () => {
     if (dialog.open) dialog.close();
-    if (trigger) trigger.focus();
+    if (activeTrigger) activeTrigger.focus();
   };
 
-  if (trigger) {
+  triggers.forEach(trigger => {
     trigger.addEventListener("click", () => {
+      activeTrigger = trigger;
       if (typeof dialog.showModal === "function") dialog.showModal();
       else dialog.setAttribute("open", "");
       closeButton.focus();
     });
-  }
+  });
   closeButton.addEventListener("click", closeDialog);
   dialog.addEventListener("click", event => {
     if (event.target === dialog) closeDialog();
   });
   dialog.addEventListener("close", () => {
-    if (trigger && document.activeElement !== trigger) trigger.focus();
+    if (activeTrigger && document.activeElement !== activeTrigger) activeTrigger.focus();
   });
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && dialog.open) closeDialog();
