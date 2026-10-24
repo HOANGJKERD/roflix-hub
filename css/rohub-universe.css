@@ -1,0 +1,53 @@
+
+/* Shared RoHub universe skin. Keeps each world, matches the hub door. */
+html.rh-world{--rh-bg:#080610;--rh-orange:#ff762e;--rh-purple:#a855f7;--rh-cyan:#58d8ff;--rh-bridge:40px}
+html.rh-world body:not([data-theme="light"]){
+  background:
+    radial-gradient(ellipse at 8% 0%,#ff762e18,transparent 32%),
+    radial-gradient(ellipse at 96% 12%,#a855f71c,transparent 34%),
+    var(--rh-bg) !important;
+  color:#f8f5ff;
+}
+html.rh-story body:not([data-theme="light"]){background:radial-gradient(ellipse at 8% 0%,#a855f722,transparent 32%),radial-gradient(ellipse at 96% 18%,#ff762e12,transparent 30%),var(--rh-bg)!important}
+html.rh-edu body:not([data-theme="light"]){background:radial-gradient(ellipse at 8% 0%,#58d8ff18,transparent 30%),radial-gradient(ellipse at 96% 16%,#a855f716,transparent 32%),var(--rh-bg)!important}
+.rh-bridge{position:sticky;top:0;z-index:80;display:flex;align-items:center;gap:14px;height:var(--rh-bridge);padding:0 16px;background:#080610e6;border-bottom:1px solid #ffffff16;backdrop-filter:blur(16px);font-family:Inter,ui-sans-serif,system-ui,sans-serif}
+.rh-bridge-brand{display:inline-flex;align-items:center;gap:8px;color:#f8f5ff;text-decoration:none;font-weight:900;letter-spacing:-.4px;font-size:13px}
+.rh-bridge-brand i{width:22px;height:22px;display:grid;place-items:center;border-radius:7px;background:linear-gradient(140deg,#ff762e,#ffb15c 40%,#a855f7);color:#140a16;font-style:normal;font-size:12px;font-weight:1000}
+.rh-bridge-here{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#ffb48a;border:1px solid #ff762e44;background:#ff762e14;border-radius:999px;padding:4px 8px}
+html.rh-story .rh-bridge-here{color:#e4ccff;border-color:#a855f755;background:#a855f714}
+html.rh-edu .rh-bridge-here{color:#b7f3ff;border-color:#58d8ff55;background:#58d8ff14}
+.rh-bridge nav{margin-left:auto;display:flex;gap:6px}
+.rh-bridge nav a{color:#c8bfd7;text-decoration:none;font-size:11px;font-weight:800;padding:6px 9px;border-radius:999px}
+.rh-bridge nav a[aria-current="page"]{color:#fff;background:#ffffff12}
+.rh-bridge nav a:hover{color:#fff}
+html.rh-world .header-ios,
+html.rh-world .rt-site-header,
+html.rh-world header.topbar,
+html.rh-world .topbar,
+html.rh-world header.top{top:var(--rh-bridge)!important}
+html.rh-world .movie-card-premium,
+html.rh-world .topic-card,
+html.rh-world .story,
+html.rh-world .subject-card,
+html.rh-world .source-card,
+html.rh-world .quest-card,
+html.rh-world .panel,
+html.rh-world .hero-console{
+  transform-style:preserve-3d;
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s;
+}
+html.rh-world .rh-tilting{
+  box-shadow:0 18px 40px #0008, inset 0 1px #ffffff22;
+}
+@media(max-width:640px){
+  .rh-bridge nav a:not([aria-current="page"]){display:none}
+  .rh-bridge{gap:8px;padding:0 10px}
+}
+@media(prefers-reduced-motion:reduce){
+  html.rh-world .movie-card-premium,
+  html.rh-world .topic-card,
+  html.rh-world .story,
+  html.rh-world .subject-card,
+  html.rh-world .source-card,
+  html.rh-world .quest-card{transition:none}
+}
