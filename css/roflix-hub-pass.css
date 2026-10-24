@@ -83,9 +83,49 @@ html.rh-flix .hero-epic .btn-secondary {
 html.rh-flix .movie-card-premium {
   border-radius: 18px !important;
   border-color: #ffffff14 !important;
+  transition: box-shadow .22s ease, border-color .22s ease;
+}
+html.rh-flix .movie-card-premium .card-poster img {
+  transition: transform .45s ease, filter .45s ease;
+}
+html.rh-flix .movie-card-premium .card-overlay {
+  background: linear-gradient(180deg, #08061014 10%, #080610e6 100%);
+  backdrop-filter: blur(3px);
+}
+html.rh-flix .movie-card-premium .watch-btn {
+  background: linear-gradient(110deg, #ff762e, #ffb15c) !important;
+  color: #160d14 !important;
+}
+html.rh-flix .movie-card-premium::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 36%, #ffffff66 50%, transparent 64%);
+  transform: translateX(-130%);
+  transition: transform .7s ease;
 }
 html.rh-flix .movie-card-premium:hover {
-  border-color: #ff762e99 !important;
+  z-index: 3;
+  border-color: #ff762e !important;
+  box-shadow: 0 22px 46px #000c, 0 0 0 1px #ff762eaa, 0 0 32px #ff762e40 !important;
+}
+html.rh-flix .movie-card-premium:hover::before {
+  transform: translateX(130%);
+}
+html.rh-flix .movie-card-premium:hover .card-poster img {
+  transform: scale(1.08);
+  filter: saturate(1.12) brightness(1.06);
+}
+html.rh-flix .movie-card-premium:hover .card-title {
+  color: #ffd0b0;
+}
+html.rh-flix .movie-card-premium:hover .card-overlay {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.rh-flix .movie-card-premium::before { display: none; }
 }
 html.rh-flix .topic-card {
   border-radius: 18px !important;
