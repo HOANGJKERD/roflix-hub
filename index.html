@@ -23,7 +23,7 @@
     .mark{width:45px;height:45px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(140deg,var(--orange),#ffb15c 35%,var(--purple) 78%);color:#130a19;font-weight:1000;font-size:23px;box-shadow:0 0 32px #a855f74a, inset 0 1px #ffffff8a}
     .brand-name{font-size:25px;font-weight:950;letter-spacing:-1.3px}.brand-name span{color:var(--purple)}
     .brand small{display:block;color:#8c829e;font-size:9px;letter-spacing:2.8px;font-weight:800;margin-top:2px}
-    .status{display:flex;align-items:center;gap:9px;padding:9px 13px;border:1px solid var(--line);border-radius:999px;color:#c8bfd7;background:#ffffff05;font-size:10px;letter-spacing:1.6px;font-weight:800}
+    .hub-nav{display:flex;align-items:center;gap:6px;margin-left:auto}.hub-nav a{color:#c8bfd7;text-decoration:none;font-size:12px;font-weight:800;padding:8px 12px;border-radius:999px;border:1px solid transparent}.hub-nav a:hover{color:#fff;border-color:#ffffff22;background:#ffffff0c}.status{display:flex;align-items:center;gap:9px;padding:9px 13px;border:1px solid var(--line);border-radius:999px;color:#c8bfd7;background:#ffffff05;font-size:10px;letter-spacing:1.6px;font-weight:800}
     .status i{width:7px;height:7px;border-radius:50%;background:#78f5bd;box-shadow:0 0 12px #78f5bd;display:inline-block}
     .hero{position:relative;text-align:center;padding:78px 0 38px;isolation:isolate}
     .hero-orbit{position:absolute;width:470px;height:470px;border:1px solid #a855f725;border-radius:50%;left:50%;top:40px;transform:translateX(-50%);z-index:-1;pointer-events:none}
@@ -41,7 +41,7 @@
     .section-head h2{font-size:23px;letter-spacing:-.8px;margin:7px 0 0}
     .section-head p{font-size:12px;color:#8f859e;margin:0 0 3px}
     .portals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;perspective:1400px}
-    .portal{--accent:var(--orange);--accent-rgb:255,118,46;position:relative;display:flex;flex-direction:column;min-height:340px;padding:27px 28px 24px;border-radius:26px;border:1px solid #ff762e45;text-decoration:none;overflow:hidden;isolation:isolate;background:linear-gradient(140deg,#ff762e14,transparent 58%),linear-gradient(160deg,#1b1426,#0d0a15 80%);transform-style:preserve-3d;transition:transform .22s ease,border-color .25s,box-shadow .25s}
+    .portal{--accent:var(--orange);--accent-rgb:255,118,46;position:relative;display:flex;flex-direction:column;min-height:360px;padding:26px 24px 22px;border-radius:28px;border:1px solid #ff762e45;text-decoration:none;overflow:hidden;isolation:isolate;background:linear-gradient(140deg,#ff762e16,transparent 58%),linear-gradient(165deg,#22182f,#0c0914 78%);transform-style:preserve-3d;box-shadow:0 24px 50px #0008, inset 0 1px #ffffff24;transition:transform .22s ease,border-color .25s,box-shadow .25s}
     .portal.story{--accent:var(--purple);--accent-rgb:168,85,247;border-color:#a855f747;background:linear-gradient(140deg,#a855f71b,transparent 62%),linear-gradient(160deg,#191126,#0d0a15 80%)}
     .portal.edu{--accent:#58d8ff;--accent-rgb:88,216,255;border-color:#58d8ff45;background:linear-gradient(140deg,#58d8ff16,transparent 62%),linear-gradient(160deg,#101b29,#0d0a15 80%)}
     .portal:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at var(--spot-x,85%) var(--spot-y,10%),rgba(var(--accent-rgb),.24),transparent 38%);opacity:.8;z-index:-1;transition:opacity .25s}
@@ -62,7 +62,7 @@
     .portal-ghost{position:absolute;right:-18px;bottom:38px;font-size:115px;line-height:1;font-weight:1000;letter-spacing:-12px;color:rgba(var(--accent-rgb),.055);pointer-events:none;z-index:-1}
     .featured{margin-top:32px}
     .feature-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-    .feature{display:flex;align-items:flex-start;gap:13px;padding:17px 16px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(145deg,#ffffff08,#ffffff02);min-width:0}
+    .feature{display:flex;align-items:flex-start;gap:13px;padding:18px 16px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(160deg,#1b1426cc,#0d0a15);min-width:0;transform-style:preserve-3d;transition:transform .2s ease,border-color .2s}
     .feature-icon{flex:0 0 38px;height:38px;display:grid;place-items:center;border-radius:12px;background:#ffffff0a;color:#d6a7ff;border:1px solid #ffffff12;font-size:16px}
     .feature h3{font-size:12px;margin:2px 0 6px}.feature p{font-size:11px;line-height:1.65;color:#92889f;margin:0}
     .bottom-row{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:24px;padding-top:18px;border-top:1px solid #ffffff12}
@@ -76,8 +76,9 @@
     .intro-flare{animation:flare 4.8s ease-in-out infinite}
     @keyframes flare{0%,100%{opacity:.65;filter:blur(0)}50%{opacity:1;filter:blur(.5px)}}
     @media(min-width:1000px){.hero{padding-top:82px}.portal{min-height:318px}}
-    @media(max-width:980px){.portals{grid-template-columns:1fr}}@media(max-width:760px){.shell{padding:20px 18px 24px}.hero{padding:68px 0 30px}.hero-orbit{width:380px;height:380px;top:34px}.hero-orbit:before{inset:30px}.hero-orbit:after{inset:68px}h1{letter-spacing:-2.5px}.portals{gap:13px}.portal{padding:22px;min-height:285px}.portal h3{font-size:28px}.feature-grid{grid-template-columns:1fr}.feature{padding:14px}.section-head{align-items:flex-start;flex-direction:column;gap:7px}}
-    @media(max-width:520px){.portal.edu{grid-column:auto;min-height:265px}.shell{padding:16px 14px 20px}.brand-name{font-size:22px}.mark{width:41px;height:41px;border-radius:13px}.status{font-size:8px;letter-spacing:1px;padding:8px 10px}.hero{padding:60px 0 26px}.hero-orbit{width:300px;height:300px;top:43px}.hero-orbit:before{inset:24px}.hero-orbit:after{inset:54px}.eyebrow{font-size:8px;letter-spacing:1.4px;padding:8px 10px}h1{font-size:clamp(38px,11vw,56px);letter-spacing:-2.1px;line-height:1.03;margin:21px 0 15px}.hero p{font-size:13px;line-height:1.75;padding:0 5px}.scroll-cue{font-size:9px;margin-top:22px}.section-head h2{font-size:21px}.portals{grid-template-columns:1fr}.portal{min-height:265px;padding:21px;border-radius:22px}.portal h3{margin-top:21px}.portal-ghost{font-size:95px}.bottom-row{align-items:flex-start;flex-direction:column}.edu-link{margin-left:0;display:inline-block;margin-top:10px}}\n    @media(max-width:390px){.status{font-size:0;gap:0;width:30px;height:30px;justify-content:center;padding:0;flex:0 0 30px}.status i{width:7px;height:7px}}
+    @media(max-width:980px){.portals{grid-template-columns:1fr}}@media(max-width:760px){.topbar{flex-wrap:wrap}.hub-nav{order:3;width:100%;margin:0}.shell{padding:20px 18px 24px}.hero{padding:68px 0 30px}.hero-orbit{width:380px;height:380px;top:34px}.hero-orbit:before{inset:30px}.hero-orbit:after{inset:68px}h1{letter-spacing:-2.5px}.portals{gap:13px}.portal{padding:22px;min-height:285px}.portal h3{font-size:28px}.feature-grid{grid-template-columns:1fr}.feature{padding:14px}.section-head{align-items:flex-start;flex-direction:column;gap:7px}}
+    @media(max-width:520px){.portal.edu{grid-column:auto;min-height:265px}.shell{padding:16px 14px 20px}.brand-name{font-size:22px}.mark{width:41px;height:41px;border-radius:13px}.status{font-size:8px;letter-spacing:1px;padding:8px 10px}.hero{padding:60px 0 26px}.hero-orbit{width:300px;height:300px;top:43px}.hero-orbit:before{inset:24px}.hero-orbit:after{inset:54px}.eyebrow{font-size:8px;letter-spacing:1.4px;padding:8px 10px}h1{font-size:clamp(38px,11vw,56px);letter-spacing:-2.1px;line-height:1.03;margin:21px 0 15px}.hero p{font-size:13px;line-height:1.75;padding:0 5px}.scroll-cue{font-size:9px;margin-top:22px}.section-head h2{font-size:21px}.portals{grid-template-columns:1fr}.portal{min-height:265px;padding:21px;border-radius:22px}.portal h3{margin-top:21px}.portal-ghost{font-size:95px}.bottom-row{align-items:flex-start;flex-direction:column}.edu-link{margin-left:0;display:inline-block;margin-top:10px}}
+    @media(max-width:390px){.status{font-size:0;gap:0;width:30px;height:30px;justify-content:center;padding:0;flex:0 0 30px}.status i{width:7px;height:7px}}
     @media(hover:none),(pointer:coarse){.portal:hover{box-shadow:none}.portal:after{display:none}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal{opacity:1;transform:none}.portal.reveal{transform:none}}
   </style>
@@ -87,7 +88,8 @@
   <main class="shell">
     <header class="topbar">
       <a class="brand" href="index.html" aria-label="RoHub trang chủ"><span class="mark">R</span><span class="brand-name">Ro<span>Hub</span><small>ONE HUB. MANY WORLDS.</small></span></a>
-      <div class="status"><i></i> HỆ SINH THÁI ĐANG HOẠT ĐỘNG</div>
+      <nav class="hub-nav" aria-label="Các thế giới"><a href="roflix.html">RoFlix</a><a href="rotruyen.html">RoTruyện</a><a href="roedu.html">RoEdu</a></nav>
+      <div class="status"><i></i> ĐANG MỞ</div>
     </header>
     <section class="hero">
       <div class="hero-orbit intro-flare" aria-hidden="true"></div>
@@ -136,7 +138,7 @@
   <script>
     (() => {
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const cards = [...document.querySelectorAll('.portal')];
+      const cards = [...document.querySelectorAll('.portal, .feature')];
       const revealItems = document.querySelectorAll('.reveal');
       if ('IntersectionObserver' in window && !reduceMotion) {
         const observer = new IntersectionObserver(entries => entries.forEach(entry => {
