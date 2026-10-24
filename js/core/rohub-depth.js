@@ -52,7 +52,7 @@
     }
     active = card;
     if (!card) return;
-    if (card.matches(".portal,.feature") && path.endsWith("/index.html") === false && path !== "/") return;
+    if (isHub && card.matches(".portal,.feature")) return;
     var rect = card.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     var x = (event.clientX - rect.left) / rect.width;
