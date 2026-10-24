@@ -1,0 +1,105 @@
+/* RoFlix only. Loaded last so the movie screen matches the RoHub door. */
+html.rh-flix {
+  --ro-primary: #ff762e;
+  --ro-bg-main: #080610;
+}
+html.rh-flix body:not(.light-theme) {
+  background:
+    radial-gradient(ellipse at 0% 0%, #ff762e16, transparent 28%),
+    radial-gradient(ellipse at 100% 0%, #a855f714, transparent 26%),
+    #080610 !important;
+}
+html.rh-flix .header-ios {
+  background: #080610e0 !important;
+  border-bottom-color: #ffffff14 !important;
+}
+html.rh-flix .search-ios {
+  border-radius: 999px;
+  background: #ffffff0a;
+  border-color: #ffffff16;
+}
+html.rh-flix .search-ios:focus-within {
+  border-color: #ff762e88;
+  box-shadow: 0 0 0 3px #ff762e18;
+}
+html.rh-flix .hero-epic {
+  min-height: 78vh;
+  margin: 8px 18px 0;
+  border-radius: 28px;
+  align-items: flex-end;
+  justify-content: flex-start;
+  box-shadow: 0 30px 80px #0008;
+}
+html.rh-flix .hero-epic .hero-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, #080610f5 0%, #080610d0 36%, #08061066 64%, #08061022 100%),
+    linear-gradient(180deg, #08061022 0%, transparent 30%, #080610e8 100%);
+}
+html.rh-flix .hero-epic .hero-content.glass-premium {
+  text-align: left;
+  max-width: 680px;
+  margin: 0;
+  padding: 36px 6vw 64px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  border-radius: 0;
+}
+html.rh-flix .hero-epic .hero-content.glass-premium:hover {
+  transform: none;
+  border: 0;
+  box-shadow: none;
+}
+html.rh-flix .hero-badges,
+html.rh-flix .hero-actions {
+  justify-content: flex-start !important;
+}
+html.rh-flix .hero-title {
+  letter-spacing: -2px;
+  text-align: left;
+}
+html.rh-flix .hero-desc {
+  margin-left: 0 !important;
+  text-align: left;
+  color: #d7d0e4 !important;
+}
+html.rh-flix .hero-epic .btn-primary,
+html.rh-flix .btn-primary {
+  background: linear-gradient(110deg, #ff762e, #ffb15c 52%, #a855f7) !important;
+  color: #160d14 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 30px #ff762e33;
+}
+html.rh-flix .hero-epic .btn-primary::before { display: none; }
+html.rh-flix .hero-epic .btn-secondary {
+  border-radius: 14px;
+  background: #ffffff10;
+  border-color: #ffffff28;
+}
+html.rh-flix .movie-card-premium {
+  border-radius: 18px !important;
+  border-color: #ffffff14 !important;
+}
+html.rh-flix .movie-card-premium:hover {
+  border-color: #ff762e99 !important;
+}
+html.rh-flix .topic-card {
+  border-radius: 18px !important;
+}
+html.rh-flix .hero-dots button,
+html.rh-flix .hero-dot {
+  background: #ffffff55;
+}
+@media (max-width: 760px) {
+  html.rh-flix .hero-epic {
+    margin: 8px 10px 0;
+    min-height: 70vh;
+    border-radius: 20px;
+  }
+  html.rh-flix .hero-epic .hero-content.glass-premium { padding: 28px 20px 48px; }
+  html.rh-flix .hero-title { letter-spacing: -1px; }
+}
