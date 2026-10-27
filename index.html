@@ -181,6 +181,27 @@
       });
     })();
   </script>
+  <script>
+    (() => {
+      const warmed = new Set();
+      const warmRoute = (href) => {
+        if (!href || warmed.has(href) || /^(mailto:|tel:|#)/i.test(href)) return;
+        const url = new URL(href, location.href);
+        if (url.origin !== location.origin || !/\/(roflix|rotruyen|roedu)\.html$/.test(url.pathname)) return;
+        warmed.add(href);
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = url.pathname + url.search;
+        link.as = 'document';
+        document.head.appendChild(link);
+      };
+      document.querySelectorAll('.portal[href], .hub-nav a[href]').forEach(link => {
+        link.addEventListener('pointerenter', () => warmRoute(link.getAttribute('href')), {passive:true});
+        link.addEventListener('focus', () => warmRoute(link.getAttribute('href')), {passive:true});
+        link.addEventListener('touchstart', () => warmRoute(link.getAttribute('href')), {passive:true, once:true});
+      });
+    })();
+  </script>
   <script src="js/core/rohub-depth.js?v=20261024-3d" defer></script>
   <script src="js/features/rohub-legal-modal.js" defer></script>
 </body>
