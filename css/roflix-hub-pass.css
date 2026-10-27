@@ -143,3 +143,86 @@ html.rh-flix .hero-dot {
   html.rh-flix .hero-epic .hero-content.glass-premium { padding: 28px 20px 48px; }
   html.rh-flix .hero-title { letter-spacing: -1px; }
 }
+
+
+/* RoFlix hover pass: stronger card feedback without changing the grid layout. */
+html.rh-flix .header-ios {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  isolation: isolate;
+  backdrop-filter: blur(22px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.25) !important;
+  box-shadow: 0 10px 28px rgba(0,0,0,.28);
+}
+html.rh-flix .movie-card-premium {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transform: translateZ(0);
+  border: 1px solid rgba(255,255,255,.09) !important;
+  transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, border-color .28s ease !important;
+}
+html.rh-flix .movie-card-premium .card-poster {
+  overflow: hidden;
+}
+html.rh-flix .movie-card-premium .card-poster img {
+  display: block;
+  transition: transform .42s cubic-bezier(.2,.8,.2,1), filter .42s ease !important;
+}
+html.rh-flix .movie-card-premium::before {
+  z-index: 5;
+  opacity: .85;
+  background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.04) 42%, rgba(255,218,177,.72) 50%, rgba(255,255,255,.12) 56%, transparent 68%) !important;
+  transform: translateX(-140%);
+  transition: transform .72s cubic-bezier(.2,.7,.2,1) !important;
+}
+html.rh-flix .movie-card-premium:hover,
+html.rh-flix .movie-card-premium:focus-within {
+  z-index: 12;
+  transform: translateY(-7px) scale(1.018);
+  border-color: #ff8a45 !important;
+  box-shadow: 0 20px 42px rgba(0,0,0,.62), 0 0 0 1px rgba(255,138,69,.75), 0 0 30px rgba(255,118,46,.32) !important;
+}
+html.rh-flix .movie-card-premium:hover::before,
+html.rh-flix .movie-card-premium:focus-within::before {
+  transform: translateX(140%);
+}
+html.rh-flix .movie-card-premium:hover .card-poster img,
+html.rh-flix .movie-card-premium:focus-within .card-poster img {
+  transform: scale(1.075);
+  filter: saturate(1.28) contrast(1.04) brightness(1.06);
+}
+html.rh-flix .movie-card-premium .card-overlay {
+  opacity: 0;
+  transition: opacity .25s ease, backdrop-filter .25s ease !important;
+  background: linear-gradient(180deg, rgba(8,6,16,.05) 12%, rgba(8,6,16,.92) 100%) !important;
+}
+html.rh-flix .movie-card-premium:hover .card-overlay,
+html.rh-flix .movie-card-premium:focus-within .card-overlay {
+  opacity: 1 !important;
+  backdrop-filter: blur(2px);
+}
+html.rh-flix .movie-card-premium .card-title {
+  transition: color .2s ease, text-shadow .2s ease;
+}
+html.rh-flix .movie-card-premium:hover .card-title,
+html.rh-flix .movie-card-premium:focus-within .card-title {
+  color: #fff1e6 !important;
+  text-shadow: 0 0 16px rgba(255,138,69,.28);
+}
+html.rh-flix .movie-card-premium .watch-btn {
+  transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
+}
+html.rh-flix .movie-card-premium:hover .watch-btn,
+html.rh-flix .movie-card-premium:focus-within .watch-btn {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow: 0 8px 24px rgba(255,118,46,.28);
+}
+@media (hover: none), (prefers-reduced-motion: reduce) {
+  html.rh-flix .movie-card-premium::before { display: none !important; }
+  html.rh-flix .movie-card-premium,
+  html.rh-flix .movie-card-premium .card-poster img,
+  html.rh-flix .movie-card-premium .card-overlay { transition: none !important; }
+}
