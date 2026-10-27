@@ -33,16 +33,16 @@
     .rh-bridge nav{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-left:auto}
     .rh-bridge nav a{padding:7px 10px;border:1px solid rgba(255,255,255,.08);border-radius:999px;color:#cbd5e1;text-decoration:none;font-size:12px;transition:background .2s,border-color .2s,color .2s}
     .rh-bridge nav a:hover,.rh-bridge nav a[aria-current="page"]{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.1);color:#fff}
-    .rh-world .portal,.rh-world .feature,.rh-world .movie-card-premium,.rh-world .topic-card,.rh-world .stat-card,.rh-world .pull-card,.rh-world .pull-movie,.rh-world .story,.rh-world .subject-card,.rh-world .source-card,.rh-world .quest-card,.rh-world .hero-console,.rh-world .panel,.rh-world .filter-panel,.rh-world .detail-card,.rh-world .submit-story-card,.rh-world .quiz-panel,.rh-world .library,.rh-world .card-grid>*,.rh-world .subject-grid>*{transform-style:preserve-3d;backface-visibility:hidden;transition:transform .22s cubic-bezier(.2,.75,.25,1),box-shadow .22s ease,border-color .22s ease}
+    .rh-world .portal,.rh-world .feature,.rh-world .topic-card,.rh-world .stat-card,.rh-world .pull-card,.rh-world .pull-movie,.rh-world .story,.rh-world .subject-card,.rh-world .source-card,.rh-world .quest-card,.rh-world .hero-console,.rh-world .panel,.rh-world .filter-panel,.rh-world .detail-card,.rh-world .submit-story-card,.rh-world .quiz-panel,.rh-world .library,.rh-world .card-grid>*,.rh-world .subject-grid>*{transform-style:preserve-3d;backface-visibility:hidden;transition:transform .22s cubic-bezier(.2,.75,.25,1),box-shadow .22s ease,border-color .22s ease}
     .rh-world .rh-tilting{will-change:transform;box-shadow:0 20px 45px rgba(0,0,0,.24),0 0 0 1px rgba(167,139,250,.14)}
     .rh-hub .portal,.rh-hub .feature{transform-style:preserve-3d;backface-visibility:hidden}
     @media(max-width:560px){.rh-bridge{gap:9px!important}.rh-bridge nav{width:100%;margin-left:0}.rh-bridge nav a{font-size:11px;padding:7px 9px}}
-    @media(prefers-reduced-motion:reduce){.rh-world .rh-bridge nav a,.rh-world .portal,.rh-world .feature,.rh-world .movie-card-premium,.rh-world .topic-card,.rh-world .stat-card,.rh-world .pull-card,.rh-world .pull-movie,.rh-world .story,.rh-world .subject-card,.rh-world .source-card,.rh-world .quest-card,.rh-world .hero-console,.rh-world .panel,.rh-world .filter-panel,.rh-world .detail-card,.rh-world .submit-story-card,.rh-world .quiz-panel,.rh-world .library,.rh-world .card-grid>*,.rh-world .subject-grid>*{transition:none!important}}
+    @media(prefers-reduced-motion:reduce){.rh-world .rh-bridge nav a,.rh-world .portal,.rh-world .feature,.rh-world .topic-card,.rh-world .stat-card,.rh-world .pull-card,.rh-world .pull-movie,.rh-world .story,.rh-world .subject-card,.rh-world .source-card,.rh-world .quest-card,.rh-world .hero-console,.rh-world .panel,.rh-world .filter-panel,.rh-world .detail-card,.rh-world .submit-story-card,.rh-world .quiz-panel,.rh-world .library,.rh-world .card-grid>*,.rh-world .subject-grid>*{transition:none!important}}
   `;
   document.head.appendChild(style);
   if (reduceMotion || !finePointer) return;
 
-  var sel = ".portal,.feature,.movie-card-premium,.topic-card,.stat-card,.pull-card,.pull-movie,.story,.subject-card,.source-card,.quest-card,.hero-console,.panel,.filter-panel,.detail-card,.submit-story-card,.quiz-panel,.library,.card-grid>*,.subject-grid>*";
+  var sel = ".portal,.feature,.topic-card,.stat-card,.pull-card,.pull-movie,.story,.subject-card,.source-card,.quest-card,.hero-console,.panel,.filter-panel,.detail-card,.submit-story-card,.quiz-panel,.library,.card-grid>*,.subject-grid>*";
   var active = null;
   document.addEventListener("pointermove", function(event){
     var card = event.target.closest(sel);
