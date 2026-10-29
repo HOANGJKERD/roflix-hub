@@ -1,3 +1,16 @@
 /* Admin 3.0 */
 #admin-nav button[data-page="game-center"] span,#admin-nav button[data-page="live-comments"] span,#admin-nav button[data-page="content-tools"] span{filter:drop-shadow(0 0 8px rgba(245,158,11,.18))}
 #game-center .table td,#game-center .table th{white-space:nowrap}.danger-text{color:#fca5a5}
+
+/* RoHub Admin unified polish */
+#admin-nav button{transition:background .18s ease,border-color .18s ease,transform .18s ease}
+#admin-nav button:hover{transform:translateX(3px)}
+#admin-nav button.active{box-shadow:inset 3px 0 0 #f59e0b,0 8px 24px rgba(245,158,11,.08)}
+.main .topbar{position:sticky;top:0;z-index:30;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+#dashboard .stats>.card,#game-center .stats>.card,#rotruyen .stats>.card{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+#dashboard .stats>.card:hover,#game-center .stats>.card:hover,#rotruyen .stats>.card:hover{transform:translateY(-3px);border-color:rgba(245,158,11,.28);box-shadow:0 14px 34px rgba(0,0,0,.18)}
+#admin-nav button:focus-visible,.main button:focus-visible,.main a:focus-visible,.main input:focus-visible,.main select:focus-visible,.main textarea:focus-visible{outline:2px solid #fbbf24;outline-offset:3px}
+#audit .table td:last-child{max-width:460px;white-space:normal;overflow-wrap:anywhere}
+#audit .table code{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:760px){.main .topbar{position:sticky;top:0}.topbar-left{min-width:0}.topbar-left strong{max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#audit .table{min-width:760px}#admin-nav button:hover{transform:none}}
+@media(prefers-reduced-motion:reduce){#admin-nav button,#dashboard .stats>.card,#game-center .stats>.card,#rotruyen .stats>.card{transition:none}#admin-nav button:hover,#dashboard .stats>.card:hover,#game-center .stats>.card:hover,#rotruyen .stats>.card:hover{transform:none}}
