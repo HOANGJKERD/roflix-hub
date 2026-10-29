@@ -70,7 +70,7 @@ async function run(){
   state.running=false;state.lastRun=new Date().toISOString();if(runButton){runButton.disabled=false;runButton.textContent='▶ Chạy kiểm tra';}render();return;
  }
  await Promise.all(['profiles','rohub_theme_versions','rotruyen_series','rotruyen_chapters','roflix_active_sessions','roflix_admin_audit_logs'].map(t=>checkTable(db,t)));
- await Promise.all(['js/config/supabase.config.js','js/core/supabase.js','js/admin/admin.js','js/admin/rotruyen-admin.js','js/admin/rohub-studio.js','js/rotruyen/published-theme-runtime.js'].map(checkAsset));
+ await Promise.all(['js/config/supabase.config.js','js/core/supabase.js','js/admin/admin.js','js/admin/rotruyen-admin.js','js/admin/admin-v3.js','css/admin/admin.css','css/admin/admin-v3.css','js/rotruyen/published-theme-runtime.js'].map(checkAsset));
  await Promise.all([
   checkApi('Nguồn phim KKPhim','https://phimapi.com/v1/api/danh-sach/phim-moi-cap-nhat?page=1',p=>!!p&&(Array.isArray(p.data)||Array.isArray(p.items)||Array.isArray(p.items?.data))),
   checkApi('Nguồn phim VSMOV','https://vsmov.com/api/danh-sach/phim-moi-cap-nhat?page=1',p=>!!p&&(Array.isArray(p.data)||Array.isArray(p.items)||Array.isArray(p.results))),
