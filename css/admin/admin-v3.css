@@ -45,3 +45,9 @@
 .dashboard-empty{padding:16px 0;color:#94a3b8;font-size:12px;line-height:1.6}
 .dashboard-overview-lower>.card{min-width:0}
 @media(max-width:760px){.dashboard-header-actions{align-items:flex-start}.dashboard-section-head{align-items:flex-start;flex-direction:column}.dashboard-health-row{grid-template-columns:9px minmax(0,1fr)}.dashboard-health-tag{grid-column:2;justify-self:start}.dashboard-status-card p{min-height:0}}
+
+
+/* Stability patch: keep the admin layout steady during background refreshes */
+#dashboard .stats>.card,#game-center .stats>.card,#rotruyen .stats>.card{will-change:auto}
+.dashboard-status-card,#dashboard .card{overflow-anchor:none}
+@media(prefers-reduced-motion:reduce){.dashboard-status-card,#dashboard .card{transition:none!important}}
