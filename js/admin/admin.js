@@ -121,7 +121,7 @@
     if(error){$('audit-body').innerHTML='<tr><td colspan="5" class="danger-text">'+esc(error.message)+'</td></tr>';if(host)host.innerHTML='<div class="dashboard-empty">Không tải được nhật ký: '+esc(error.message)+'</div>';return;}
     state.audit=data||[];
     $('audit-body').innerHTML=state.audit.length?state.audit.map(x=>'<tr><td>'+fmtDate(x.created_at)+'</td><td><small>'+esc(x.admin_id||'')+'</small></td><td><b>'+esc(x.action)+'</b></td><td><small>'+esc(x.target_user_id||'')+'</small></td><td><code>'+esc(JSON.stringify(x.details||{}))+'</code></td></tr>').join(''):'<tr><td colspan="5" class="empty">Chưa có thao tác quản trị.</td></tr>';
-    if(host)host.innerHTML?host.innerHTML=state.audit.slice(0,6).length?state.audit.slice(0,6).map(x=>'<div class="dashboard-audit-item"><span class="dashboard-audit-mark">↳</span><div><b>'+esc(x.action||'Thao tác quản trị')+'</b><small>'+esc(x.admin_id||'Admin')+' · '+fmtDate(x.created_at)+'</small><p>'+esc(JSON.stringify(x.details||{}).slice(0,180))+'</p></div></div>').join(''):'<div class="dashboard-empty">Chưa có thao tác quản trị được ghi nhận.</div>':'';
+    if(host){host.innerHTML=state.audit.length?state.audit.slice(0,6).map(x=>'<div class="dashboard-audit-item"><span class="dashboard-audit-mark">↳</span><div><b>'+esc(x.action||'Thao tác quản trị')+'</b><small>'+esc(x.admin_id||'Admin')+' · '+fmtDate(x.created_at)+'</small><p>'+esc(JSON.stringify(x.details||{}).slice(0,180))+'</p></div></div>').join(''):'<div class="dashboard-empty">Chưa có thao tác quản trị được ghi nhận.</div>';}
   }
 
   function scheduleRefresh(){clearTimeout(state.realtimeTimer);state.realtimeTimer=setTimeout(()=>{loadDashboard();if(state.currentPage==='analytics')loadActiveSessions();if(state.currentPage==='moderation')loadModeration();if(state.currentPage==='schedule'&&window.rfLoadAdminSchedule)window.rfLoadAdminSchedule();},900);}
@@ -149,7 +149,7 @@
     }
   });
   document.querySelectorAll('#admin-nav button').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.page)));
-  $('refresh-btn').addEventListener('click',loadAll);
+  $('refresh-btn').addEventListener('click',loadAll);$('dashboard-refresh-btn')?.addEventListener('click',loadAll);
   $('admin-login-open')?.addEventListener('click',()=>{showAccess('Chưa đăng nhập','Hãy đăng nhập tài khoản RoFlix có quyền admin trước.');$('access').scrollIntoView({behavior:'smooth',block:'start'});$('admin-login-email')?.focus();});
   $('logout-btn').addEventListener('click',async()=>{await sb.auth.signOut();location.href='index.html';});
   $('modal-close').addEventListener('click',window.rfCloseUser);$('user-modal').addEventListener('click',e=>{if(e.target.id==='user-modal')window.rfCloseUser();});
