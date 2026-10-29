@@ -1,7 +1,7 @@
 # 🌌 RoHUB — Một hệ sinh thái, nhiều cách khám phá
 
 <p align="center">
-  <strong>RoFlix · RoTruyen · RoHub Admin · RoHub Studio</strong><br>
+  <strong>RoFlix · RoTruyen · RoHub Admin</strong><br>
   <em>Được xây dựng từng bước bằng sự tò mò, thử nghiệm và mong muốn tạo ra một sản phẩm của riêng mình.</em>
 </p>
 
@@ -21,7 +21,7 @@
 - [RoHUB là gì?](#-rohub-là-gì)
 - [Hai nền tảng chính](#-hai-nền-tảng-chính)
 - [Hành trình phát triển](#-hành-trình-phát-triển)
-- [RoHub Admin và RoHub Studio](#-rohub-admin-và-rohub-studio)
+- [RoHub Admin](#-rohub-admin)
 - [Định hướng kỹ thuật](#-định-hướng-kỹ-thuật)
 - [Lộ trình phát triển](#-lộ-trình-phát-triển)
 - [Triết lý thiết kế](#-triết-lý-thiết-kế)
@@ -54,7 +54,6 @@ Mình không xem việc làm ra một trang web có thể mở được là đí
 | **RoFlix** | Trải nghiệm khám phá và xem nội dung phim |
 | **RoTruyen** | Nền tảng khám phá và đọc truyện, hướng tới các tính năng tài khoản và cộng đồng |
 | **RoHub Admin** | Trung tâm quản trị tập trung cho các nền tảng |
-| **RoHub Studio** | Định hướng công cụ tùy biến theme và template, xem trước và quản lý phiên bản giao diện |
 
 Mục tiêu dài hạn là để các thành phần có thể chia sẻ những nguyên tắc thiết kế và công cụ quản trị chung, nhưng vẫn giữ được trải nghiệm phù hợp với từng sản phẩm.
 
@@ -98,7 +97,6 @@ Những tính năng này không nhất thiết đã hoàn tất cùng lúc. Chú
 - [RoFlix](./roflix.html)
 - [RoTruyen](./rotruyen.html)
 - [RoHub Admin](./admin.html)
-- [RoHub Studio](./rohub-studio.html)
 
 Các liên kết trên trỏ tới tệp trong repository. Việc có tệp trong GitHub không tự động có nghĩa website đã được deploy hoặc tính năng đã được kiểm thử trên môi trường đang chạy.
 
@@ -138,90 +136,9 @@ RoHUB phát triển theo hướng mở rộng dần: từ các trang web riêng 
 
 **Mục tiêu:** cho phép tùy biến giao diện một cách có tổ chức.
 
-RoHub Studio được định hướng như bước tiến từ việc sửa CSS thủ công sang quản lý theme và template:
+## 🧰 RoHub Admin
 
-- Tùy chỉnh màu nhấn, màu nền, màu thẻ, độ bo góc và mật độ giao diện.
-- Xem trước giao diện trước khi áp dụng.
-- Nhập và xuất cấu hình theme dạng JSON.
-- Tổ chức các mẫu cho header, footer và nhiều loại trang.
-- Quản lý bản nháp và phiên bản đã xuất bản.
-- Hướng tới lịch sử thay đổi và khả năng khôi phục phiên bản trước.
-
-### Giai đoạn 5 — Tách bản nháp khỏi giao diện đang xuất bản
-
-**Mục tiêu:** tránh để một thay đổi chưa hoàn chỉnh ảnh hưởng người xem.
-
-Nguyên tắc kiến trúc đang hướng tới:
-
-1. Quản trị viên chỉnh sửa bản nháp.
-2. Bản nháp được xem trước độc lập.
-3. Quản trị viên xác nhận xuất bản.
-4. Website chỉ đọc cấu hình đã xuất bản.
-5. Khi phiên bản mới có vấn đề, quản trị viên có thể khôi phục phiên bản ổn định trước đó.
-
-Đây là nguyên tắc quan trọng của RoHub Studio. Việc hoàn thành nó cần cả giao diện quản trị, lưu phiên bản, quyền truy cập dữ liệu và runtime trên website. Không nên xem một nút “Publish” hoặc “Rollback” trên giao diện là bằng chứng rằng toàn bộ quy trình đã an toàn.
-
-### Giai đoạn 6 — Mở rộng RoTruyen thành nền tảng cộng đồng
-
-**Mục tiêu:** phát triển các trải nghiệm được gợi ý từ nghiên cứu giao diện website truyện, đồng thời xây dựng thiết kế và cách triển khai phù hợp với RoTruyen.
-
-Các hướng đang được ưu tiên gồm:
-
-- Bộ lọc tìm kiếm nâng cao.
-- Hồ sơ cá nhân và lịch sử đọc.
-- Truyện theo dõi và thư viện cá nhân.
-- Luồng đăng truyện, quản lý chương và kiểm duyệt.
-- Trò chơi ghép hình, điểm thưởng và thành tích.
-- Quản trị báo cáo, nhật ký và quyền của người dùng.
-
-Các mục này là lộ trình phát triển; tình trạng triển khai cần được xác minh theo từng tính năng.
-
----
-
-## 🧰 RoHub Admin và RoHub Studio
-
-### Một trung tâm quản trị cho nhiều sản phẩm
-
-Mục tiêu của RoHub Admin là giúp quản trị viên quản lý RoFlix và RoTruyen trong cùng một khu vực, nhưng không trộn lẫn dữ liệu hoặc quyền hạn giữa các tính năng.
-
-Những nhóm công cụ được định hướng gồm:
-
-- Tổng quan hệ thống và dữ liệu.
-- **System Health Center:** kiểm tra phiên đăng nhập/quyền admin, truy vấn metadata các bảng Supabase, tải tài nguyên frontend, thăm dò phản hồi API bên ngoài và xuất báo cáo JSON.
-- Quản lý tài khoản, vai trò và trạng thái tài khoản.
-- Quản lý nội dung phim và truyện.
-- Kiểm duyệt và xử lý báo cáo.
-- Nhật ký thao tác.
-- Cấu hình giao diện và template.
-
-### Theme Builder và Template Builder
-
-Một theme xác định các thuộc tính giao diện như màu sắc, nền và độ bo góc. Một template xác định cấu trúc và cách sắp xếp các thành phần trên một loại trang. RoHub Studio hướng tới việc quản lý cả hai.
-
-Các loại template mục tiêu:
-
-- Header và Footer.
-- Trang chủ.
-- Trang chi tiết nội dung.
-- Trang đăng nhập và đăng ký.
-- Trang danh mục, tìm kiếm và 404.
-- Các khối nội dung có thể sắp xếp trong bố cục.
-
-Về lâu dài, trình chỉnh sửa nên hỗ trợ thêm, xóa, sắp xếp và cấu hình từng khối; xem trước ở nhiều kích thước màn hình; lưu lịch sử và khôi phục phiên bản.
-
-### Bảo mật và độ tin cậy
-
-Một trung tâm quản trị thực sự cần nhiều hơn giao diện đẹp:
-
-- Xác thực danh tính và kiểm tra quyền ở phía máy chủ.
-- Chính sách RLS phù hợp khi dùng Supabase.
-- Không đặt khóa bí mật hoặc quyền đặc biệt trong mã frontend.
-- Lưu lịch sử phiên bản và người thực hiện thay đổi.
-- Kiểm tra cấu hình trước khi xuất bản.
-- Có phương án dự phòng nếu cấu hình mới lỗi.
-- Không hiển thị trạng thái thành công nếu thao tác lưu thực tế thất bại.
-
----
+RoHub Admin là trung tâm quản lý nội dung, tài khoản, kiểm duyệt và tình trạng hệ thống.
 
 ## 🧱 Định hướng kỹ thuật
 
@@ -234,7 +151,6 @@ Repository hiện có các trang HTML, stylesheet CSS và mã JavaScript phía t
 | **JavaScript** | Tương tác giao diện, điều hướng và logic phía client |
 | **Supabase** | Hướng tích hợp xác thực và dữ liệu cho các tính năng cần backend |
 | **GitHub** | Lưu mã nguồn, theo dõi thay đổi và cộng tác |
-| **RoHub Studio** | Công cụ quản lý theme/template đang được phát triển |
 
 ### Một số nguyên tắc kỹ thuật
 
@@ -257,7 +173,6 @@ Repository hiện có các trang HTML, stylesheet CSS và mã JavaScript phía t
 - [ ] Xây dựng quy trình đăng truyện, quản lý chương và kiểm duyệt.
 - [ ] Hoàn thiện quản lý nguồn truyện và xử lý chương lỗi.
 - [ ] Hoàn thiện RoHub Admin để quản lý tập trung.
-- [ ] Hoàn thiện Template Builder với các khối có thể kéo thả.
 - [ ] Kiểm thử đầy đủ chu trình Draft → Preview → Publish → Runtime → Rollback.
 - [ ] Xác minh chính sách Supabase RLS và quyền truy cập cho từng vai trò.
 - [ ] Bổ sung kiểm thử hồi quy cho các luồng quan trọng.
@@ -318,7 +233,7 @@ Các ý kiến giúp dự án tốt hơn, đặc biệt là phản hồi có th�
 
 RoHUB bắt đầu từ một ý tưởng, nhưng tham vọng của nó là lớn hơn một trang web đơn lẻ: **xây dựng một hệ sinh thái có trải nghiệm riêng, công cụ quản trị tập trung và nền tảng kỹ thuật có thể phát triển lâu dài.**
 
-RoFlix đại diện cho nhánh phim. RoTruyen mở rộng sang thế giới truyện và các trải nghiệm cộng đồng. RoHub Admin và RoHub Studio là nỗ lực đưa việc quản lý nội dung, giao diện và phiên bản về một nơi có tổ chức.
+RoFlix đại diện cho nhánh phim. RoTruyen mở rộng sang thế giới truyện và các trải nghiệm cộng đồng. RoHub Admin tập trung quản lý nội dung và vận hành.
 
 Mọi thứ chưa hoàn hảo, và hành trình vẫn đang tiếp diễn. Mỗi commit là một bước tiến; mỗi lỗi được tìm ra là một cơ hội để hiểu hệ thống sâu hơn; mỗi tính năng hoàn thành cần được kiểm chứng bằng hành vi thực tế.
 
