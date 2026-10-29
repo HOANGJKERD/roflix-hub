@@ -14,3 +14,34 @@
 #audit .table code{white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:760px){.main .topbar{position:sticky;top:0}.topbar-left{min-width:0}.topbar-left strong{max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#audit .table{min-width:760px}#admin-nav button:hover{transform:none}}
 @media(prefers-reduced-motion:reduce){#admin-nav button,#dashboard .stats>.card,#game-center .stats>.card,#rotruyen .stats>.card{transition:none}#admin-nav button:hover,#dashboard .stats>.card:hover,#game-center .stats>.card:hover,#rotruyen .stats>.card:hover{transform:none}}
+
+/* Unified RoHub overview dashboard */
+.dashboard-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dashboard-section-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:24px 0 12px}
+.dashboard-section-head .section-title{margin:0 0 5px}
+.dashboard-live-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid rgba(74,222,128,.2);border-radius:999px;color:#86efac;font-size:11px;white-space:nowrap}
+.dashboard-live-pill i{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 12px rgba(74,222,128,.65)}
+.dashboard-status-card{min-width:0;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+.dashboard-status-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dashboard-portal-icon{font-size:25px;width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:rgba(148,163,184,.08);border:1px solid rgba(148,163,184,.12)}
+.dashboard-status-card h3{font-size:18px;margin:0}
+.dashboard-status-card p{color:#aab4c5;font-size:12px;line-height:1.55;margin:0;min-height:38px;overflow-wrap:anywhere}
+.dashboard-status-card .btn{align-self:flex-start;margin-top:auto}
+.dashboard-status-pill,.dashboard-health-tag{font-size:10px;font-weight:800;border-radius:999px;padding:5px 8px;white-space:nowrap;border:1px solid transparent}
+.dashboard-ok{color:#86efac;background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.18)}
+.dashboard-warn{color:#fcd34d;background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.2)}
+.dashboard-fail{color:#fca5a5;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.2)}
+.dashboard-health-list{display:grid;gap:0}
+.dashboard-health-row{display:grid;grid-template-columns:9px minmax(0,1fr) auto;align-items:start;gap:10px;padding:12px 0;border-bottom:1px solid rgba(148,163,184,.12)}
+.dashboard-health-row:last-child{border-bottom:0}
+.dashboard-health-dot{width:8px;height:8px;border-radius:50%;margin-top:5px}
+.dashboard-health-row b,.dashboard-audit-item b{display:block;font-size:12px}
+.dashboard-health-row small,.dashboard-audit-item small{display:block;color:#94a3b8;font-size:11px;line-height:1.5;margin-top:4px;overflow-wrap:anywhere}
+.dashboard-audit-item{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid rgba(148,163,184,.12)}
+.dashboard-audit-item:last-child{border-bottom:0}
+.dashboard-audit-mark{display:grid;place-items:center;flex:0 0 28px;height:28px;border-radius:9px;background:rgba(245,158,11,.1);color:#fbbf24}
+.dashboard-audit-item>div{min-width:0}
+.dashboard-audit-item p{font-size:11px;line-height:1.5;color:#aab4c5;margin:5px 0 0;overflow-wrap:anywhere}
+.dashboard-empty{padding:16px 0;color:#94a3b8;font-size:12px;line-height:1.6}
+.dashboard-overview-lower>.card{min-width:0}
+@media(max-width:760px){.dashboard-header-actions{align-items:flex-start}.dashboard-section-head{align-items:flex-start;flex-direction:column}.dashboard-health-row{grid-template-columns:9px minmax(0,1fr)}.dashboard-health-tag{grid-column:2;justify-self:start}.dashboard-status-card p{min-height:0}}
