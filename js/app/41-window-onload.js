@@ -1,7 +1,7 @@
 // ============================================================
 // WINDOW ONLOAD
 // ============================================================
-window.onload = function () {
+document.addEventListener('DOMContentLoaded', function () {
     if (localStorage.getItem('roflix-theme') === 'light') {
         document.body.classList.add('light-theme');
         document.documentElement.classList.remove('dark');
@@ -29,7 +29,7 @@ window.onload = function () {
     renderLeaderboard();
     try { if(typeof updateNotificationBadge==='function') updateNotificationBadge(); if(typeof renderNotifications==='function') renderNotifications(); } catch (_) {}
     console.log('🔥 RoFlix Pro - Cloud Account Bridge active');
-};
+}, { once: true });
 
 // ============================================================
 // CLOUD ACCOUNT BRIDGE
