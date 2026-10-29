@@ -64,7 +64,39 @@
       el.querySelector('p').textContent=(all.count||0).toLocaleString('vi-VN')+' tác phẩm trong catalog · '+(published.count||0).toLocaleString('vi-VN')+' đã xuất bản · '+((all.count||0)-(published.count||0)).toLocaleString('vi-VN')+' bản nháp / chờ duyệt.';
     }catch(e){const p=el.querySelector('p');if(p)p.textContent='Chưa lấy được số liệu RoTruyện: '+(e.message||'kiểm tra quyền database');}
   }
-  async function loadDashboard(){loadRoTruyenOverview();const {data,error}=await sb.rpc('roflix_admin_stats');if(error){$('stats-cards').innerHTML=`<div class="card danger-text">${esc(error.message)}<br><small>Hãy chạy SQL V2.</small></div>`;return;}state.stats=data||{};renderStats(state.stats);await fetchMovieCounts();await loadLiveViewers();}
+  async function loadDashboard(){
+    const healthHost=$('dashboard-health-summary'),portalHost=$('dashboard-portal-status');
+    if(portalHost)portalHost.innerHTML='<div class="card dashboard-status-card"><span class="muted">Đang kiểm tra…</span></div>'.repeat(3);
+    const results=await Promise.allSettled([
+      sb.from('profiles').select('id',{count:'exact',head:true}),
+      sb.rpc('roflix_admin_stats'),
+      sb.from('rotruyen_series').select('id',{count:'exact',head:true}),
+      sb.from('rotruyen_chapters').select('id',{count:'exact',head:true})
+    ]);
+    const val=i=>results[i].status==='fulfilled'?results[i].value:{error:results[i].reason};
+    const profile=val(0),stats=val(1),series=val(2),chapters=val(3);
+    if(!stats.error){state.stats=stats.data||{};renderStats(state.stats);await Promise.allSettled([fetchMovieCounts(),loadLiveViewers()]);}
+    else $('stats-cards').innerHTML='<div class="card danger-text">Không tải được số liệu RoFlix: '+esc(stats.error.message||'Lỗi không xác định')+'<br><small>Kiểm tra RPC roflix_admin_stats và quyền quản trị.</small></div>';
+    const portals=[
+      {name:'RoFlix',icon:'🎬',state:!stats.error?'ok':'fail',detail:stats.error?'Không đọc được thống kê quản trị':fmtNum(state.stats?.movie_views_today)+' lượt xem hôm nay · '+fmtNum(state.stats?.users_total)+' tài khoản',target:'movie-control',label:'Mở quản lý phim'},
+      {name:'RoTruyen',icon:'📚',state:!series.error?'ok':'fail',detail:series.error?'Không truy cập được catalog':fmtNum(series.count)+' tác phẩm · '+(chapters.error?'chưa đọc được số chương':fmtNum(chapters.count)+' chương'),target:'rotruyen',label:'Mở quản lý truyện'},
+      {name:'RoEdu',icon:'🎓',state:'warn',detail:'Chưa kết nối CRUD sách/chương vào database',target:'roedu',label:'Mở khu RoEdu'}
+    ];
+    if(portalHost)portalHost.innerHTML=portals.map(p=>'<article class="card dashboard-status-card"><div class="dashboard-status-top"><span class="dashboard-portal-icon">'+p.icon+'</span><span class="dashboard-status-pill dashboard-'+p.state+'">'+(p.state==='ok'?'● Đang kết nối':p.state==='warn'?'! Chưa hoàn thiện':'× Cần kiểm tra')+'</span></div><h3>'+p.name+'</h3><p>'+esc(p.detail)+'</p><button type="button" class="btn" data-dashboard-go="'+p.target+'">'+p.label+' →</button></article>').join('');
+    portalHost?.querySelectorAll('[data-dashboard-go]').forEach(button=>button.addEventListener('click',()=>switchPage(button.dataset.dashboardGo)));
+    document.querySelectorAll('[data-dashboard-go]').forEach(button=>{if(button.dataset.dashboardBound)return;button.dataset.dashboardBound='1';button.addEventListener('click',()=>switchPage(button.dataset.dashboardGo));});
+    const checks=[
+      {name:'Supabase · profiles',ok:!profile.error,detail:profile.error?profile.error.message:fmtNum(profile.count)+' hồ sơ đọc được'},
+      {name:'RoFlix · thống kê',ok:!stats.error,detail:stats.error?stats.error.message:'RPC roflix_admin_stats phản hồi thành công'},
+      {name:'RoTruyen · catalog',ok:!series.error,detail:series.error?series.error.message:fmtNum(series.count)+' tác phẩm'},
+      {name:'RoTruyen · chương',ok:!chapters.error,detail:chapters.error?chapters.error.message:fmtNum(chapters.count)+' chương'},
+      {name:'RoEdu · dữ liệu quản trị',ok:false,warning:true,detail:'Chưa có CRUD sách/chương kết nối database; không đánh dấu hoạt động giả.'}
+    ];
+    if(healthHost)healthHost.innerHTML=checks.map(x=>'<div class="dashboard-health-row"><span class="dashboard-health-dot dashboard-'+(x.ok?'ok':x.warning?'warn':'fail')+'"></span><div><b>'+esc(x.name)+'</b><small>'+esc(x.detail)+'</small></div><span class="dashboard-health-tag dashboard-'+(x.ok?'ok':x.warning?'warn':'fail')+'">'+(x.ok?'Đạt':x.warning?'Chưa hoàn thiện':'Lỗi')+'</span></div>').join('');
+    const failed=checks.filter(x=>!x.ok&&!x.warning).length,warnings=checks.filter(x=>x.warning).length;
+    const dot=$('live-dot');if(dot)dot.style.background=failed?'#f87171':warnings?'#fbbf24':'#4ade80';
+    loadRoTruyenOverview();
+  }
 
   function filteredUsers(){const q=($('user-search').value||'').toLowerCase(),role=$('user-role-filter').value,status=$('user-status-filter').value;return state.users.filter(u=>(!q||`${u.email||''} ${u.display_name||''}`.toLowerCase().includes(q))&&(!role||u.role===role)&&(!status||u.account_status===status));}
   function renderUsers(){const rows=filteredUsers();$('users-body').innerHTML=rows.length?rows.map(u=>{const role=u.role==='admin'?'<span class="pill pill-admin">admin</span>':'<span class="pill pill-user">user</span>';const st=u.account_status||'active';return `<tr><td><b>${esc(u.display_name||'Không tên')}</b><br><span class="muted">${esc(u.email||u.id)}</span></td><td>${fmtDate(u.created_at)}</td><td>${role}</td><td><span class="pill pill-${st}">${esc(st)}</span></td><td>${fmtDate(u.last_seen_at)}</td><td><button class="btn" onclick="window.rfOpenUser('${u.id}')">Quản lý</button></td></tr>`;}).join(''):'<tr><td colspan="6" class="empty">Không có tài khoản phù hợp.</td></tr>';}
@@ -83,7 +115,14 @@
 
   async function loadActiveSessions(){const {data,error}=await sb.rpc('roflix_admin_live_viewers');if(error){$('active-sessions').innerHTML=`<p class="danger-text">${esc(error.message)}</p>`;return;}const live=data||[];$('active-sessions').innerHTML=live.length?live.map(x=>`<div class="event"><div class="event-top"><b>${x.is_authenticated?'👤 Đã đăng nhập':'🌐 Khách'}</b><span class="pill pill-active">online</span></div><small>${esc(x.movie_title||x.page||'RoFlix')} · ${fmtDate(x.last_seen_at)}</small></div>`).join(''):'<div class="empty">Hiện chưa có session active.</div>';renderLiveTable(live);}
   function renderLiveTable(live){const body=$('live-viewers-body');if(!body)return;body.innerHTML=live.length?live.map(x=>`<tr><td>${x.is_authenticated?'👤 User':'🌐 Guest'}</td><td><small>${esc(x.user_id||x.session_id)}</small></td><td>${esc(x.page||'')}</td><td><b>${esc(x.movie_title||'Không xem phim')}</b><br><small class="muted">${esc(x.movie_slug||'')}</small></td><td>${fmtDate(x.last_seen_at)}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">Chưa có người xem realtime.</td></tr>';const mini=$('live-viewers-mini');if(mini)mini.innerHTML=live.slice(0,5).map(x=>`<div class="event"><b>${x.is_authenticated?'👤':'🌐'}</b> ${esc(x.movie_title||x.page||'RoFlix')}<br><small class="muted">${fmtDate(x.last_seen_at)}</small></div>`).join('')||'<div class="empty">Chưa có người online.</div>';}
-  async function loadAudit(){const {data,error}=await sb.from('roflix_admin_audit_logs').select('id,admin_id,action,target_user_id,details,created_at').order('created_at',{ascending:false}).limit(100);if(error){$('audit-body').innerHTML=`<tr><td colspan="5" class="danger-text">${esc(error.message)}</td></tr>`;return;}state.audit=data||[];$('audit-body').innerHTML=state.audit.length?state.audit.map(x=>`<tr><td>${fmtDate(x.created_at)}</td><td><small>${esc(x.admin_id||'')}</small></td><td><b>${esc(x.action)}</b></td><td><small>${esc(x.target_user_id||'')}</small></td><td><code>${esc(JSON.stringify(x.details||{}))}</code></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Chưa có thao tác quản trị.</td></tr>';}
+  async async function loadAudit(){
+    const {data,error}=await sb.from('roflix_admin_audit_logs').select('id,admin_id,action,target_user_id,details,created_at').order('created_at',{ascending:false}).limit(100);
+    const host=$('dashboard-admin-activity');
+    if(error){$('audit-body').innerHTML='<tr><td colspan="5" class="danger-text">'+esc(error.message)+'</td></tr>';if(host)host.innerHTML='<div class="dashboard-empty">Không tải được nhật ký: '+esc(error.message)+'</div>';return;}
+    state.audit=data||[];
+    $('audit-body').innerHTML=state.audit.length?state.audit.map(x=>'<tr><td>'+fmtDate(x.created_at)+'</td><td><small>'+esc(x.admin_id||'')+'</small></td><td><b>'+esc(x.action)+'</b></td><td><small>'+esc(x.target_user_id||'')+'</small></td><td><code>'+esc(JSON.stringify(x.details||{}))+'</code></td></tr>').join(''):'<tr><td colspan="5" class="empty">Chưa có thao tác quản trị.</td></tr>';
+    if(host)host.innerHTML?host.innerHTML=state.audit.slice(0,6).length?state.audit.slice(0,6).map(x=>'<div class="dashboard-audit-item"><span class="dashboard-audit-mark">↳</span><div><b>'+esc(x.action||'Thao tác quản trị')+'</b><small>'+esc(x.admin_id||'Admin')+' · '+fmtDate(x.created_at)+'</small><p>'+esc(JSON.stringify(x.details||{}).slice(0,180))+'</p></div></div>').join(''):'<div class="dashboard-empty">Chưa có thao tác quản trị được ghi nhận.</div>':'';
+  }
 
   function scheduleRefresh(){clearTimeout(state.realtimeTimer);state.realtimeTimer=setTimeout(()=>{loadDashboard();if(state.currentPage==='analytics')loadActiveSessions();if(state.currentPage==='moderation')loadModeration();if(state.currentPage==='schedule'&&window.rfLoadAdminSchedule)window.rfLoadAdminSchedule();},900);}
   function subscribeRealtime(){if(!sb||state.realtime)return;state.realtime=sb.channel('roflix-admin-live-v2').on('postgres_changes',{event:'*',schema:'public',table:'roflix_active_sessions'},scheduleRefresh).on('postgres_changes',{event:'INSERT',schema:'public',table:'roflix_site_events'},scheduleRefresh).on('postgres_changes',{event:'*',schema:'public',table:'roflix_movie_comments'},scheduleRefresh).on('postgres_changes',{event:'*',schema:'public',table:'roflix_release_schedule'},scheduleRefresh).subscribe();}
