@@ -161,7 +161,7 @@
   });
   document.querySelectorAll('#admin-nav button').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.page)));
   $('refresh-btn').addEventListener('click',loadAll);$('dashboard-refresh-btn')?.addEventListener('click',loadAll);
-  $('admin-login-open')?.addEventListener('click',async()=>{try{const ok=await ensureAdmin();if(ok){switchPage('dashboard');await loadAll();return;}}catch(error){showAccess('Không kiểm tra được phiên đăng nhập',error?.message||'Hãy tải lại trang rồi thử lại.','⚠️');} $('access').scrollIntoView({behavior:'smooth',block:'start'});$('admin-login-email')?.focus();});
+  $('admin-login-open')?.addEventListener('click',async()=>{try{const ok=await ensureAdmin();if(ok){switchPage('dashboard');await loadAll();return;}showAccess('Chưa đăng nhập','Hãy đăng nhập bằng tài khoản RoFlix có quyền admin. Nếu đang dùng tài khoản thường, bạn có thể nhập tài khoản admin tại đây.');}catch(error){showAccess('Chưa đăng nhập','Không xác minh được phiên hiện tại. Hãy đăng nhập lại bằng tài khoản có quyền admin.');console.error('[RoHub Admin] Không xác minh được phiên:',error);} $('access').scrollIntoView({behavior:'smooth',block:'start'});$('admin-login-email')?.focus();});
   $('logout-btn').addEventListener('click',async()=>{await sb.auth.signOut();location.href='index.html';});
   $('modal-close').addEventListener('click',window.rfCloseUser);$('user-modal').addEventListener('click',e=>{if(e.target.id==='user-modal')window.rfCloseUser();});
   $('user-search').addEventListener('input',renderUsers);$('user-role-filter').addEventListener('change',renderUsers);$('user-status-filter').addEventListener('change',renderUsers);
