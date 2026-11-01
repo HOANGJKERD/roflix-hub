@@ -243,8 +243,23 @@
     renderRecommend(state.items);
   }
   const reel = {ids:"", index:0, timer:0, ms:6500, slides:[]};
+  const bannerImageCache = new Map();
   function bannerCover(s){
     return String(s.cover||"").replace(".256.jpg",".512.jpg");
+  }
+  function warmBannerImage(url, priority){
+    if(!url || bannerImageCache.has(url)) return bannerImageCache.get(url) || Promise.resolve(false);
+    const task = new Promise(resolve=>{
+      const img=new Image();
+      img.decoding="async";
+      if(priority) img.fetchPriority="high";
+      img.onload=()=>resolve(true);
+      img.onerror=()=>resolve(false);
+      img.src=url;
+    });
+    bannerImageCache.set(url,task);
+    if(bannerImageCache.size>12) bannerImageCache.delete(bannerImageCache.keys().next().value);
+    return task;
   }
   function renderRecommend(items){
     const box = $("#rt-recommend");
@@ -260,7 +275,7 @@
       reel.slides = picked;
       reel.index = 0;
       const rail = $("#rt-banner-rail");
-      rail.innerHTML = picked.map((s,i) => '<button type="button" data-reel="'+i+'"><img src="'+esc(bannerCover(s))+'" alt=""></button>').join("");
+      rail.innerHTML = picked.map((s,i) => '<button type="button" data-reel="'+i+'"><img src="'+esc(String(s.cover||"").replace(".512.jpg",".256.jpg"))+'" alt="" loading="lazy" decoding="async"></button>').join("");
       rail.onclick = (e) => {
         const hit = e.target.closest("[data-reel]");
         if(!hit) return;
@@ -282,7 +297,17 @@
     reel.index = (index + slides.length) % slides.length;
     const s = slides[reel.index];
     const media = $("#rt-banner-media");
-    media.style.backgroundImage = 'url("'+bannerCover(s).replace(/"/g,"")+'")';
+    const imageUrl=bannerCover(s).replace(/"/g,"");
+    media.style.backgroundColor="#141824";
+    if(media.dataset.bannerSrc!==imageUrl){
+      media.dataset.bannerSrc=imageUrl;
+      media.style.opacity="0.72";
+      warmBannerImage(imageUrl,reel.index===0).then(ok=>{
+        if(media.dataset.bannerSrc!==imageUrl)return;
+        media.style.backgroundImage='url("'+imageUrl+'")';
+        media.style.opacity="1";
+      });
+    }
     $("#rt-banner-kicker").textContent = (s.kind || "Đề xuất").toUpperCase();
     $("#rt-banner-title").textContent = s.title || "";
     const desc = String(s.description || s.author || "").replace(/\s+/g," ").trim();
