@@ -221,3 +221,92 @@
   html.rh-story #reader-modal .reader-chapter-nav { grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) !important; }
   html.rh-story #reader-modal #reader-chapter-position { max-width: 68px; }
 }
+
+
+/* Final mobile layout corrections: avoid nested flex/grid collisions. */
+@media (max-width:760px) {
+  /* RoFlix: stable two-row header, no search/control overlap. */
+  html.rh-flix .header-ios { position:relative !important; top:auto !important; }
+  html.rh-flix .header-ios > .max-w-7xl {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) auto !important;
+    grid-template-rows:auto auto !important;
+    align-items:center !important;
+    gap:8px 10px !important;
+  }
+  html.rh-flix .header-ios > .max-w-7xl > div:first-child {
+    grid-column:1 !important; grid-row:1 !important; min-width:0 !important;
+  }
+  html.rh-flix .header-ios > .max-w-7xl > div:last-child {
+    grid-column:1 / -1 !important; grid-row:2 !important;
+    display:flex !important; flex-direction:row !important; flex-wrap:wrap !important;
+    align-items:center !important; justify-content:flex-start !important;
+    gap:7px !important; width:100% !important; min-width:0 !important; margin:0 !important;
+  }
+  html.rh-flix .header-ios .search-ios-mobile {
+    order:20 !important; flex:1 0 100% !important; width:100% !important;
+    min-width:0 !important; height:42px !important; margin:0 !important;
+    display:flex !important; position:relative !important; inset:auto !important;
+  }
+  html.rh-flix .header-ios > .max-w-7xl > div:last-child > button {
+    flex:0 0 40px !important; width:40px !important; height:40px !important;
+  }
+  html.rh-flix .header-ios #mobile-menu {
+    position:absolute !important; top:100% !important; left:10px !important; right:10px !important;
+    z-index:140 !important; width:auto !important; max-height:65dvh !important;
+    overflow:auto !important; display:block !important;
+  }
+  html.rh-flix .header-ios #mobile-menu.hidden { display:none !important; }
+  html.rh-flix .hero-epic { isolation:isolate; }
+  html.rh-flix .hero-epic .hero-content.glass-premium {
+    position:absolute !important; inset:auto 0 0 !important;
+    width:100% !important; max-width:none !important; margin:0 !important;
+    padding:18px 14px 22px !important;
+    background:linear-gradient(0deg,#080610 0%,rgba(8,6,16,.94) 72%,transparent 100%) !important;
+    z-index:2;
+  }
+  html.rh-flix .hero-epic .hero-nav { z-index:4 !important; }
+  html.rh-flix .hero-epic .hero-actions { position:relative; z-index:5; }
+
+  /* RoTruyen reader: only images scroll; controls remain in fixed frame. */
+  html.rh-story #reader-modal:not([hidden]) { display:flex !important; }
+  html.rh-story #reader-modal .reader-content {
+    display:flex !important; flex-direction:column !important; align-items:stretch !important;
+    gap:0 !important; padding:0 !important;
+  }
+  html.rh-story #reader-modal .reader-page {
+    display:flex; flex-direction:column; align-items:center;
+    width:100%; margin:0; padding:0 0 var(--reader-page-gap,4px);
+  }
+  html.rh-story #reader-modal .reader-page img {
+    display:block; width:100%; height:auto; min-height:0; object-fit:contain;
+  }
+  html.rh-story #reader-modal .reader-page-report[hidden] { display:none !important; }
+  html.rh-story #reader-modal .reader-page-report:not([hidden]) {
+    display:inline-flex; align-self:center; margin:8px auto 12px;
+    min-height:34px; padding:6px 12px; border:1px solid #a78bfa55;
+    border-radius:999px; background:#171321; color:#d8c7ff; font-size:11px;
+  }
+  html.rh-story #reader-modal .reader-page.has-error {
+    min-height:110px; justify-content:center; background:#0b0b10;
+  }
+  html.rh-story #reader-modal .reader-page img.reader-image-error {
+    width:auto; max-width:100%; min-height:0; max-height:65px; object-fit:contain;
+  }
+  html.rh-story #reader-modal .reader-chapter-nav {
+    width:100% !important; box-sizing:border-box !important;
+    grid-template-columns:minmax(0,1fr) minmax(56px,auto) minmax(0,1fr) !important;
+  }
+  html.rh-story #reader-modal .reader-chapter-nav button { width:100%; }
+  html.rh-story #reader-modal .reader-tools { box-sizing:border-box; width:100%; }
+  html.rh-story #reader-modal .reader-top { box-sizing:border-box; width:100%; }
+
+  /* RoHub landing: prevent sticky header from starting below an artificial offset. */
+  body:has(> .noise) .shell { padding-top: max(10px,env(safe-area-inset-top)) !important; }
+  body:has(> .noise) .topbar { top:0 !important; }
+}
+@media (max-width:390px) {
+  html.rh-flix .header-ios > .max-w-7xl { padding-inline:10px !important; }
+  html.rh-flix .header-ios > .max-w-7xl > div:last-child { gap:6px !important; }
+  html.rh-story #reader-modal .reader-tools { gap:7px !important; padding:8px !important; }
+}
