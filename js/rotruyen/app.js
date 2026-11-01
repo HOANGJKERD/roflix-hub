@@ -86,6 +86,22 @@
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
     return id && file ? '/api/mangadex-image?host=uploads.mangadex.org&path='+encodeURIComponent('/covers/'+id+'/'+file+'.512.jpg') : '';
   }
+  function coverFallbackOf(item) {
+    const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
+    return id && file ? 'https://uploads.mangadex.org/covers/'+encodeURIComponent(id)+'/'+encodeURIComponent(file)+'.512.jpg' : '';
+  }
+  window.rtCoverError = function(img) {
+    if (!img) return;
+    const fallback=img.dataset.fallbackSrc;
+    if (fallback && img.dataset.fallbackTried !== '1' && img.src !== fallback) {
+      img.dataset.fallbackTried='1'; img.src=fallback; return;
+    }
+    img.onerror=null; img.style.display='none'; img.parentElement?.classList.add('cover-missing');
+    if (!img.parentElement?.querySelector('.cover-fallback-icon')) {
+      const icon=document.createElement('i'); icon.className='fa-solid fa-book-open cover-fallback-icon';
+      icon.setAttribute('aria-hidden','true'); img.parentElement?.appendChild(icon);
+    }
+  };
   const RT_TAG_VI = {
     action:'Hành động', adventure:'Phiêu lưu', comedy:'Hài hước', drama:'Chính kịch',
     fantasy:'Kỳ ảo', horror:'Kinh dị', mystery:'Bí ẩn', romance:'Lãng mạn',
@@ -114,7 +130,7 @@
     const tagText=rawTags.join(' ');
     const genre=tagText.includes('romance')?'romance':tagText.includes('action')?'action':tagText.includes('drama')?'drama':tagText.includes('adventure')?'adventure':'fantasy';
     const description=a.description?.vi||a.description?.en||'Nguồn chưa cung cấp mô tả bằng tiếng Việt hoặc tiếng Anh.';
-    return {id:item.id,source:'mangadex',title:titleOf(item),author:(item.relationships||[]).find(r=>r.type==='author')?.attributes?.name||'Chưa rõ tác giả',genre,kind:tags.slice(0,2).join(' · ')||'Chưa có thông tin thể loại',chapters:null,rating:null,pop:0,updated:0,cover:coverOf(item),description,status:rtLocalizeStatus(a.status),contentRating:a.contentRating||'safe',raw:item};
+    return {id:item.id,source:'mangadex',title:titleOf(item),author:(item.relationships||[]).find(r=>r.type==='author')?.attributes?.name||'Chưa rõ tác giả',genre,kind:tags.slice(0,2).join(' · ')||'Chưa có thông tin thể loại',chapters:null,rating:null,pop:0,updated:0,cover:coverOf(item),coverFallback:coverFallbackOf(item),description,status:rtLocalizeStatus(a.status),contentRating:a.contentRating||'safe',raw:item};
   }
   async function fetchJSON(url, options={}) {
     const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),18000);
@@ -228,7 +244,7 @@
   function isStoryLocked(item){return item?.source==='database' && (item.isLocked===true || item.is_locked===true);}
   function coverMarkup(s) {
     const style='--cover:'+esc(s.coverColor||'#282449')+';--glow:'+esc(s.glow||'#8c6ce0')+';--accent:'+esc(s.accent||'#d3b9ff');
-    const visual=s.cover && ['mangadex','database','longbook','truyenviet'].includes(s.source) && s.cover ? '<img loading="lazy" src="'+esc(s.cover)+'" alt="" onerror="this.onerror=null;this.style.display=\'none\';this.parentElement.classList.add(\'cover-missing\');this.insertAdjacentHTML(\'beforeend\',\'<i class=&quot;fa-solid fa-book-open&quot; aria-hidden=&quot;true&quot;></i>\')">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
+    const visual=s.cover && ['mangadex','database','longbook','truyenviet'].includes(s.source) ? '<img loading="lazy" decoding="async" src="'+esc(s.cover)+'" '+(s.coverFallback?'data-fallback-src="'+esc(s.coverFallback)+'" ':'')+'alt="" onerror="window.rtCoverError(this)">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     const locked=isStoryLocked(s),ageLock=isAdultOnly(s)?'<span class="rt-age-lock" title="18+ · cần đăng nhập"><i class="fa-solid fa-lock"></i> 18+</span>':'';
     const lockBadge=locked?'<span class="rt-story-lock-badge"><i class="fa-solid fa-lock"></i> Đã khóa</span>':'';
     return '<div class="cover'+(locked?' is-story-locked':'')+'" style="'+style+'">'+visual+ageLock+lockBadge+'<small>'+esc(s.kind||'Truyện')+'</small><button data-save="'+esc(s.id)+'" class="'+(state.saved.has(s.id)?'saved':'')+'" aria-label="'+(state.saved.has(s.id)?'Bỏ lưu':'Lưu truyện')+'"><i class="fa-'+(state.saved.has(s.id)?'solid':'regular')+' fa-bookmark"></i></button></div>';
@@ -247,18 +263,19 @@
   function bannerCover(s){
     return String(s.cover||"").replace(".256.jpg",".512.jpg");
   }
-  function warmBannerImage(url, priority){
-    if(!url || bannerImageCache.has(url)) return bannerImageCache.get(url) || Promise.resolve(false);
-    const task = new Promise(resolve=>{
-      const img=new Image();
-      img.decoding="async";
-      if(priority) img.fetchPriority="high";
-      img.onload=()=>resolve(true);
-      img.onerror=()=>resolve(false);
-      img.src=url;
+  function warmBannerImage(url, priority, fallback){
+    const key=url+'|'+(fallback||'');
+    if(!url) return Promise.resolve('');
+    if(bannerImageCache.has(key)) return bannerImageCache.get(key);
+    const load=src=>new Promise(resolve=>{
+      const img=new Image(); img.decoding='async';
+      if(priority) img.fetchPriority='high';
+      img.onload=()=>resolve(src); img.onerror=()=>resolve('');
+      img.src=src;
     });
-    bannerImageCache.set(url,task);
-    if(bannerImageCache.size>12) bannerImageCache.delete(bannerImageCache.keys().next().value);
+    const task=load(url).then(ok=>ok || (fallback && fallback!==url ? load(fallback) : ''));
+    bannerImageCache.set(key,task);
+    if(bannerImageCache.size>24) bannerImageCache.delete(bannerImageCache.keys().next().value);
     return task;
   }
   function renderRecommend(items){
@@ -275,7 +292,7 @@
       reel.slides = picked;
       reel.index = 0;
       const rail = $("#rt-banner-rail");
-      rail.innerHTML = picked.map((s,i) => '<button type="button" data-reel="'+i+'"><img src="'+esc(String(s.cover||"").replace(".512.jpg",".256.jpg"))+'" alt="" loading="lazy" decoding="async"></button>').join("");
+      rail.innerHTML = picked.map((s,i) => '<button type="button" data-reel="'+i+'"><img src="'+esc(String(s.cover||"").replace(".512.jpg",".256.jpg"))+'" '+(s.coverFallback?'data-fallback-src="'+esc(s.coverFallback)+'" ':'')+'alt="" loading="lazy" decoding="async" onerror="window.rtCoverError(this)"></button>').join("");
       rail.onclick = (e) => {
         const hit = e.target.closest("[data-reel]");
         if(!hit) return;
@@ -302,10 +319,10 @@
     if(media.dataset.bannerSrc!==imageUrl){
       media.dataset.bannerSrc=imageUrl;
       media.style.opacity="0.72";
-      warmBannerImage(imageUrl,reel.index===0).then(ok=>{
+      warmBannerImage(imageUrl,reel.index===0,s.coverFallback||'').then(loadedUrl=>{
         if(media.dataset.bannerSrc!==imageUrl)return;
-        media.style.backgroundImage='url("'+imageUrl+'")';
-        media.style.opacity="1";
+        if(loadedUrl){media.style.backgroundImage='url("'+loadedUrl.replace(/"/g,'')+'")';media.style.opacity="1";}
+        else {media.style.backgroundImage='none';media.style.opacity="0.25";}
       });
     }
     $("#rt-banner-kicker").textContent = (s.kind || "Đề xuất").toUpperCase();
