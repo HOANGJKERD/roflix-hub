@@ -3,15 +3,14 @@
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var finePointer = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
   var path = location.pathname.toLowerCase();
-  var isHub = path === "/" || path.endsWith("/index.html") || !/roflix|rotruyen|roedu/.test(path);
-  var world = path.indexOf("roflix") >= 0 ? "flix" : path.indexOf("rotruyen") >= 0 ? "story" : path.indexOf("roedu") >= 0 ? "edu" : "";
+  var isHub = path === "/" || path.endsWith("/index.html") || !/roflix|rotruyen/.test(path);
+  var world = path.indexOf("roflix") >= 0 ? "flix" : path.indexOf("rotruyen") >= 0 ? "story" : "";
   if (world) {
     document.documentElement.classList.add("rh-world", "rh-" + world);
-    var names = {flix:"ROFLIX", story:"ROTRUYỆN", edu:"ROEDU"};
+    var names = {flix:"ROFLIX", story:"ROTRUYỆN"};
     var links = [
       ["roflix.html","RoFlix","flix"],
       ["rotruyen.html","RoTruyện","story"],
-      ["roedu.html","RoEdu","edu"]
     ];
     var bar = document.createElement("div");
     bar.className = "rh-bridge";
