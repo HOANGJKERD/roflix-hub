@@ -26,34 +26,6 @@
     document.head.appendChild(s);
   }
 
-  function loadAnimeRestore() {
-    if (document.getElementById('rf-anime-restore-script')) return;
-    const s = document.createElement('script');
-    s.id = 'rf-anime-restore-script';
-    s.src = 'js/features/anime-restore.js?v=20261006-2';
-    s.async = false;
-    document.head.appendChild(s);
-  }
-
-  function loadAnimePlayer() {
-    if (document.getElementById('rf-anime-player-script')) return;
-    const s = document.createElement('script');
-    s.id = 'rf-anime-player-script';
-    s.src = 'js/features/anime-player.js?v=20261008-1';
-    s.async = false;
-    document.head.appendChild(s);
-  }
-
-  function loadAnimeCatalog() {
-    loadAnimePlayer();
-    if (document.getElementById('rf-anime-catalog-script')) return;
-    const s = document.createElement('script');
-    s.id = 'rf-anime-catalog-script';
-    s.src = 'js/features/anime-hub.js?v=20261007-9';
-    s.async = false;
-    document.head.appendChild(s);
-  }
-
   function loadDanMyCatalog() {
     if (document.getElementById('rf-danmy-hub-script')) return;
     const s = document.createElement('script');
@@ -205,8 +177,6 @@
     css();
     loadFeatureGates();
     loadMovieCuration();
-    loadAnimeRestore();
-    loadAnimeCatalog();
     loadDanMyCatalog();
     installSecurityRealtime();
 
