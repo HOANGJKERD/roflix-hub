@@ -47,10 +47,10 @@
   const videoState = new WeakMap();
   function attachVideo(video){
     if(videoState.has(video))return;
-    const state={last:0,lastSent:0};videoState.set(video,state);
+    const state={last:0,lastSent:0,pending:0};videoState.set(video,state);
     video.addEventListener('playing',()=>{state.last=Number(video.currentTime)||0;state.lastSent=Date.now();});
-    video.addEventListener('pause',()=>{state.last=Number(video.currentTime)||0;});
-    video.addEventListener('ended',()=>{const d=Number(video.duration);const delta=Math.max(0,Math.min(30,(Number(video.currentTime)||0)-state.last));sendProgress(video,delta,d);state.last=Number(video.currentTime)||0;});
+    video.addEventListener('pause',()=>{const pos=Number(video.currentTime)||0;state.pending+=Math.max(0,Math.min(30,pos-state.last));if(state.pending>=1)sendProgress(video,state.pending,Number(video.duration));state.pending=0;state.last=pos;});
+    video.addEventListener('ended',()=>{const d=Number(video.duration);const delta=Math.max(0,Math.min(30,(Number(video.currentTime)||0)-state.last));state.pending+=delta;if(state.pending>=1)sendProgress(video,state.pending,d);state.pending=0;state.last=Number(video.currentTime)||0;});
   }
   async function sendProgress(video,seconds,duration){
     if(!current.movieSlug||seconds<=0)return;
@@ -64,8 +64,8 @@
     document.querySelectorAll('video').forEach(video=>{
       const s=videoState.get(video);if(!s||video.paused||video.ended||!Number.isFinite(video.currentTime))return;
       const now=Date.now(),position=Number(video.currentTime)||0,delta=Math.max(0,Math.min(30,position-s.last));
-      if(delta>=1&&now-s.lastSent>=10000){s.last=position;s.lastSent=now;sendProgress(video,delta,Number(video.duration));}
-      else if(delta>0)s.last=position;
+      if(delta>0){s.pending+=delta;s.last=position;}
+      if(s.pending>=1&&now-s.lastSent>=10000){const pending=s.pending;s.pending=0;s.lastSent=now;sendProgress(video,pending,Number(video.duration));}
     });
   },5000);
 
