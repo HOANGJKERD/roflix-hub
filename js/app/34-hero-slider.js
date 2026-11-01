@@ -6,6 +6,22 @@
         let heroTimer = null;
         const HERO_INTERVAL = 7000;
 
+        const heroImageCache = new Map();
+        function warmHeroImage(url) {
+            if (!url || heroImageCache.has(url)) return heroImageCache.get(url) || Promise.resolve();
+            const task = new Promise(resolve => {
+                const img = new Image();
+                img.decoding = 'async';
+                img.fetchPriority = 'high';
+                img.onload = async () => { try { if (img.decode) await img.decode(); } catch (_) {} resolve(true); };
+                img.onerror = () => resolve(false);
+                img.src = url;
+            });
+            heroImageCache.set(url, task);
+            if (heroImageCache.size > 12) heroImageCache.delete(heroImageCache.keys().next().value);
+            return task;
+        }
+
         async function initHeroSlider() {
             try {
                 const res1 = await fetchListWithFallback('/quoc-gia/au-my?page=1');
@@ -13,24 +29,24 @@
                     .filter(m => m.slug && isValidPosterUrl(m.poster))
                     .slice(0, 8);
 
-                if (heroSlides.length < 4) {
-                    try {
-                        const res2 = await fetchListWithFallback('/tim-kiem?keyword=2024&page=1');
-                        const more = mapListResultItems(res2).filter(m => m.slug);
-                        heroSlides = [...heroSlides, ...more].slice(0, 8);
-                    } catch (_) {}
+                if (!heroSlides.length) {
+                    const res2 = await fetchListWithFallback('/tim-kiem?keyword=2024&page=1');
+                    heroSlides = mapListResultItems(res2).filter(m => m.slug && isValidPosterUrl(m.poster)).slice(0, 8);
                 }
 
                 if (!heroSlides.length) return;
-
                 renderHeroDots();
+                const firstImage = heroSlides[0].thumb || heroSlides[0].poster;
+                await warmHeroImage(firstImage);
                 showHeroSlide(0, false);
                 startHeroAutoplay();
 
+                // Tải trước slide kế tiếp ở nền, không chặn nội dung đầu trang.
+                if (heroSlides[1]) warmHeroImage(heroSlides[1].thumb || heroSlides[1].poster);
                 const section = document.getElementById('hero-section');
                 if (section) {
-                    section.addEventListener('mouseenter', stopHeroAutoplay);
-                    section.addEventListener('mouseleave', startHeroAutoplay);
+                    section.addEventListener('mouseenter', stopHeroAutoplay, {passive:true});
+                    section.addEventListener('mouseleave', startHeroAutoplay, {passive:true});
                 }
             } catch (e) {
                 console.error('Hero slider error:', e);
@@ -122,12 +138,20 @@
                 }
             };
 
-            if (animate && box) {
-                box.classList.add('is-fading');
-                box.classList.remove('is-visible');
-                setTimeout(apply, 280);
+            const nextUrl = m.thumb || m.poster;
+            const applyWhenReady = () => {
+                if (animate && box) {
+                    box.classList.add('is-fading');
+                    box.classList.remove('is-visible');
+                    requestAnimationFrame(() => requestAnimationFrame(apply));
+                } else apply();
+                const next = heroSlides[(heroIndex + 1) % heroSlides.length];
+                if (next && next !== m) warmHeroImage(next.thumb || next.poster);
+            };
+            if (nextUrl && heroImageCache.has(nextUrl)) {
+                warmHeroImage(nextUrl).then(applyWhenReady);
             } else {
-                apply();
+                warmHeroImage(nextUrl).then(applyWhenReady);
             }
         }
 
