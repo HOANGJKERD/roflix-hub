@@ -134,6 +134,14 @@
     const rows=data||[];
     body.innerHTML=rows.length?rows.map(x=>'<tr><td>'+fmtDate(x.created_at)+'</td><td>'+(x.user_id?'<b>'+esc(x.display_name||'Thành viên')+'</b><br><small>'+esc(x.user_email||x.user_id)+'</small>':'<b>Khách</b><br><small>Guest session</small>')+'</td><td>'+esc(x.event_type==='movie_play'?'▶ Phát phim':x.event_type==='movie_view'?'👁 Mở phim':x.event_type==='movie_detail'?'ℹ Chi tiết phim':'🌐 Truy cập')+'</td><td><b>'+esc(x.movie_title||'—')+'</b><br><small>'+esc(x.movie_slug||x.page||'')+'</small></td><td><code>'+esc(x.session_id)+'</code></td></tr>').join(''):'<tr><td colspan="6" class="empty">Chưa có lịch sử. Khách truy cập mới sẽ được ghi nhận từ phiên bản này.</td></tr>';
   }
+  async function loadWatchHistory(){
+    const body=$('watch-history-body');if(!body)return;
+    const {data,error}=await sb.rpc('roflix_admin_watch_history',{p_limit:250});
+    if(error){body.innerHTML='<tr><td colspan="5" class="danger-text">'+esc(error.message)+'</td></tr>';return;}
+    const rows=data||[];
+    body.innerHTML=rows.length?rows.map(x=>'<tr><td>'+fmtDate(x.created_at)+'</td><td>'+(x.user_id?'<b>'+esc(x.display_name||'Thành viên')+'</b><br><small>'+esc(x.user_email||x.user_id)+'</small>':'<b>Khách</b><br><small>Guest session</small>')+'</td><td>'+esc(x.event_type==='movie_play'?'▶ Phát phim':x.event_type==='movie_view'?'👁 Mở phim':x.event_type==='movie_detail'?'ℹ Chi tiết phim':'🌐 Truy cập')+'</td><td><b>'+esc(x.movie_title||'—')+'</b><br><small>'+esc(x.movie_slug||x.page||'')+'</small></td><td><code>'+esc(x.session_id)+'</code></td></tr>').join(''):'<tr><td colspan="5" class="empty">Chưa có lịch sử. Khách truy cập mới sẽ được ghi nhận từ phiên bản này.</td></tr>';
+  }
+  window.rfAdminRefreshWatchHistory=loadWatchHistory;
   async function loadAudit(){
     const {data,error}=await sb.from('roflix_admin_audit_logs').select('id,admin_id,action,target_user_id,details,created_at').order('created_at',{ascending:false}).limit(100);
     const host=$('dashboard-admin-activity');
