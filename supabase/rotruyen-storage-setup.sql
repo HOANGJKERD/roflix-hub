@@ -1,7 +1,7 @@
 -- Run this SQL in the Supabase SQL Editor for the RoFlix/RoHub project.
 -- Public read is needed for reader pages; only active admin profiles may write/delete.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('rotruyen-pages','rotruyen-pages',true,52428800,array['image/jpeg','image/png','image/webp','image/gif'])
+values ('rotruyen-pages','rotruyen-pages',true,15728640,array['image/jpeg','image/png','image/webp','image/gif'])
 on conflict (id) do update set public=excluded.public,file_size_limit=excluded.file_size_limit,allowed_mime_types=excluded.allowed_mime_types;
 
 drop policy if exists "RoTruyen chapter images are publicly readable" on storage.objects;
