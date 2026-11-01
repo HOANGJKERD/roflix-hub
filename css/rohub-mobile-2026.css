@@ -1,0 +1,175 @@
+/* RoHub mobile-first refinement · desktop styles remain untouched. */
+@media (max-width: 760px) {
+  html { scroll-padding-top: 112px; }
+  body { overflow-x: clip; }
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  button, [role="button"], .btn { touch-action: manipulation; }
+}
+
+/* RoHub gateway */
+@media (max-width: 760px) {
+  body:has(> .noise) .shell { padding: max(14px, env(safe-area-inset-top)) 16px 24px; }
+  body:has(> .noise) .topbar {
+    position: sticky; top: 40px; z-index: 30;
+    display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px;
+    padding: 9px 0; background: rgba(8,6,16,.88);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  }
+  body:has(> .noise) .brand { min-width: 0; gap: 9px; }
+  body:has(> .noise) .brand-name { font-size: 21px; }
+  body:has(> .noise) .hub-nav {
+    grid-column: 1 / -1; order: 3; width: 100%; margin: 0;
+    display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px;
+  }
+  body:has(> .noise) .hub-nav a {
+    min-height: 42px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid #ffffff18; border-radius: 12px;
+    background: linear-gradient(135deg,#ffffff0b,#ffffff04); font-size: 12px;
+  }
+  body:has(> .noise) .status { justify-self: end; font-size: 9px; padding: 8px 10px; }
+  body:has(> .noise) .hero { padding: 56px 0 28px; }
+  body:has(> .noise) .hero-orbit { width: min(82vw,340px); height: min(82vw,340px); top: 38px; }
+  body:has(> .noise) h1 { font-size: clamp(38px,10vw,58px); line-height: 1.04; letter-spacing: -.045em; }
+  body:has(> .noise) .hero p { max-width: 34rem; font-size: 13px; line-height: 1.7; }
+  body:has(> .noise) .section-head { margin: 22px 0 14px; }
+  body:has(> .noise) .section-head p { font-size: 11px; }
+  body:has(> .noise) .portals { grid-template-columns: minmax(0,1fr); gap: 12px; }
+  body:has(> .noise) .portal { min-height: 0; padding: 19px; border-radius: 20px; }
+  body:has(> .noise) .portal h3 { margin: 18px 0 7px; font-size: 27px; }
+  body:has(> .noise) .portal p { max-width: 38rem; font-size: 12px; line-height: 1.65; }
+  body:has(> .noise) .portal-bottom { padding-top: 18px; }
+  body:has(> .noise) .feature-grid { grid-template-columns: minmax(0,1fr); gap: 9px; }
+  body:has(> .noise) .feature { padding: 13px; border-radius: 15px; }
+  body:has(> .noise) .bottom-row { align-items: flex-start; flex-direction: column; gap: 12px; }
+  body:has(> .noise) footer { padding-bottom: max(18px,env(safe-area-inset-bottom)); }
+}
+@media (max-width: 390px) {
+  body:has(> .noise) .shell { padding-inline: 12px; }
+  body:has(> .noise) .mark { width: 38px; height: 38px; }
+  body:has(> .noise) .brand-name { font-size: 19px; }
+  body:has(> .noise) .status { font-size: 8px; letter-spacing: .7px; }
+  body:has(> .noise) .hero { padding-top: 48px; }
+  body:has(> .noise) .eyebrow { letter-spacing: 1px; }
+}
+
+/* RoFlix: compact, thumb-friendly browsing without changing its existing layout logic. */
+@media (max-width: 760px) {
+  html.rh-flix { --rf-mobile-gutter: 12px; }
+  html.rh-flix .rh-bridge { padding-left: 10px; padding-right: 10px; }
+  html.rh-flix .header-ios { width: 100%; }
+  html.rh-flix .header-ios>.max-w-7xl { min-height: 54px; }
+  html.rh-flix .header-ios .search-ios-mobile { order: 5; }
+  html.rh-flix .header-ios button,
+  html.rh-flix .header-ios a,
+  html.rh-flix .hero-actions button,
+  html.rh-flix .hero-actions a { min-height: 42px; }
+  html.rh-flix #movie-grid-container { align-items: start; }
+  html.rh-flix .movie-card-premium img { width: 100%; }
+  html.rh-flix .movie-card-premium .card-overlay { padding: 8px !important; }
+  html.rh-flix .movie-card-premium .watch-btn { padding: 7px 8px !important; }
+  html.rh-flix .rf-suite-bar { scrollbar-width: none; }
+  html.rh-flix .rf-suite-bar::-webkit-scrollbar { display: none; }
+  html.rh-flix .rf-section-heading { flex-wrap: wrap; }
+  html.rh-flix .filter-panel, html.rh-flix .glass-premium { max-width: 100%; }
+  html.rh-flix .modal, html.rh-flix [role="dialog"] { max-width: 100vw; }
+  html.rh-flix input, html.rh-flix select, html.rh-flix textarea { font-size: 16px !important; }
+}
+@media (max-width: 390px) {
+  html.rh-flix { --rf-mobile-gutter: 9px; }
+  html.rh-flix .header-ios>.max-w-7xl>div:last-child { gap: 5px !important; }
+  html.rh-flix .header-ios button { min-width: 35px; }
+  html.rh-flix #movie-grid-container { gap: 8px !important; }
+}
+
+/* RoTruyen: retain banner + catalogue hierarchy, make every control reachable. */
+@media (max-width: 760px) {
+  html.rh-story { --rt-mobile-gutter: 12px; }
+  html.rh-story body { overflow-x: clip; }
+  html.rh-story .rh-bridge { gap: 7px; padding-inline: 10px; }
+  html.rh-story .rh-bridge-brand { font-size: 12px; }
+  html.rh-story .rh-bridge-here { font-size: 9px; letter-spacing: 1px; }
+  html.rh-story .rt-site-header {
+    top: 40px !important; min-height: 56px; padding: 8px var(--rt-mobile-gutter);
+    display: flex !important; gap: 8px; flex-wrap: nowrap;
+  }
+  html.rh-story .rt-brand { gap: 7px; font-size: 15px; }
+  html.rh-story .rt-brand-mark { width: 32px; height: 32px; flex: 0 0 32px; }
+  html.rh-story .rt-brand small { font-size: 7px; }
+  html.rh-story .rt-header-actions { gap: 5px; }
+  html.rh-story .rt-icon-button { width: 36px; height: 36px; padding: 0; }
+  html.rh-story .rt-account-link { width: 36px; height: 36px; padding: 0; }
+  html.rh-story .rt-account-link span { display: none; }
+  html.rh-story #mobile-menu { display: inline-flex !important; align-items: center; justify-content: center; width: 38px; height: 38px; }
+  html.rh-story .rt-site-header>nav {
+    top: 100% !important; left: 0; right: 0; z-index: 90;
+    display: none; flex-direction: column; align-items: stretch; gap: 3px;
+    padding: 10px 12px; background: rgba(9,8,18,.97);
+    border: 1px solid #ffffff18; border-top: 0; border-radius: 0 0 15px 15px;
+    box-shadow: 0 18px 35px #0009;
+  }
+  html.rh-story .rt-site-header>nav.open { display: flex !important; }
+  html.rh-story .rt-site-header>nav a { min-height: 42px; display: flex; align-items: center; padding: 8px 12px; border: 0; border-radius: 9px; }
+  html.rh-story #catalog { width: calc(100% - 24px); }
+  html.rh-story section.hero.rt-banner {
+    width: calc(100% + 24px); margin: 10px -12px 24px;
+    min-height: clamp(480px,78svh,590px); border-radius: 0 0 20px 20px;
+    padding: 190px 16px 104px;
+  }
+  html.rh-story section.hero.rt-banner .rt-banner-copy { min-height: 0; padding: 0 2px 90px; }
+  html.rh-story section.hero.rt-banner h1 { max-width: 13ch; font-size: clamp(34px,9vw,52px); line-height: 1.03; }
+  html.rh-story section.hero.rt-banner p { max-width: 38rem; font-size: 13px; line-height: 1.6; }
+  html.rh-story section.hero.rt-banner .rt-banner-rail { bottom: 12px !important; left: 12px !important; right: 12px !important; gap: 7px !important; }
+  html.rh-story section.hero.rt-banner .rt-banner-rail button { width: 48px; height: 66px; flex-basis: 48px; }
+  html.rh-story section.catalog { padding-top: 12px; }
+  html.rh-story section.catalog .section-heading { gap: 10px; margin: 24px 0 16px; }
+  html.rh-story section.catalog .section-heading h2 { font-size: 25px; }
+  html.rh-story section.catalog .section-actions { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; }
+  html.rh-story section.catalog .section-actions .btn { min-height: 40px; padding: 9px 11px; font-size: 11px; }
+  html.rh-story section.catalog .filter-panel { padding: 12px !important; }
+  html.rh-story section.catalog .filter-search-row { grid-template-columns: minmax(0,1fr) auto; gap: 7px; }
+  html.rh-story section.catalog .filter-search-row .search { min-height: 44px; padding-inline: 10px; gap: 7px; }
+  html.rh-story section.catalog .filter-search-row .search input { min-height: 42px; font-size: 16px; }
+  html.rh-story section.catalog .filter-reset { min-height: 44px; padding-inline: 10px; font-size: 11px; }
+  html.rh-story section.catalog .filter-controls { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  html.rh-story section.catalog .filter-control span { font-size: 10px; }
+  html.rh-story section.catalog .filter-control select { min-height: 42px; padding-inline: 8px; font-size: 12px; }
+  html.rh-story section.catalog .tabs { gap: 7px; padding-bottom: 10px; margin: 15px 0; }
+  html.rh-story section.catalog .tabs button { min-height: 38px; padding: 8px 12px !important; font-size: 11px; }
+  html.rh-story .story-grid { grid-template-columns: repeat(3,minmax(0,1fr)) !important; gap: 12px !important; }
+  html.rh-story .story-grid>* { min-width: 0; }
+  html.rh-story .story-grid h3, html.rh-story .story-grid .story-title { font-size: 11px; line-height: 1.35; }
+  html.rh-story .story-grid p { font-size: 10px; }
+  html.rh-story .lower { grid-template-columns: minmax(0,1fr) !important; gap: 12px; margin: 30px 0; }
+  html.rh-story .panel { padding: 17px !important; }
+  html.rh-story .library { padding: 16px !important; }
+  html.rh-story .footer { flex-wrap: wrap; justify-content: center; text-align: center; padding: 20px 14px max(20px,env(safe-area-inset-bottom)); }
+  html.rh-story .rohub-legal-trigger { width: 100%; min-height: 42px; }
+  html.rh-story .modal { padding: 10px; }
+  html.rh-story .modal-card { width: 100%; max-height: calc(100svh - 20px); padding: 16px; }
+  html.rh-story .reader-modal { padding: 0; }
+  html.rh-story .reader-top { gap: 8px; padding: 12px 52px 12px 12px; }
+  html.rh-story .reader-heading h2 { font-size: 14px; }
+  html.rh-story .reader-tools { top: 56px; gap: 8px; padding: 9px 10px; }
+  html.rh-story .reader-tools label { font-size: 11px; }
+  html.rh-story .reader-tools select { max-width: 112px; }
+  html.rh-story .reader-chapter-nav { padding: 9px 10px max(9px,env(safe-area-inset-bottom)); }
+  html.rh-story .reader-chapter-nav button { min-height: 40px; padding: 8px; font-size: 11px; }
+  html.rh-story .reader-chapter-nav span { max-width: 80px; font-size: 10px; }
+  html.rh-story input, html.rh-story select, html.rh-story textarea { font-size: 16px; }
+}
+@media (max-width: 430px) {
+  html.rh-story .story-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 12px !important; }
+  html.rh-story section.catalog .filter-controls { grid-template-columns: minmax(0,1fr); }
+  html.rh-story section.catalog .filter-search-row { grid-template-columns: minmax(0,1fr); }
+  html.rh-story section.catalog .filter-reset { width: 100%; }
+  html.rh-story section.hero.rt-banner { min-height: 500px; padding-top: 170px; }
+  html.rh-story section.hero.rt-banner .rt-banner-copy { padding-bottom: 84px; }
+}
+@media (hover: none), (pointer: coarse) {
+  html.rh-world .story-grid>*:hover,
+  html.rh-world .movie-card-premium:hover,
+  html.rh-world .portal:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.rh-world *, html.rh-world *::before, html.rh-world *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
