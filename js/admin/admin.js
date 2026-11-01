@@ -86,7 +86,7 @@
     ]);
     const val=i=>results[i].status==='fulfilled'?results[i].value:{error:results[i].reason};
     const profile=val(0),stats=val(1),series=val(2),chapters=val(3);
-    if(!stats.error){state.stats=stats.data||{};renderStats(state.stats);await Promise.allSettled([fetchMovieCounts(),loadLiveViewers()]);}
+    if(!stats.error){state.stats=stats.data||{};renderStats(state.stats);await Promise.allSettled([fetchMovieCounts(),loadActiveSessions(),loadWatchHistory()]);}
     else $('stats-cards').innerHTML='<div class="card danger-text">Không tải được số liệu RoFlix: '+esc(stats.error.message||'Lỗi không xác định')+'<br><small>Kiểm tra RPC roflix_admin_stats và quyền quản trị.</small></div>';
     const portals=[
       {name:'RoFlix',icon:'🎬',state:!stats.error?'ok':'fail',detail:stats.error?'Không đọc được thống kê quản trị':fmtNum(state.stats?.movie_views_today)+' lượt xem hôm nay · '+fmtNum(state.stats?.users_total)+' tài khoản',target:'movie-control',label:'Mở quản lý phim'},
