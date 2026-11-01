@@ -5,7 +5,7 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtDate = v => v ? new Date(v).toLocaleString('vi-VN',{dateStyle:'short',timeStyle:'short'}) : 'Chưa có';
   const fmtNum = v => Number(v||0).toLocaleString('vi-VN');
-  const state = {user:null,stats:null,users:[],audit:[],charts:{visitors:null,analytics:null},currentPage:'dashboard',refreshTimer:null,realtime:null,realtimeTimer:null,loadingAll:false};
+  const state = {user:null,stats:null,users:[],audit:[],charts:{visitors:null,analytics:null,concurrent:null},currentPage:'dashboard',refreshTimer:null,realtime:null,realtimeTimer:null,loadingAll:false};
 
   function showAccess(title,text,icon='🔐'){
     const login=title==='Chưa đăng nhập';
@@ -86,7 +86,7 @@
     ]);
     const val=i=>results[i].status==='fulfilled'?results[i].value:{error:results[i].reason};
     const profile=val(0),stats=val(1),series=val(2),chapters=val(3);
-    if(!stats.error){state.stats=stats.data||{};renderStats(state.stats);await Promise.allSettled([fetchMovieCounts(),loadActiveSessions(),loadWatchHistory()]);}
+    if(!stats.error){state.stats=stats.data||{};renderStats(state.stats);await Promise.allSettled([fetchMovieCounts(),loadActiveSessions(),loadWatchHistory(),loadWatchMetrics()]);}
     else $('stats-cards').innerHTML='<div class="card danger-text">Không tải được số liệu RoFlix: '+esc(stats.error.message||'Lỗi không xác định')+'<br><small>Kiểm tra RPC roflix_admin_stats và quyền quản trị.</small></div>';
     const portals=[
       {name:'RoFlix',icon:'🎬',state:!stats.error?'ok':'fail',detail:stats.error?'Không đọc được thống kê quản trị':fmtNum(state.stats?.movie_views_today)+' lượt xem hôm nay · '+fmtNum(state.stats?.users_total)+' tài khoản',target:'movie-control',label:'Mở quản lý phim'},
@@ -142,6 +142,25 @@
     body.innerHTML=rows.length?rows.map(x=>'<tr><td>'+fmtDate(x.created_at)+'</td><td>'+(x.user_id?'<b>'+esc(x.display_name||'Thành viên')+'</b><br><small>'+esc(x.user_email||x.user_id)+'</small>':'<b>Khách</b><br><small>Guest session</small>')+'</td><td>'+esc(x.event_type==='movie_play'?'▶ Phát phim':x.event_type==='movie_view'?'👁 Mở phim':x.event_type==='movie_detail'?'ℹ Chi tiết phim':'🌐 Truy cập')+'</td><td><b>'+esc(x.movie_title||'—')+'</b><br><small>'+esc(x.movie_slug||x.page||'')+'</small></td><td><code>'+esc(x.session_id)+'</code></td></tr>').join(''):'<tr><td colspan="5" class="empty">Chưa có lịch sử. Khách truy cập mới sẽ được ghi nhận từ phiên bản này.</td></tr>';
   }
   window.rfAdminRefreshWatchHistory=loadWatchHistory;
+  function formatWatchTime(seconds){const n=Math.max(0,Math.floor(Number(seconds)||0));return Math.floor(n/3600)+'h '+Math.floor(n%3600/60)+'m';}
+  async function loadWatchMetrics(){
+    const host=$('watch-metrics');if(!host)return;
+    const {data,error}=await sb.rpc('roflix_admin_watch_metrics');
+    if(error){host.innerHTML='<p class="danger-text">'+esc(error.message)+'</p>';return;}
+    const d=data||{};
+    host.innerHTML='<div class="grid four"><div class="card"><div class="stat-label">⏱ Tổng thời gian xem</div><div class="stat-value accent-blue">'+formatWatchTime(d.total_watch_seconds)+'</div></div><div class="card"><div class="stat-label">🏁 Phiên xem hoàn tất</div><div class="stat-value accent-green">'+fmtNum(d.completed_sessions)+'</div></div><div class="card"><div class="stat-label">📈 Tỷ lệ hoàn tất</div><div class="stat-value accent-amber">'+(d.completion_rate??0)+'%</div></div><div class="card"><div class="stat-label">📺 Phim có dữ liệu xem</div><div class="stat-value accent-purple">'+fmtNum((d.top_watch_time||[]).length)+'</div></div></div><div class="grid two" style="margin-top:14px"><div><h4>Top theo thời lượng xem</h4>'+(d.top_watch_time||[]).map(x=>'<div class="movie-rank"><b>'+esc(x.movie_title||x.movie_slug)+'</b><span>'+formatWatchTime(x.seconds)+'</span></div>').join('')+'</div><div><h4>Top theo số phiên xem hoàn tất</h4>'+(d.top_completed||[]).map(x=>'<div class="movie-rank"><b>'+esc(x.movie_title||x.movie_slug)+'</b><span>'+fmtNum(x.completed)+' / '+fmtNum(x.sessions)+'</span></div>').join('')+'</div></div>';
+  }
+  function sampleConcurrent(){
+    const host=$('concurrent-viewers-chart');if(!host||state.currentPage!=='analytics')return;
+    const active=document.querySelectorAll('#live-viewers-body tr').length;
+    const value=active&&document.querySelector('#live-viewers-body tr td.empty')?0:active;
+    const now=new Date(),label=now.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    if(!state.concurrentSamples)state.concurrentSamples=[];
+    state.concurrentSamples.push({label,value});if(state.concurrentSamples.length>80)state.concurrentSamples.shift();
+    const labels=state.concurrentSamples.map(x=>x.label),data=state.concurrentSamples.map(x=>x.value),ctx=host.getContext('2d');if(!ctx)return;
+    if(state.charts.concurrent){state.charts.concurrent.data.labels=labels;state.charts.concurrent.data.datasets[0].data=data;state.charts.concurrent.update('none');}
+    else state.charts.concurrent=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Phiên online đồng thời',data,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.12)',fill:true,tension:.25}]},options:chartCommon()});
+  }
   async function loadAudit(){
     const {data,error}=await sb.from('roflix_admin_audit_logs').select('id,admin_id,action,target_user_id,details,created_at').order('created_at',{ascending:false}).limit(100);
     const host=$('dashboard-admin-activity');
@@ -151,9 +170,9 @@
     if(host){host.innerHTML=state.audit.length?state.audit.slice(0,6).map(x=>'<div class="dashboard-audit-item"><span class="dashboard-audit-mark">↳</span><div><b>'+esc(x.action||'Thao tác quản trị')+'</b><small>'+esc(x.admin_id||'Admin')+' · '+fmtDate(x.created_at)+'</small><p>'+esc(JSON.stringify(x.details||{}).slice(0,180))+'</p></div></div>').join(''):'<div class="dashboard-empty">Chưa có thao tác quản trị được ghi nhận.</div>';}
   }
 
-  function scheduleRefresh(){clearTimeout(state.realtimeTimer);state.realtimeTimer=setTimeout(()=>{loadDashboard();if(state.currentPage==='analytics'){loadActiveSessions();loadWatchHistory();}if(state.currentPage==='moderation')loadModeration();if(state.currentPage==='schedule'&&window.rfLoadAdminSchedule)window.rfLoadAdminSchedule();},900);}
+  function scheduleRefresh(){clearTimeout(state.realtimeTimer);state.realtimeTimer=setTimeout(()=>{loadDashboard();if(state.currentPage==='analytics'){loadActiveSessions();loadWatchHistory();loadWatchMetrics();sampleConcurrent();}if(state.currentPage==='moderation')loadModeration();if(state.currentPage==='schedule'&&window.rfLoadAdminSchedule)window.rfLoadAdminSchedule();},900);}
   function subscribeRealtime(){if(!sb||state.realtime)return;state.realtime=sb.channel('roflix-admin-live-v2').on('postgres_changes',{event:'*',schema:'public',table:'roflix_active_sessions'},scheduleRefresh).on('postgres_changes',{event:'INSERT',schema:'public',table:'roflix_site_events'},scheduleRefresh).on('postgres_changes',{event:'*',schema:'public',table:'roflix_movie_comments'},scheduleRefresh).on('postgres_changes',{event:'*',schema:'public',table:'roflix_release_schedule'},scheduleRefresh).subscribe();}
-  function switchPage(page){state.currentPage=page;document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===page));document.querySelectorAll('#admin-nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));const titles={dashboard:'Dashboard 5.0',users:'Quản lý tài khoản','movie-control':'Quản lý phim 5.0',analytics:'Truy cập & người xem realtime',schedule:'Lịch ra phim 3.0',moderation:'Kiểm duyệt & quyền',audit:'Nhật ký quản trị','game-center':'Gacha 4.0','live-comments':'Comment realtime 3.0','content-tools':'Content Tools',rotruyen:'RoTruyện · Quản trị nội dung',roedu:'RoEdu · Quản trị học tập','system-health':'System Health Center'};setTopTitle('RoHub Admin · '+(titles[page]||page));if(page==='analytics'){loadActiveSessions();loadWatchHistory();}if(page==='users')loadUsers();if(page==='moderation')loadModeration();if(page==='schedule'&&window.rfLoadAdminSchedule)window.rfLoadAdminSchedule();if(page==='game-center'&&window.rfAdminLoadGameCenter)window.rfAdminLoadGameCenter();if(page==='live-comments'&&window.rfAdminLoadLiveComments)window.rfAdminLoadLiveComments();if(page==='content-tools'&&window.rfAdminLoadContentTools)window.rfAdminLoadContentTools();if(page==='system-health'&&window.rfRunSystemHealth)window.rfRunSystemHealth();}
+  function switchPage(page){state.currentPage=page;document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===page));document.querySelectorAll('#admin-nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));const titles={dashboard:'Dashboard 5.0',users:'Quản lý tài khoản','movie-control':'Quản lý phim 5.0',analytics:'Truy cập & người xem realtime',schedule:'Lịch ra phim 3.0',moderation:'Kiểm duyệt & quyền',audit:'Nhật ký quản trị','game-center':'Gacha 4.0','live-comments':'Comment realtime 3.0','content-tools':'Content Tools',rotruyen:'RoTruyện · Quản trị nội dung',roedu:'RoEdu · Quản trị học tập','system-health':'System Health Center'};setTopTitle('RoHub Admin · '+(titles[page]||page));if(page==='analytics'){loadActiveSessions();loadWatchHistory();loadWatchMetrics();sampleConcurrent();}if(page==='users')loadUsers();if(page==='moderation')loadModeration();if(page==='schedule'&&window.rfLoadAdminSchedule)window.rfLoadAdminSchedule();if(page==='game-center'&&window.rfAdminLoadGameCenter)window.rfAdminLoadGameCenter();if(page==='live-comments'&&window.rfAdminLoadLiveComments)window.rfAdminLoadLiveComments();if(page==='content-tools'&&window.rfAdminLoadContentTools)window.rfAdminLoadContentTools();if(page==='system-health'&&window.rfRunSystemHealth)window.rfRunSystemHealth();}
   async function loadAll(){if(state.loadingAll)return;state.loadingAll=true;try{if(!(await ensureAdmin()))return;await Promise.allSettled([loadDashboard(),loadUsers(),loadActiveSessions(),loadWatchHistory(),loadAudit(),loadModeration()]);subscribeRealtime();}catch(error){console.error('[RoHub Admin] Không tải được dashboard:',error);showAccess('Không tải được khu quản trị',error?.message||'Lỗi không xác định. Hãy thử tải lại trang.','⚠️');}finally{state.loadingAll=false;}}
 
   $('roedu-admin-open-reader')?.addEventListener('click',()=>{const grade=$('roedu-admin-grade')?.value||'10';const subject=$('roedu-admin-subject')?.value||'Toán học';location.href='roedu-reader?grade='+encodeURIComponent(grade)+'&subject='+encodeURIComponent(subject);});
@@ -182,5 +201,5 @@
   $('modal-close').addEventListener('click',window.rfCloseUser);$('user-modal').addEventListener('click',e=>{if(e.target.id==='user-modal')window.rfCloseUser();});
   $('user-search').addEventListener('input',renderUsers);$('user-role-filter').addEventListener('change',renderUsers);$('user-status-filter').addEventListener('change',renderUsers);
   sb?.auth.onAuthStateChange((event)=>{if(event==='SIGNED_IN')loadAll();if(event==='SIGNED_OUT'){state.user=null;showAccess('Đã đăng xuất','Hãy đăng nhập lại bằng tài khoản admin.');}});
-  (async()=>{try{const ok=await ensureAdmin();if(ok){switchPage('dashboard');await loadAll();state.refreshTimer=setInterval(()=>{if(state.loadingAll)return;loadDashboard();loadActiveSessions();if(state.currentPage==='users')loadUsers();if(state.currentPage==='moderation')loadModeration();if(state.currentPage==='schedule'&&window.rfLoadAdminSchedule)window.rfLoadAdminSchedule();},30000);}}catch(error){console.error('[RoHub Admin] Lỗi xác thực ban đầu:',error);showAccess('Không xác thực được phiên',error?.message||'Kiểm tra kết nối rồi thử lại.','⚠️');}})();
+  (async()=>{try{const ok=await ensureAdmin();if(ok){switchPage('dashboard');await loadAll();state.refreshTimer=setInterval(()=>{if(state.loadingAll)return;loadDashboard();loadActiveSessions();if(state.currentPage==='analytics'){loadWatchMetrics();sampleConcurrent();}if(state.currentPage==='users')loadUsers();if(state.currentPage==='moderation')loadModeration();if(state.currentPage==='schedule'&&window.rfLoadAdminSchedule)window.rfLoadAdminSchedule();},30000);}}catch(error){console.error('[RoHub Admin] Lỗi xác thực ban đầu:',error);showAccess('Không xác thực được phiên',error?.message||'Kiểm tra kết nối rồi thử lại.','⚠️');}})();
 })();
