@@ -63,11 +63,6 @@ function updateSourceUi() {
             window.RoflixVidSrc.injectSourcePill();
         }
     } catch (_) {}
-    try {
-        if (window.RoflixAniMapper && typeof window.RoflixAniMapper.injectSourcePill === 'function') {
-            window.RoflixAniMapper.injectSourcePill();
-        }
-    } catch (_) {}
 }
 
 function switchSource(id) {
@@ -76,14 +71,6 @@ function switchSource(id) {
             window.RoflixVidSrc.openTester();
         } else if (typeof showToast === 'function') {
             showToast('info', 'VidSrc', 'Đang tải trang phát...');
-        }
-        return;
-    }
-    if (id === 'animapper') {
-        if (window.RoflixAniMapper && typeof window.RoflixAniMapper.open === 'function') {
-            window.RoflixAniMapper.open();
-        } else if (typeof showToast === 'function') {
-            showToast('info', 'AniMapper', 'Đang tải catalog anime...');
         }
         return;
     }
@@ -117,7 +104,6 @@ function loadOptionalSource(src, flag) {
 }
 
 loadOptionalSource('js/app/00b-vidsrc.js', 'RoflixVidSrc');
-loadOptionalSource('js/app/00c-animapper.js?v=20261009-1', 'RoflixAniMapper');
 
 const ITEMS_PER_PAGE = 24;
 let currentPage = 1;
