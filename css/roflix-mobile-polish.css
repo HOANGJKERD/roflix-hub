@@ -1,0 +1,58 @@
+/* RoFlix mobile UI: preserve desktop identity, optimize for touch screens. */
+@media (max-width:760px){
+html.rh-flix{--rf-mobile-gutter:12px}
+html.rh-flix body{overflow-x:hidden}
+html.rh-flix #view-main-site{min-width:0}
+html.rh-flix .header-ios{top:var(--rh-bridge,40px)!important;z-index:100!important}
+html.rh-flix .header-ios>.max-w-7xl{display:flex!important;flex-wrap:wrap!important;gap:9px!important;padding:9px var(--rf-mobile-gutter)!important}
+html.rh-flix .header-ios>.max-w-7xl>div:first-child{gap:0!important;min-width:0}
+html.rh-flix .header-ios>.max-w-7xl>div:first-child>a{font-size:1.2rem!important;gap:8px!important}
+html.rh-flix .header-ios>.max-w-7xl>div:first-child>a .w-9{width:34px!important;height:34px!important}
+html.rh-flix .header-ios>.max-w-7xl>div:last-child{gap:7px!important;min-width:0;margin-left:auto}
+html.rh-flix .header-ios .search-ios-mobile{order:5;flex:1 0 100%;width:100%;min-width:0;height:40px;margin:0;padding:0 13px;border-radius:13px}
+html.rh-flix .header-ios .search-ios-mobile input{width:100%;min-width:0;font-size:14px}
+html.rh-flix .header-ios button{min-width:38px;min-height:38px}
+html.rh-flix .hero-epic{min-height:clamp(390px,66svh,590px)!important;margin:10px var(--rf-mobile-gutter) 0!important;border-radius:20px!important;overflow:hidden}
+html.rh-flix .hero-epic .hero-background::after{background:linear-gradient(90deg,rgba(8,6,16,.72),rgba(8,6,16,.12)),linear-gradient(180deg,rgba(8,6,16,.02) 12%,rgba(8,6,16,.30) 42%,#080610 100%)!important}
+html.rh-flix .hero-epic .hero-content.glass-premium{width:100%;max-width:none;padding:20px 17px 23px!important}
+html.rh-flix .hero-title{max-width:100%;font-size:clamp(1.65rem,7vw,2.35rem)!important;line-height:1.08!important;letter-spacing:-.8px!important;overflow-wrap:anywhere}
+html.rh-flix .hero-desc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:12px!important;line-height:1.55!important}
+html.rh-flix .hero-badges{gap:6px!important;flex-wrap:wrap}
+html.rh-flix .hero-badges>*{font-size:9px!important;padding:5px 8px!important}
+html.rh-flix .hero-actions{gap:8px!important;flex-wrap:wrap}
+html.rh-flix .hero-actions button,html.rh-flix .hero-actions a{min-height:42px;padding:10px 13px!important;font-size:12px!important;border-radius:12px!important}
+html.rh-flix .hero-nav{width:34px;height:34px;opacity:.8}
+html.rh-flix .hero-nav-prev{left:8px}html.rh-flix .hero-nav-next{right:8px}
+html.rh-flix main,html.rh-flix main.max-w-7xl,html.rh-flix section.max-w-7xl{max-width:100%}
+html.rh-flix main.max-w-7xl,html.rh-flix section.max-w-7xl{padding-left:var(--rf-mobile-gutter)!important;padding-right:var(--rf-mobile-gutter)!important}
+html.rh-flix #movie-grid-container{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:11px!important}
+html.rh-flix .movie-card-premium{min-width:0;border-radius:13px!important}
+html.rh-flix .movie-card-premium .card-overlay{opacity:1!important;background:linear-gradient(180deg,transparent 35%,rgba(8,6,16,.88) 100%)!important;backdrop-filter:none!important}
+html.rh-flix .movie-card-premium .card-title{font-size:11px!important;line-height:1.35!important}
+html.rh-flix .movie-card-premium .watch-btn{min-height:32px;font-size:10px!important}
+html.rh-flix .rf-section-heading,html.rh-flix .rf-mega-head,html.rh-flix .rf-watchlist-head,html.rh-flix .rf-home-release-head{align-items:flex-start!important;gap:8px!important}
+html.rh-flix .rf-reco-grid,html.rh-flix .rf-mega-row,html.rh-flix .rf-upcoming-grid{gap:10px!important}
+html.rh-flix .rf-reco-card,html.rh-flix .rf-mega-card,html.rh-flix .rf-upcoming-card{flex-basis:132px!important}
+html.rh-flix .rf-schedule-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+html.rh-flix .rf-broadcast-list{grid-template-columns:1fr!important}
+html.rh-flix .rf-player-summary{grid-template-columns:76px minmax(0,1fr)!important;gap:12px!important}
+html.rh-flix .rf-summary-poster img{width:76px!important;height:112px!important}
+html.rh-flix .rf-comment-composer{flex-direction:row!important}
+html.rh-flix .rf-comment-submit{padding:0 12px!important}
+html.rh-flix .rf-real-lb-item{grid-template-columns:30px minmax(0,1fr) 48px!important}
+html.rh-flix .card-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+html.rh-flix input,html.rh-flix select,html.rh-flix textarea{font-size:16px}
+html.rh-flix button,html.rh-flix a,html.rh-flix [role=button]{-webkit-tap-highlight-color:transparent}
+}
+@media(max-width:390px){
+html.rh-flix .header-ios>.max-w-7xl{padding-left:9px!important;padding-right:9px!important}
+html.rh-flix .hero-epic{min-height:390px!important}
+html.rh-flix .hero-epic .hero-content.glass-premium{padding:17px 14px 19px!important}
+html.rh-flix #movie-grid-container{gap:8px!important}
+html.rh-flix .movie-card-premium .card-title{font-size:10px!important}
+}
+@media(min-width:761px) and (max-width:1024px){
+html.rh-flix #movie-grid-container{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+html.rh-flix .hero-epic{min-height:62vh}
+}
+@media(prefers-reduced-motion:reduce){html.rh-flix .hero-epic,html.rh-flix .movie-card-premium{transition:none!important}}
