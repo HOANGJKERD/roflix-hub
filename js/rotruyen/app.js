@@ -488,9 +488,9 @@
   function restoreReadProgress() {
     const saved=readProgress[String(state.selected?.id||'')];
     if(!saved || Number(saved.chapterIndex)!==state.chapterIndex)return;
-    const modal=$('#reader-modal'),container=$('#reader-content');
-    if(!modal)return;
-    const apply=()=>{const max=Math.max(0,modal.scrollHeight-modal.clientHeight);if(max>0)modal.scrollTop=Math.round(max*Math.min(1,Math.max(0,Number(saved.scrollRatio)||0)));};
+    const container=$('#reader-content');
+    if(!container)return;
+    const apply=()=>{const max=Math.max(0,container.scrollHeight-container.clientHeight);if(max>0)container.scrollTop=Math.round(max*Math.min(1,Math.max(0,Number(saved.scrollRatio)||0)));};
     requestAnimationFrame(()=>{apply();container?.querySelectorAll('img').forEach(img=>img.addEventListener('load',apply,{once:true}));});
   }
   function rememberChapter() {
@@ -615,7 +615,7 @@
       const pageSrc=(kind, file)=>'/api/mangadex-image?host='+encodeURIComponent(imageHost)+'&path='+encodeURIComponent('/'+kind+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file));
       const container=$('#reader-content');
       container.innerHTML=files.map((file,i)=>{const fallback=saverFiles[i]?pageSrc('data-saver', saverFiles[i]):'';return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pageSrc('data', file))+'" data-saver="'+esc(fallback)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
-      container.querySelectorAll('img[data-saver]').forEach(img=>{img.addEventListener('error',()=>{const next=img.getAttribute('data-saver');if(next&&!img.dataset.fallback){img.dataset.fallback='1';img.src=next;}});});wireReaderImages();restoreReadProgress();
+      wireReaderImages();restoreReadProgress();
     }catch(e){$('#reader-content').innerHTML='<div class="reader-error"><h3>Không thể tải chương</h3><p>'+esc(e.message)+'</p><p>Thử lại sau hoặc chọn chương khác.</p><button class="btn" id="retry-chapter">Thử lại</button></div>';$('#retry-chapter')?.addEventListener('click',()=>openReader(index));}
   }
   async function requireSignedIn(feature){const sb=window.rfSupabase;if(!sb){notify('Dịch vụ tài khoản chưa sẵn sàng.');return false;}try{const {data,error}=await sb.auth.getUser();if(error)throw error;if(!data?.user){notify('Đăng nhập RoHub để dùng '+feature+'.');location.href='rotruyen-account.html';return false;}return true;}catch(e){notify('Không kiểm tra được tài khoản: '+e.message);return false;}}
@@ -786,7 +786,7 @@ async function loadPublicGenres(){
     $('#reader-bg')?.addEventListener('change',e=>saveReaderPrefs({bg:e.target.value}));
     $('#reader-mode')?.addEventListener('change',e=>saveReaderPrefs({mode:e.target.value}));
     $('#reader-report-all')?.addEventListener('click',()=>reportReaderIssue(null));
-    $('#reader-modal')?.addEventListener('scroll',()=>persistReadProgress(false),{passive:true});
+    $('#reader-content')?.addEventListener('scroll',()=>persistReadProgress(false),{passive:true});
     $('#reader-close')?.addEventListener('click',()=>persistReadProgress(true));
     $('#mobile-menu').addEventListener('click',()=>$('#rt-nav').classList.toggle('open'));
     $('#security-dismiss')?.addEventListener('click',()=>{const el=$('#devtools-block');if(el)el.style.display='none';});
