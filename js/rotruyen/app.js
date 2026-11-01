@@ -220,6 +220,9 @@
     if(state.rating==='suggestive')return !adult&&value==='suggestive';
     return true;
   }
+  function isMangaItem(item) {
+    return item?.source==='mangadex' || (item?.source==='database' && (item?.contentType||'comic')==='comic') || item?.contentType==='comic';
+  }
   function activeItems() {
     const query=normalizeFilterText(state.query);
     let items=state.items.filter(s=>{
@@ -231,9 +234,11 @@
         &&(state.catalogSource==='all'||s.source===state.catalogSource)
         &&(state.contentType==='all'||(s.contentType||'comic')===state.contentType);
     });
-    if(state.sort==='latest') items=[...items].sort((a,b)=>(Date.parse(b.raw?.attributes?.updatedAt||b.updated||0)||0)-(Date.parse(a.raw?.attributes?.updatedAt||a.updated||0)||0));
-    if(state.sort==='popular') items=[...items].sort((a,b)=>(Number(b.pop)||Number(b.raw?.attributes?.followedCount)||0)-(Number(a.pop)||Number(a.raw?.attributes?.followedCount)||0));
-    if(state.sort==='rating') items=[...items].sort((a,b)=>(b.rating||0)-(a.rating||0));
+    const mangaFirst=(a,b)=>Number(isMangaItem(b))-Number(isMangaItem(a));
+    if(state.sort==='latest') items=[...items].sort((a,b)=>mangaFirst(a,b)||(Date.parse(b.raw?.attributes?.updatedAt||b.updated||0)||0)-(Date.parse(a.raw?.attributes?.updatedAt||a.updated||0)||0));
+    else if(state.sort==='popular') items=[...items].sort((a,b)=>mangaFirst(a,b)||(Number(b.pop)||Number(b.raw?.attributes?.followedCount)||0)-(Number(a.pop)||Number(a.raw?.attributes?.followedCount)||0));
+    else if(state.sort==='rating') items=[...items].sort((a,b)=>mangaFirst(a,b)||(b.rating||0)-(a.rating||0));
+    else items=[...items].sort(mangaFirst);
     return items;
   }
   function updateFilterSummary(){
@@ -254,7 +259,7 @@
     grid.innerHTML=items.map(s=>'<article class="story'+(isAdultOnly(s)?' story-adult':'')+(isStoryLocked(s)?' story-locked':'')+'"><div class="story-open" data-open="'+esc(s.id)+'" role="button" tabindex="0" aria-label="'+(isStoryLocked(s)?'Truyện đã bị khóa: ':isAdultOnly(s)?'Truyện 18+, cần đăng nhập: ':'Xem chi tiết ')+esc(s.title)+'">'+coverMarkup(s)+'<h3 title="'+esc(s.title)+'">'+esc(s.title)+(isStoryLocked(s)?' <small class="rt-age-label">🔒 Truyện đã khóa</small>':isAdultOnly(s)?' <small class="rt-age-label">🔒 18+ · Đăng nhập để xem</small>':'')+'</h3></div><p>'+esc(s.author||'Đang cập nhật')+'</p><div class="meta"><span>'+(s.chapters?s.chapters+' chương':s.source==='mangadex'?'MangaDex':s.source==='truyenviet'?'Truyện Việt':'Chưa có chương')+'</span><span class="rating">'+(s.rating?'★ '+s.rating.toFixed(1):['mangadex','truyenviet'].includes(s.source)?'Nguồn ngoài':'Chưa đánh giá')+'</span></div></article>').join('');
     const count=$('#result-count'); if(count)count.textContent=items.length+' kết quả';updateFilterSummary();
     const empty=$('#empty-state'); if(empty)empty.hidden=!!items.length;
-    const rank=$('#ranking-list'); if(rank)rank.innerHTML=[...state.items].sort((a,b)=>(b.pop||0)-(a.pop||0)).slice(0,4).map((s,i)=>'<div class="ranking"><span class="rank">0'+(i+1)+'</span><span class="rank-info"><b>'+esc(s.title)+'</b><small>'+esc(s.kind||'Truyện')+'</small></span><span>'+(s.rating?'★ '+s.rating.toFixed(1):'↗')+'</span></div>').join('')||'<p class="muted">Chưa có dữ liệu xếp hạng từ nguồn này.</p>';
+    const rank=$('#ranking-list'); if(rank)rank.innerHTML=[...state.items].sort((a,b)=>Number(isMangaItem(b))-Number(isMangaItem(a))||(b.pop||0)-(a.pop||0)).slice(0,4).map((s,i)=>'<div class="ranking"><span class="rank">0'+(i+1)+'</span><span class="rank-info"><b>'+esc(s.title)+'</b><small>'+esc(s.kind||'Truyện')+'</small></span><span>'+(s.rating?'★ '+s.rating.toFixed(1):'↗')+'</span></div>').join('')||'<p class="muted">Chưa có dữ liệu xếp hạng từ nguồn này.</p>';
     renderSavedCount();
     renderRecommend(state.items);
   }
