@@ -1,0 +1,185 @@
+/* RoFlix mobile layout: one authoritative set of rules.
+   Desktop remains untouched. Mobile components stay in normal flow to prevent overlap. */
+@media (max-width: 760px) {
+  html.rh-flix, html.rh-flix body, html.rh-flix #roflix-app-root,
+  html.rh-flix #view-main-site { width:100%; min-width:0; max-width:100%; }
+  html.rh-flix body { overflow-x:hidden !important; }
+  html.rh-flix #view-main-site { overflow-x:clip; }
+
+  /* Shared RoHub bridge + RoFlix local header */
+  html.rh-flix .rh-bridge {
+    position:sticky !important; top:0 !important; z-index:150 !important;
+    height:42px !important; min-height:42px !important;
+    padding:0 12px !important; gap:8px !important;
+    flex-wrap:nowrap !important; box-sizing:border-box;
+  }
+  html.rh-flix .rh-bridge-brand { flex:0 0 auto; font-size:13px; white-space:nowrap; }
+  html.rh-flix .rh-bridge-here { white-space:nowrap; font-size:9px; letter-spacing:1px; }
+  html.rh-flix .rh-bridge nav { display:flex !important; flex:0 0 auto; width:auto !important; margin-left:auto !important; gap:5px !important; flex-wrap:nowrap !important; }
+  html.rh-flix .rh-bridge nav a { padding:5px 8px !important; font-size:10px !important; white-space:nowrap; }
+
+  html.rh-flix .header-ios {
+    position:sticky !important; top:42px !important; z-index:140 !important;
+    width:100% !important; min-width:0; box-sizing:border-box;
+    padding:0 !important; margin:0 !important;
+    background:rgba(8,6,16,.97) !important;
+    border-bottom:1px solid rgba(255,255,255,.1);
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  }
+  html.rh-flix .header-ios > .max-w-7xl {
+    width:100% !important; max-width:none !important; min-width:0 !important;
+    margin:0 !important; padding:10px 12px !important; box-sizing:border-box;
+    display:grid !important; grid-template-columns:minmax(0,1fr) !important;
+    grid-template-rows:auto auto !important; gap:10px !important;
+  }
+  html.rh-flix .header-ios > .max-w-7xl > div:first-child {
+    grid-row:1 !important; grid-column:1 !important;
+    display:flex !important; align-items:center !important;
+    min-width:0 !important; width:100% !important; gap:0 !important;
+  }
+  html.rh-flix .header-ios > .max-w-7xl > div:first-child > a {
+    min-width:0; font-size:20px !important; line-height:1 !important;
+    white-space:nowrap; gap:8px !important;
+  }
+  html.rh-flix .header-ios > .max-w-7xl > div:first-child > nav { display:none !important; }
+  html.rh-flix .header-ios > .max-w-7xl > div:last-child {
+    grid-row:2 !important; grid-column:1 !important;
+    display:grid !important; grid-template-columns:repeat(4,minmax(38px,44px)) !important;
+    grid-template-rows:42px 42px !important;
+    justify-content:space-between !important; align-items:center !important;
+    gap:8px !important; width:100% !important; min-width:0 !important; margin:0 !important;
+  }
+  html.rh-flix .header-ios .search-ios:not(.search-ios-mobile) { display:none !important; }
+  html.rh-flix .header-ios .search-ios-mobile {
+    display:flex !important; grid-column:1 / -1 !important; grid-row:1 !important;
+    order:0 !important; position:relative !important; inset:auto !important;
+    width:100% !important; min-width:0 !important; height:42px !important;
+    margin:0 !important; padding:0 13px !important; box-sizing:border-box;
+    border-radius:13px !important;
+  }
+  html.rh-flix .header-ios .search-ios-mobile input {
+    display:block !important; width:100% !important; min-width:0 !important;
+    height:100% !important; font-size:16px !important;
+  }
+  html.rh-flix .header-ios > .max-w-7xl > div:last-child > button,
+  html.rh-flix .header-ios #user-nav-container > button,
+  html.rh-flix .header-ios > .max-w-7xl > div:last-child > div > button {
+    width:42px !important; min-width:42px !important; max-width:42px !important;
+    height:42px !important; min-height:42px !important; padding:0 !important;
+    display:inline-flex !important; align-items:center !important; justify-content:center !important;
+    box-sizing:border-box !important;
+  }
+  html.rh-flix .header-ios > .max-w-7xl > div:last-child > button[onclick*="toggleTheme"] { grid-column:1; grid-row:2; }
+  html.rh-flix .header-ios > .max-w-7xl > div:last-child > div:has(#notif-badge) { grid-column:2; grid-row:2; }
+  html.rh-flix .header-ios #user-nav-container { grid-column:3; grid-row:2; min-width:0 !important; }
+  html.rh-flix .header-ios #user-nav-container > button { overflow:hidden; }
+  html.rh-flix .header-ios #user-nav-container > button span { display:none !important; }
+  html.rh-flix .header-ios > .max-w-7xl > div:last-child > button[onclick*="toggleMobileMenu"] { grid-column:4; grid-row:2; }
+  html.rh-flix .header-ios .btn-continue { display:none !important; }
+  html.rh-flix #mobile-menu.hidden { display:none !important; }
+  html.rh-flix #mobile-menu:not(.hidden) {
+    display:block !important; position:absolute !important; top:100% !important;
+    left:10px !important; right:10px !important; width:auto !important;
+    max-height:65dvh !important; overflow-y:auto !important; overscroll-behavior:contain;
+    z-index:160 !important; margin:0 !important; border-radius:0 0 16px 16px !important;
+    background:#0c0a14 !important; box-shadow:0 18px 40px #000c;
+  }
+
+  /* Featured movie: image occupies the upper stage; copy has its own flow area.
+     This prevents genre chips and title from being painted over one another. */
+  html.rh-flix #hero-section.hero-epic {
+    position:relative !important; isolation:isolate !important;
+    display:flex !important; flex-direction:column !important; justify-content:flex-end !important;
+    width:calc(100% - 24px) !important; max-width:none !important;
+    min-width:0 !important; height:auto !important;
+    min-height:clamp(570px,78svh,720px) !important;
+    margin:10px 12px 0 !important; padding:220px 0 0 !important;
+    box-sizing:border-box !important; overflow:hidden !important;
+    border-radius:22px !important;
+  }
+  html.rh-flix #hero-section .hero-background {
+    position:absolute !important; inset:0 !important; z-index:0 !important;
+    background-position:center 22% !important; background-size:cover !important;
+  }
+  html.rh-flix #hero-section .hero-background::after {
+    content:"" !important; position:absolute !important; inset:0 !important;
+    background:linear-gradient(180deg,rgba(5,5,12,.05) 0%,rgba(5,5,12,.16) 28%,rgba(5,5,12,.78) 52%,#080610 76%) !important;
+  }
+  html.rh-flix #hero-section .hero-float { z-index:1 !important; pointer-events:none; }
+  html.rh-flix #hero-section .hero-nav {
+    position:absolute !important; top:46% !important; z-index:5 !important;
+    width:38px !important; height:38px !important;
+  }
+  html.rh-flix #hero-section .hero-nav-prev { left:8px !important; }
+  html.rh-flix #hero-section .hero-nav-next { right:8px !important; }
+  html.rh-flix #hero-section .hero-content.glass-premium {
+    position:relative !important; inset:auto !important; z-index:3 !important;
+    display:flex !important; flex-direction:column !important;
+    width:100% !important; max-width:none !important; min-width:0 !important;
+    height:auto !important; margin:0 !important; padding:18px 16px 22px !important;
+    box-sizing:border-box !important; border:0 !important; border-radius:0 !important;
+    background:linear-gradient(180deg,rgba(8,6,16,.72),#080610 18%) !important;
+    transform:none !important;
+  }
+  html.rh-flix #hero-section .hero-badges {
+    display:flex !important; flex-wrap:wrap !important; align-items:center !important;
+    gap:6px !important; min-width:0; margin:0 0 12px !important;
+  }
+  html.rh-flix #hero-section .hero-badges > * {
+    flex:0 0 auto !important; max-width:100%; font-size:10px !important;
+  }
+  html.rh-flix #hero-section .hero-title {
+    display:block !important; position:relative !important;
+    width:100% !important; max-width:100% !important; min-width:0 !important;
+    margin:0 0 12px !important; font-size:clamp(25px,7.2vw,34px) !important;
+    line-height:1.12 !important; letter-spacing:-.7px !important;
+    overflow-wrap:anywhere !important; word-break:normal !important;
+  }
+  html.rh-flix #hero-section .hero-title > span { display:inline !important; }
+  html.rh-flix #hero-section .hero-desc {
+    display:-webkit-box !important; -webkit-box-orient:vertical !important;
+    -webkit-line-clamp:3 !important; overflow:hidden !important;
+    width:100% !important; margin:0 0 16px !important;
+    font-size:13px !important; line-height:1.55 !important;
+  }
+  html.rh-flix #hero-section .hero-actions {
+    display:flex !important; flex-wrap:wrap !important; gap:8px !important;
+    width:100% !important; margin:0 !important;
+  }
+  html.rh-flix #hero-section .hero-actions > button {
+    flex:1 1 135px !important; min-width:0 !important; min-height:44px !important;
+    padding:10px 12px !important; font-size:12px !important; white-space:nowrap;
+  }
+  html.rh-flix #hero-section .hero-dots {
+    position:relative !important; inset:auto !important; display:flex !important;
+    justify-content:center !important; gap:8px !important; margin:18px 0 0 !important;
+  }
+
+  /* Filters, toolbars and cards stay inside the viewport. */
+  html.rh-flix #view-main-site > section:not(#hero-section),
+  html.rh-flix #view-main-site main,
+  html.rh-flix #view-main-site .max-w-7xl { min-width:0 !important; max-width:100% !important; }
+  html.rh-flix #view-main-site > section:not(#hero-section) { box-sizing:border-box; }
+  html.rh-flix #roflix-upgrade-toolbar,
+  html.rh-flix #source-switch,
+  html.rh-flix #country-filter {
+    display:flex !important; flex-wrap:wrap !important; align-items:center !important;
+    gap:8px !important; min-width:0 !important; max-width:100% !important;
+  }
+  html.rh-flix #source-switch > * { max-width:100%; }
+  html.rh-flix #source-switch .source-note { flex:1 1 100% !important; }
+  html.rh-flix #movie-grid-container { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; }
+  html.rh-flix #movie-grid-container > * { min-width:0 !important; }
+  html.rh-flix img, html.rh-flix video, html.rh-flix iframe { max-width:100%; }
+  html.rh-flix .cloud-center, html.rh-flix #cloud-center { max-width:calc(100vw - 24px); }
+}
+@media (max-width:390px) {
+  html.rh-flix .rh-bridge { padding-inline:8px !important; gap:6px !important; }
+  html.rh-flix .rh-bridge nav a { padding:5px 6px !important; font-size:9px !important; }
+  html.rh-flix .header-ios > .max-w-7xl { padding-inline:10px !important; }
+  html.rh-flix #hero-section.hero-epic { min-height:560px !important; padding-top:205px !important; }
+  html.rh-flix #hero-section .hero-content.glass-premium { padding-inline:13px !important; }
+}
+@media (prefers-reduced-motion:reduce) {
+  html.rh-flix #hero-section *, html.rh-flix .header-ios * { animation:none !important; transition:none !important; }
+}
