@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 const $=id=>document.getElementById(id),db=()=>window.rfSupabase;
-const state={items:[],summary:null,offset:0,limit:100,total:0,loading:false,filter:'all',search:'',selected:new Set()};
+const state={items:[],summary:null,offset:0,limit:100,total:0,loading:false,filter:'all',search:'',selected:new Set(),previewed:new Set()};
 const fmt=n=>{n=Number(n)||0;return n>=1073741824?(n/1073741824).toFixed(2)+' GB':n>=1048576?(n/1048576).toFixed(1)+' MB':(n/1024).toFixed(0)+' KB';};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function publicUrl(name){return db().storage.from('rotruyen-pages').getPublicUrl(name).data.publicUrl;}
@@ -16,7 +16,7 @@ async function scan(reset=false){
 }
 function render(){
  const s=state.summary||{};
- $('storage-cleanup-stats').innerHTML=[['Tổng đối tượng',s.total_objects||0,fmt(s.total_bytes)],['Ảnh mồ côi',s.orphan_objects||0,fmt(s.orphan_bytes)+' ứng viên'],['Ảnh trùng nội dung',s.duplicate_objects||0,fmt(s.duplicate_reclaimable_bytes)+' có thể tiết kiệm'],['Có tham chiếu',Math.max(0,(s.total_objects||0)-(s.orphan_objects||0)),'Không cho phép xóa']].map(x=>'<article class="sc-stat"><span>'+x[0]+'</span><strong>'+Number(x[1]).toLocaleString('vi-VN')+'</strong><small>'+x[2]+'</small></article>').join('');
+ $('storage-cleanup-stats').innerHTML=[['Tổng đối tượng',s.total_objects||0,fmt(s.total_bytes)],['Ảnh mồ côi',s.orphan_objects||0,fmt(s.orphan_bytes)+' ứng viên'],['Ảnh trùng ETag',s.duplicate_objects||0,fmt(s.duplicate_reclaimable_bytes)+' dung lượng bản sao ước tính'],['Có tham chiếu',Math.max(0,(s.total_objects||0)-(s.orphan_objects||0)),'Không cho phép xóa']].map(x=>'<article class="sc-stat"><span>'+x[0]+'</span><strong>'+Number(x[1]).toLocaleString('vi-VN')+'</strong><small>'+x[2]+'</small></article>').join('');
  let list=state.items.filter(x=>state.filter==='all'||x.status===state.filter);if(state.search)list=list.filter(x=>(x.name||'').toLowerCase().includes(state.search));
  $('storage-cleanup-list').innerHTML=list.length?list.map(x=>{
  const canDelete=x.status==='orphan'&&Number(x.reference_count)===0;
@@ -26,10 +26,10 @@ function render(){
  $('storage-cleanup-prev').disabled=state.offset<=0;$('storage-cleanup-next').disabled=state.offset+state.limit>=state.total;
  $('storage-cleanup-delete-selected').disabled=state.selected.size===0;$('storage-cleanup-selection-count').textContent=state.selected.size+' đã chọn';
 }
-function preview(item){const modal=$('storage-cleanup-preview');$('storage-cleanup-preview-img').src=publicUrl(item.name);$('storage-cleanup-preview-img').alt=item.name;$('storage-cleanup-preview-title').textContent=item.name;$('storage-cleanup-preview-meta').textContent=fmt(item.size_bytes)+' · '+(item.mimetype||'Không rõ')+' · '+item.reference_count+' tham chiếu · '+(item.status==='orphan'?'Mồ côi':item.status==='duplicate'?'Trùng ETag':'Đang dùng');modal.hidden=false;}
+function preview(item){state.previewed.add(item.id);const modal=$('storage-cleanup-preview');$('storage-cleanup-preview-img').src=publicUrl(item.name);$('storage-cleanup-preview-img').alt=item.name;$('storage-cleanup-preview-title').textContent=item.name;$('storage-cleanup-preview-meta').textContent=fmt(item.size_bytes)+' · '+(item.mimetype||'Không rõ')+' · '+item.reference_count+' tham chiếu · '+(item.status==='orphan'?'Mồ côi':item.status==='duplicate'?'Trùng ETag':'Đang dùng');modal.hidden=false;}
 function closePreview(){$('storage-cleanup-preview').hidden=true;$('storage-cleanup-preview-img').src='';}
 async function safeDelete(items){
- if(!items.length)return;if(items.some(x=>x.status!=='orphan'||Number(x.reference_count)!==0)){notify('Từ chối xóa: danh sách có ảnh còn được tham chiếu.',true);return;}
+ if(!items.length)return;if(items.some(x=>!state.previewed.has(x.id))){notify('Hãy mở xem trước từng ảnh đã chọn trước khi xóa.',true);return;}if(items.some(x=>x.status!=='orphan'||Number(x.reference_count)!==0)){notify('Từ chối xóa: danh sách có ảnh còn được tham chiếu.',true);return;}
  const total=items.reduce((n,x)=>n+Number(x.size_bytes||0),0);if(!confirm('Xác nhận xóa '+items.length+' ảnh mồ côi ('+fmt(total)+')? Hệ thống quét lại và kiểm tra từng URL trước khi xóa.'))return;
  try{
  notify('Đang xác minh lại từng ảnh trước khi xóa…');
@@ -41,7 +41,7 @@ async function safeDelete(items){
   const head=await fetch(publicUrl(current.name),{method:'HEAD',cache:'no-store'});if(!head.ok)throw Error('Không thể xác minh ảnh '+current.name+' (HTTP '+head.status+'). Đã dừng.');
   const removed=await db().storage.from('rotruyen-pages').remove([current.name]);if(removed.error)throw removed.error;
  }
- state.selected.clear();notify('Đã xóa '+items.length+' ảnh đã xác minh. Đang cập nhật số liệu…');await scan(true);
+ state.selected.clear();state.previewed.clear();notify('Đã xóa '+items.length+' ảnh đã xác minh. Đang cập nhật số liệu…');await scan(true);
  }catch(e){console.error('[Storage Cleanup delete]',e);notify('Đã dừng thao tác an toàn: '+(e.message||'Lỗi xóa'),true);await scan(true);}
 }
 function init(){
