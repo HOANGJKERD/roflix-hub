@@ -475,11 +475,11 @@
   }
   function persistReadProgress(force) {
     if (!state.selected || !state.chapters[state.chapterIndex]) return;
-    const modal=$('#reader-modal');
+    const container=$('#reader-content');
     const chapter=state.chapters[state.chapterIndex];
     const key=String(state.selected.id);
-    const max=Math.max(0,(modal?.scrollHeight||0)-(modal?.clientHeight||0));
-    const ratio=max>0?Math.min(1,Math.max(0,(modal.scrollTop||0)/max)):0;
+    const max=Math.max(0,(container?.scrollHeight||0)-(container?.clientHeight||0));
+    const ratio=max>0?Math.min(1,Math.max(0,(container?.scrollTop||0)/max)):0;
     readProgress[key]={mangaId:key,title:state.selected.title||'RoTruyen',source:state.selected.source||'unknown',chapterId:String(chapter.id||chapter.chapter_number||state.chapterIndex),chapter:String(chapter.attributes?.chapter||chapter.chapter_number||'?'),chapterIndex:state.chapterIndex,scrollRatio:ratio,updatedAt:Date.now()};
     if(progressSaveTimer)clearTimeout(progressSaveTimer);
     const save=()=>{memory.write('read-progress:v1',readProgress);};
