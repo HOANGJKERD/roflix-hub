@@ -1,0 +1,223 @@
+/* RoHub mobile repair pass · isolated from desktop and app logic */
+@media (max-width: 760px) {
+  html.rh-world, html.rh-world body { min-width: 0; max-width: 100%; }
+  html.rh-world body { overflow-x: hidden !important; }
+  html.rh-world img, html.rh-world video, html.rh-world canvas { max-width: 100%; }
+
+  /* Shared bridge + local header: two clear, non-overlapping rows */
+  html.rh-world .rh-bridge {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 120 !important;
+    height: 40px !important;
+    min-height: 40px;
+    flex: 0 0 40px;
+  }
+  html.rh-world .header-ios,
+  html.rh-world .rt-site-header {
+    top: 40px !important;
+    z-index: 110 !important;
+  }
+
+  /* RoFlix: compact single-row controls; dropdown is anchored to its header */
+  html.rh-flix .header-ios {
+    position: sticky !important;
+    top: 40px !important;
+    width: 100%;
+  }
+  html.rh-flix .header-ios > .max-w-7xl {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) auto;
+    align-items: center;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+  }
+  html.rh-flix .header-ios > .max-w-7xl > div:first-child { min-width: 0; }
+  html.rh-flix .header-ios > .max-w-7xl > div:last-child {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    gap: 6px !important;
+    min-width: 0;
+    margin: 0 !important;
+  }
+  html.rh-flix .header-ios .search-ios-mobile {
+    grid-column: 1 / -1;
+    order: initial !important;
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    margin: 0;
+  }
+  html.rh-flix #mobile-menu.hidden { display: none !important; }
+  html.rh-flix .header-ios #mobile-menu:not(.hidden) {
+    position: absolute !important;
+    top: 100% !important;
+    left: 10px !important;
+    right: 10px !important;
+    z-index: 130 !important;
+    width: auto !important;
+    max-height: min(62dvh, 480px);
+    overflow-y: auto;
+    margin: 0 !important;
+    border: 1px solid #ffffff20;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 18px 40px #000b;
+    background: rgba(10,9,18,.98) !important;
+  }
+  html.rh-flix .hero-epic {
+    position: relative;
+    isolation: isolate;
+    min-height: 500px !important;
+    height: auto !important;
+    margin: 10px 10px 0 !important;
+    overflow: hidden !important;
+  }
+  html.rh-flix .hero-epic .hero-content.glass-premium {
+    position: absolute;
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    background: linear-gradient(0deg,rgba(8,6,16,.98),rgba(8,6,16,.84) 72%,transparent) !important;
+    box-shadow: none !important;
+  }
+  html.rh-flix .hero-title { overflow-wrap: anywhere; }
+  html.rh-flix .hero-desc { max-width: 100%; }
+  html.rh-flix .hero-float { pointer-events: none; }
+  html.rh-flix .hero-nav { z-index: 4; }
+  html.rh-flix .hero-actions { position: relative; z-index: 5; }
+  html.rh-flix #movie-grid-container { min-width: 0; }
+
+  /* RoTruyen reader: fixed app frame, only manga pages scroll */
+  html.rh-story #reader-modal[hidden] { display: none !important; }
+  html.rh-story #reader-modal:not([hidden]) {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 300 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+    background: var(--reader-bg,#050505) !important;
+  }
+  html.rh-story #reader-modal .reader-top {
+    position: relative !important;
+    top: auto !important;
+    z-index: 5;
+    flex: 0 0 auto;
+    min-height: 58px;
+    padding: 9px 52px 9px 12px !important;
+    gap: 8px !important;
+  }
+  html.rh-story #reader-modal .reader-heading h2 {
+    font-size: 13px !important;
+    line-height: 1.3;
+  }
+  html.rh-story #reader-modal .reader-heading span { display: none; }
+  html.rh-story #reader-modal .reader-tool-button {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 7px 9px;
+    font-size: 10px;
+  }
+  html.rh-story #reader-modal .reader-top .modal-close {
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+  }
+  html.rh-story #reader-modal .reader-tools {
+    position: relative !important;
+    top: auto !important;
+    z-index: 4;
+    flex: 0 0 auto;
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+    gap: 8px 10px !important;
+    padding: 9px 11px !important;
+    font-size: 11px;
+  }
+  html.rh-story #reader-modal .reader-tools label {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    gap: 4px;
+    min-width: 0;
+  }
+  html.rh-story #reader-modal .reader-tools label:first-child {
+    grid-column: 1 / -1;
+    grid-template-columns: auto minmax(70px,1fr) auto;
+    align-items: center;
+  }
+  html.rh-story #reader-modal .reader-tools input[type="range"] { width: 100%; min-width: 0; }
+  html.rh-story #reader-modal .reader-tools select {
+    width: 100%;
+    max-width: none !important;
+    min-width: 0;
+    min-height: 36px;
+    font-size: 13px;
+  }
+  html.rh-story #reader-modal .reader-content {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--reader-page-gap,4px);
+    padding: 0 0 12px !important;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+  html.rh-story #reader-modal .reader-content img {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    object-fit: contain;
+  }
+  html.rh-story #reader-modal .reader-chapter-nav {
+    position: relative !important;
+    bottom: auto !important;
+    z-index: 6;
+    flex: 0 0 auto;
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) !important;
+    align-items: center;
+    gap: 6px !important;
+    padding: 8px 9px calc(8px + env(safe-area-inset-bottom)) !important;
+    background: rgba(8,8,12,.98);
+  }
+  html.rh-story #reader-modal .reader-chapter-nav button {
+    min-width: 0;
+    min-height: 40px;
+    padding: 7px 6px !important;
+    font-size: 10px !important;
+    white-space: nowrap;
+  }
+  html.rh-story #reader-modal #reader-chapter-position {
+    min-width: 0;
+    max-width: 90px;
+    font-size: 10px !important;
+    white-space: normal;
+    line-height: 1.2;
+  }
+  html.rh-story #reader-modal .reader-chapter-nav button:last-child { justify-self: stretch; }
+}
+@media (max-width: 390px) {
+  html.rh-flix .hero-epic { min-height: 470px !important; }
+  html.rh-flix .hero-content.glass-premium { padding: 16px 12px !important; }
+  html.rh-flix .hero-title { font-size: clamp(24px,7vw,32px) !important; }
+  html.rh-story #reader-modal .reader-tools { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  html.rh-story #reader-modal .reader-chapter-nav { grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) !important; }
+  html.rh-story #reader-modal #reader-chapter-position { max-width: 68px; }
+}
