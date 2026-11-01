@@ -303,7 +303,7 @@
 
   /* RoHub landing: prevent sticky header from starting below an artificial offset. */
   body:has(> .noise) .shell { padding-top: max(10px,env(safe-area-inset-top)) !important; }
-  body:has(> .noise) .topbar { top:0 !important; }
+  body:has(> .noise) .topbar { position:relative !important; top:auto !important; }
 }
 @media (max-width:390px) {
   html.rh-flix .header-ios > .max-w-7xl { padding-inline:10px !important; }
