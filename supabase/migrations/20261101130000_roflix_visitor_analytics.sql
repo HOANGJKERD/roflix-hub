@@ -13,6 +13,10 @@ end; $$;
 revoke all on function public.roflix_admin_watch_history(integer) from public,anon;
 grant execute on function public.roflix_admin_watch_history(integer) to authenticated;
 
+-- Public RPCs accept session IDs but derive user_id only from auth.uid().
+grant execute on function public.roflix_track_event(text,text,text,text,text,jsonb) to anon,authenticated;
+grant execute on function public.roflix_heartbeat(text,text,text,text) to anon,authenticated;
+
 create or replace function public.roflix_admin_stats()
 returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
 declare result jsonb; today_start timestamptz:=date_trunc('day',now());
