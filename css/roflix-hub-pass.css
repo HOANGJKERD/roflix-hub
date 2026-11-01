@@ -148,7 +148,8 @@ html.rh-flix .hero-dot {
 /* RoFlix hover pass: stronger card feedback without changing the grid layout. */
 html.rh-flix .header-ios {
   position: sticky !important;
-  top: 0 !important;
+  /* Keep the RoFlix toolbar below the fixed RoHub bridge. */
+  top: var(--rh-bridge, 48px) !important;
   z-index: 100 !important;
   isolation: isolate;
   backdrop-filter: blur(22px) saturate(1.25) !important;
