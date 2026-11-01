@@ -32,7 +32,17 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Only GET and HEAD are supported');
 
   const raw = req.query && req.query.path;
-  const parts = (Array.isArray(raw) ? raw : raw == null ? [] : [raw]).map(String);
+  // The reader and cover loader currently send the image path as a query parameter
+  // (?path=/data/{hash}/{file}), while Vercel catch-all routes expose path as
+  // an array only when it is part of the URL pathname. Accept both forms.
+  let parts = [];
+  if (Array.isArray(raw)) {
+    parts = raw.map(String);
+  } else if (typeof raw === 'string' && raw.trim()) {
+    parts = raw.split('/').filter(Boolean).map(segment => {
+      try { return decodeURIComponent(segment); } catch (_) { return segment; }
+    });
+  }
   const imagePath = resolveImagePath(parts);
   if (!imagePath) return sendError(res, 400, 'INVALID_IMAGE_PATH', 'Expected /data/{hash}/{filename}, /data-saver/{hash}/{filename}, or /covers/{mangaId}/{filename}');
   const host = String(req.query && req.query.host || DEFAULT_HOST).toLowerCase();
