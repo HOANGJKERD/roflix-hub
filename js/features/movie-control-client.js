@@ -92,8 +92,18 @@
     box.innerHTML=`<div class="glass-premium p-5 md:p-8 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-8"><div><div class="aspect-[2/3] rounded-2xl overflow-hidden border border-gray-800 shadow-xl"><img src="${esc(movie.poster_url)}" class="w-full h-full object-cover" alt="${esc(movie.title)}"></div><button id="rf-custom-play" class="rf-detail-watch-btn"><i class="fa-solid fa-play"></i> Xem phim</button></div><div class="md:col-span-3 space-y-5"><div class="flex justify-between gap-3"><div><h1 class="text-2xl md:text-3xl font-black text-white">${esc(movie.title)}</h1><p class="text-sm mt-1 text-gray-400">${esc(movie.origin_name)}</p></div>${locked?'<span class="rf-locked-badge">🔒 KHÓA</span>':''}</div><div class="flex flex-wrap gap-2 text-xs text-gray-300"><span class="bg-amber-500 text-black font-bold px-3 py-1 rounded-lg">${esc(movie.quality||'HD')}</span><span>${esc(movie.year||'N/A')}</span><span>${esc(movie.lang||'Vietsub')}</span></div><div><h3 class="text-sm font-bold text-gray-400 mb-1">Tóm tắt:</h3><p class="text-sm leading-relaxed text-gray-300">${esc(movie.summary||'Chưa có tóm tắt')}</p></div><div class="text-xs text-gray-400">Diễn viên: ${(movie.actors||[]).map(esc).join(', ')||'Chưa cập nhật'}</div><div class="text-xs text-gray-400">Đạo diễn: ${(movie.directors||[]).map(esc).join(', ')||'Chưa cập nhật'}</div></div></div>`;
     document.getElementById('rf-custom-play').onclick=async()=>{
       const ok2=await accessForMovie(movie,'custom',movie.slug);if(!ok2.allowed)return;
-      const u=await sb.storage.from('roflix-media').createSignedUrl(movie.video_path,3600);if(u.error){showToast?.('error','Không mở được video',u.error.message);return;}
-      const player=document.getElementById('movie-player');if(player)player.src=u.data.signedUrl;const title=document.getElementById('playing-title');if(title)title.textContent=movie.title;navigateTo('play-page');
+      const player=document.getElementById('movie-player');
+      if(movie.playback_mode==='drive_preview'&&movie.drive_file_id){
+        if(!player){showToast?.('error','Player không khả dụng','Không tìm thấy khung phát phim.');return;}
+        player.removeAttribute('sandbox');
+        player.src='https://drive.google.com/file/d/'+encodeURIComponent(movie.drive_file_id)+'/preview';
+        player.setAttribute('allow','autoplay; fullscreen; encrypted-media; picture-in-picture');
+        player.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
+      }else{
+        const u=await sb.storage.from('roflix-media').createSignedUrl(movie.video_path,3600);if(u.error){showToast?.('error','Không mở được video',u.error.message);return;}
+        if(player)player.src=u.data.signedUrl;
+      }
+      const title=document.getElementById('playing-title');if(title)title.textContent=movie.title;navigateTo('play-page');
     };
     navigateTo('detail-page');
   }
@@ -104,7 +114,7 @@
     main.appendChild(section);loadCustomMovies(section.querySelector('#rf-custom-movies-grid'));
   }
   async function loadCustomMovies(grid){
-    if(!grid)return;const r=await sb.from('roflix_custom_movies').select('id,slug,title,origin_name,poster_url,year,quality,locked,categories').eq('published',true).order('updated_at',{ascending:false}).limit(24);if(r.error||!r.data?.length){grid.innerHTML='<div class="col-span-full text-sm text-gray-500">Chưa có phim tự thêm.</div>';return;}grid.innerHTML=r.data.map(m=>`<article class="rf-custom-card cursor-pointer" data-custom="${esc(m.id)}"><div class="aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-gray-800 relative"><img src="${esc(m.poster_url)}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='https://placehold.co/300x450/111827/f59e0b?text=RoFlix'"><span class="absolute top-2 left-2 text-[9px] font-black bg-black/75 text-white px-2 py-1 rounded">${m.locked?'🔒 ':''}${esc(m.quality||'HD')}</span></div><h3 class="text-xs font-bold text-white mt-2 line-clamp-2">${esc(m.title)}</h3><p class="text-[10px] text-gray-500">${esc(m.year||'')}</p></article>`).join('');grid.querySelectorAll('[data-custom]').forEach(el=>el.addEventListener('click',()=>openCustom(el.dataset.custom)));
+    if(!grid)return;const r=await sb.from('roflix_custom_movies').select('id,slug,title,origin_name,poster_url,year,quality,locked,categories,playback_mode').eq('published',true).order('updated_at',{ascending:false}).limit(24);if(r.error||!r.data?.length){grid.innerHTML='<div class="col-span-full text-sm text-gray-500">Chưa có phim tự thêm.</div>';return;}grid.innerHTML=r.data.map(m=>`<article class="rf-custom-card cursor-pointer" data-custom="${esc(m.id)}"><div class="aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-gray-800 relative"><img src="${esc(m.poster_url)}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='https://placehold.co/300x450/111827/f59e0b?text=RoFlix'"><span class="absolute top-2 left-2 text-[9px] font-black bg-black/75 text-white px-2 py-1 rounded">${m.locked?'🔒 ':''}${esc(m.quality||'HD')}</span></div><h3 class="text-xs font-bold text-white mt-2 line-clamp-2">${esc(m.title)}</h3><p class="text-[10px] text-gray-500">${esc(m.year||'')}</p></article>`).join('');grid.querySelectorAll('[data-custom]').forEach(el=>el.addEventListener('click',()=>openCustom(el.dataset.custom)));
   }
   function hideGoogle(){
     document.querySelectorAll('button').forEach(b=>{if(/Đăng nhập bằng Google/i.test(b.textContent||'')){b.style.display='none';b.setAttribute('aria-hidden','true')}});
