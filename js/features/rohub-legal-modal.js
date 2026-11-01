@@ -49,7 +49,7 @@
       <p class="rohub-legal-notice"><strong>RoHub</strong> là dự án cá nhân do <strong>Hoangjkerd</strong> phát triển, hướng đến học tập và giải trí, không nhằm mục đích thương mại. Theo mô hình hiện tại, dự án không có quảng cáo hoặc hoạt động cá độ. Mục đích phi lợi nhuận không thay thế việc tuân thủ quyền tác giả và các điều khoản áp dụng.</p>
       <section class="rohub-legal-section">
         <h3><span aria-hidden="true">01</span> Mục đích xây dựng</h3>
-        <p>RoHub kết nối các khu vực RoFlix, RoTruyện và RoEdu trong một nền tảng chung. Dự án được phát triển nhằm phục vụ trải nghiệm khám phá, giải trí và học tập; đồng thời khuyến khích người dùng tiếp cận nguồn nội dung và tài liệu phù hợp.</p>
+        <p>RoHub kết nối RoFlix và RoTruyện trong một nền tảng chung, phục vụ trải nghiệm khám phá và giải trí.</p>
       </section>
       <section class="rohub-legal-section">
         <h3><span aria-hidden="true">02</span> RoFlix · Nguồn phim bên ngoài</h3>
@@ -59,11 +59,7 @@
         <h3><span aria-hidden="true">03</span> RoTruyện · Manga và bản dịch</h3>
         <p>RoTruyện có thể dẫn tới hoặc tích hợp nội dung từ nguồn bên ngoài như MangaDex, cùng một số bản dịch do cộng tác viên cung cấp. Tên tác giả, nhóm dịch và nguồn được ghi nhận khi thông tin đó có sẵn. Ghi nguồn hoặc được tặng bản dịch không tự động thay thế quyền cần thiết đối với tác phẩm gốc, bản dịch, hình ảnh và việc lưu trữ hoặc hiển thị nội dung.</p>
       </section>
-      <section class="rohub-legal-section">
-        <h3><span aria-hidden="true">04</span> RoEdu · Mục đích học tập</h3>
-        <p>RoEdu hướng đến việc hỗ trợ học sinh học tập. Dự án ưu tiên liên kết đến nguồn chính thức, tài liệu được phép sử dụng, nội dung tự biên soạn và câu hỏi luyện tập mới. Mỗi tài liệu cần được xem xét theo nguồn gốc, giấy phép, điều kiện sử dụng và yêu cầu ghi công tương ứng.</p>
-      </section>
-      <section class="rohub-legal-section">
+<section class="rohub-legal-section">
         <h3><span aria-hidden="true">05</span> Quyền sở hữu và yêu cầu rà soát</h3>
         <p>Quyền đối với tác phẩm và tài sản trí tuệ thuộc về chủ sở hữu hoặc chủ thể có quyền hợp pháp tương ứng. RoHub không xem việc ghi nguồn, liên kết hoặc nhúng là bằng chứng tự động về giấy phép. Chủ sở hữu quyền hoặc đại diện được ủy quyền khi yêu cầu rà soát nên cung cấp URL cụ thể, thông tin chứng minh quyền hoặc ủy quyền và nội dung yêu cầu để dự án có cơ sở xem xét.</p>
       </section>
