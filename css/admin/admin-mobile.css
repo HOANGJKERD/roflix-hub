@@ -1,108 +1,320 @@
-/* RoHub Admin · dedicated responsive layout (desktop remains unchanged) */
+/* RoHub Admin · mobile app-frame layout
+   The viewport stays fixed. Only the workspace content scrolls. */
 @media (max-width: 800px) {
-  html, body { max-width: 100%; overflow-x: clip; }
-  body { padding-bottom: env(safe-area-inset-bottom); }
-  .admin-shell { display: flex; flex-direction: column; min-height: 100dvh; }
-  .sidebar {
-    position: sticky; top: 0; left: auto; right: auto; bottom: auto;
-    z-index: 45; width: 100%; height: 58px; max-height: 58px;
-    overflow: hidden; padding: 0 8px;
-    border: 0; border-bottom: 1px solid rgba(255,255,255,.1);
-    background: rgba(8,10,17,.96);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  html, body {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    overflow: hidden !important;
+    overscroll-behavior: none;
   }
-  .sidebar .brand, .sidebar .sidebar-footer { display: none !important; }
+  body {
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: 0;
+  }
+  #app {
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+  .admin-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Compact, fixed navigation rail */
+  .sidebar {
+    position: relative !important;
+    inset: auto !important;
+    z-index: 50;
+    flex: 0 0 56px;
+    width: 100%;
+    height: 56px !important;
+    min-height: 56px;
+    max-height: 56px !important;
+    overflow: hidden;
+    padding: 0 9px !important;
+    border: 0;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+    background: rgba(8,10,17,.98);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .sidebar .brand,
+  .sidebar .sidebar-footer,
+  .sidebar .nav-group-label,
+  .sidebar .nav-studio-link { display: none !important; }
   .sidebar .nav {
-    display: flex; flex-direction: row; align-items: center; gap: 7px;
-    width: 100%; height: 58px; min-height: 58px; padding: 0 2px;
-    overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    height: 56px;
+    min-height: 56px;
+    padding: 0 1px;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
   .sidebar .nav::-webkit-scrollbar { display: none; }
-  .sidebar .nav-group-label { display: none !important; }
   .sidebar .nav button {
-    flex: 0 0 auto; width: auto; min-width: max-content; min-height: 40px;
-    display: inline-flex; align-items: center; justify-content: flex-start; gap: 8px;
-    padding: 8px 12px; border: 1px solid rgba(255,255,255,.08);
-    border-radius: 12px; background: rgba(255,255,255,.035);
-    color: #cbd5e1; font-size: 12px; white-space: nowrap;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    width: auto;
+    min-width: max-content;
+    min-height: 38px;
+    padding: 7px 11px !important;
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 11px;
+    background: rgba(255,255,255,.045);
+    color: #cbd5e1;
+    font-size: 11px !important;
+    line-height: 1;
+    white-space: nowrap;
   }
-  .sidebar .nav button span { display: inline-grid; place-items: center; font-size: 15px; }
-  .sidebar .nav button b { font-size: 12px; font-weight: 700; }
-  .sidebar .nav button.active { background: rgba(245,158,11,.13); border-color: rgba(245,158,11,.42); color: #fff; box-shadow: inset 0 -2px #f59e0b; }
-  .sidebar .nav button.active[data-zone="rotruyen"] { border-color: rgba(167,139,250,.45); box-shadow: inset 0 -2px #a78bfa; }
-  .main { width: 100%; min-width: 0; padding: 0 0 18px; }
+  .sidebar .nav button span {
+    display: inline-grid;
+    place-items: center;
+    font-size: 14px !important;
+  }
+  .sidebar .nav button b { font-size: 11px; font-weight: 700; }
+  .sidebar .nav button.active {
+    color: #fff;
+    background: rgba(245,158,11,.15);
+    border-color: rgba(245,158,11,.48);
+    box-shadow: inset 0 -2px #f59e0b;
+  }
+  .sidebar .nav button.active[data-zone="rotruyen"] {
+    border-color: rgba(167,139,250,.5);
+    box-shadow: inset 0 -2px #a78bfa;
+  }
+
+  /* App workspace occupies the exact remaining viewport */
+  .main {
+    display: flex !important;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 100%;
+    height: auto !important;
+    min-width: 0;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
   .main .topbar {
-    position: sticky; top: 58px; z-index: 35;
-    min-height: 58px; height: auto; padding: 9px 12px;
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 8px;
-    background: rgba(7,8,13,.94);
+    position: relative !important;
+    inset: auto !important;
+    z-index: 30;
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 54px;
+    height: auto;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 7px;
+    background: rgba(10,12,19,.98);
     border-bottom: 1px solid var(--line);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
-  .topbar-left { min-width: 0; flex: 1 1 150px; gap: 8px; }
-  .topbar-left strong { max-width: 48vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-  #admin-email { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; }
-  .top-actions { display: flex; flex: 1 1 100%; width: 100%; gap: 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .topbar-left {
+    display: flex;
+    flex: 1 1 130px;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+  }
+  .topbar-left strong {
+    max-width: 52vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+  }
+  #admin-email {
+    max-width: 38vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 9px;
+  }
+  .top-actions {
+    display: flex;
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
   .top-actions::-webkit-scrollbar { display: none; }
-  .top-actions .btn { flex: 0 0 auto; min-height: 40px; padding: 8px 11px; font-size: 11px; white-space: nowrap; }
+  .top-actions .btn {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 7px 10px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
   .top-actions .btn span { display: inline !important; }
-  .content { width: 100%; max-width: 100%; padding: 16px 12px 28px; }
-  .page { min-width: 0; }
-  .page-title { align-items: flex-start; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-  .page-title h1 { font-size: clamp(22px,6vw,28px); line-height: 1.15; overflow-wrap: anywhere; }
-  .page-title p { font-size: 12px; line-height: 1.6; }
-  .dashboard-header-actions { width: 100%; }
-  .dashboard-header-actions .btn { min-height: 42px; }
-  .grid, .grid.two, .grid.three { grid-template-columns: minmax(0,1fr); }
-  .stats, .roedu-admin-stats { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
-  .card { min-width: 0; padding: 13px; border-radius: 14px; }
-  .stat-label { font-size: 10px; line-height: 1.4; }
-  .stat-value { font-size: clamp(21px,6vw,27px); }
-  .stat-sub { font-size: 10px; line-height: 1.4; }
-  .dashboard-section-head { align-items: flex-start; flex-direction: column; gap: 8px; margin: 20px 0 10px; }
+
+  /* This is the ONLY page-level vertical scroll container */
+  .content {
+    display: block;
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    margin: 0;
+    padding: 15px 12px calc(22px + env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
+  .page { min-width: 0; width: 100%; }
+  .page-title {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+  .page-title h1 {
+    font-size: clamp(21px, 5.8vw, 27px);
+    line-height: 1.16;
+    overflow-wrap: anywhere;
+  }
+  .page-title h2 { font-size: 18px; line-height: 1.3; }
+  .page-title p { font-size: 11px; line-height: 1.55; }
+  .dashboard-header-actions,
+  .page-title > .btn { width: 100%; }
+  .dashboard-header-actions .btn { min-height: 40px; }
+
+  .grid, .grid.two, .grid.three {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+  .stats, .roedu-admin-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px;
+  }
+  .card {
+    min-width: 0;
+    padding: 12px;
+    border-radius: 13px;
+  }
+  .stat-label { font-size: 10px; line-height: 1.35; }
+  .stat-value { margin-top: 6px; font-size: clamp(20px, 5.8vw, 26px); }
+  .stat-sub { font-size: 9px; line-height: 1.35; }
+  .dashboard-section-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+    margin: 18px 0 10px;
+  }
   .dashboard-overview-lower { margin-top: 10px !important; }
-  .chart-box { height: 230px; }
-  .toolbar, .sc-toolbar { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; }
-  .toolbar .input, .toolbar select, .sc-toolbar .input { max-width: none !important; width: 100%; min-width: 0; }
-  .input, input, select, textarea { min-height: 42px; max-width: 100%; }
-  .table-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .table { min-width: 760px; }
-  .table th, .table td { padding: 10px; font-size: 12px; }
+  .chart-box { height: 210px; }
+
+  .toolbar, .sc-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .toolbar .input, .toolbar select, .sc-toolbar .input {
+    width: 100%;
+    max-width: none !important;
+    min-width: 0;
+  }
+  .input, input, select, textarea {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 42px;
+    font-size: 14px;
+  }
+  textarea.input { min-height: 90px; }
+  .table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .table { min-width: 720px; }
+  .table th, .table td { padding: 9px; font-size: 11px; }
   .form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-  .form-actions .btn { flex: 1 1 140px; min-height: 42px; }
-  .schedule-picker > div:first-child { display: grid !important; grid-template-columns: minmax(0,1fr); }
-  .schedule-picker > div:first-child > * { max-width: none !important; width: 100%; min-width: 0 !important; }
-  .schedule-pick-item { grid-template-columns: 44px minmax(0,1fr) auto; }
-  .schedule-pick-item img { width: 44px; height: 60px; }
-  .modal { align-items: flex-end; padding: 8px; }
-  .modal-card { width: 100%; max-width: 100%; max-height: min(88dvh,760px); overflow-y: auto; border-radius: 18px 18px 12px 12px; padding: 16px; }
-  .access { min-height: calc(100dvh - 150px); padding: 20px 0; }
-  .admin-login-card { width: 100%; padding: 22px 18px; }
-  .admin-login-card h2 { font-size: 23px; }
+  .form-actions .btn { flex: 1 1 130px; min-height: 42px; }
+  .schedule-picker > div:first-child {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .schedule-picker > div:first-child > * {
+    width: 100%;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+  .schedule-pick-item { grid-template-columns: 42px minmax(0, 1fr) auto; }
+  .schedule-pick-item img { width: 42px; height: 58px; }
+
+  .modal {
+    align-items: flex-end;
+    padding: 8px;
+  }
+  .modal-card {
+    width: 100%;
+    max-width: 100%;
+    max-height: 86dvh;
+    overflow-y: auto;
+    border-radius: 17px 17px 10px 10px;
+    padding: 15px;
+  }
+  .access {
+    min-height: 100%;
+    padding: 16px 0;
+  }
+  .admin-login-card { width: 100%; padding: 20px 16px; }
+  .admin-login-card h2 { font-size: 22px; }
   .admin-login-form .input { min-height: 46px; font-size: 16px; }
   .admin-login-submit { min-height: 46px; }
-  .notice { font-size: 12px; line-height: 1.6; }
+  .notice { font-size: 11px; line-height: 1.55; }
   .storage-cleanup-intro .top-actions { width: 100%; }
   .storage-cleanup-intro .top-actions .btn { flex: 1 1 auto; }
-  #storage-cleanup-preview { padding: 10px; }
+  #storage-cleanup-preview { padding: 9px; }
   .sc-preview-card { width: 100%; max-width: 100%; }
 }
 @media (max-width: 420px) {
+  .content { padding-left: 10px; padding-right: 10px; }
+  .sidebar .nav button { padding: 7px 9px !important; }
   .topbar-left { flex-basis: 100%; }
   .topbar-left strong { max-width: 56vw; }
   #admin-email { max-width: 42vw; }
-  .content { padding-inline: 10px; }
   .stats, .roedu-admin-stats { gap: 7px; }
-  .card { padding: 11px; }
-  .stat-value { font-size: 22px; }
-  .sidebar .nav button { padding: 8px 10px; }
-  .dashboard-live-pill { font-size: 10px; }
+  .card { padding: 10px; }
+  .stat-value { font-size: 21px; }
 }
 @media (max-width: 340px) {
-  .stats, .roedu-admin-stats { grid-template-columns: minmax(0,1fr); }
-  .sidebar .nav button { padding-inline: 9px; }
+  .stats, .roedu-admin-stats { grid-template-columns: minmax(0, 1fr) !important; }
 }
 @media (hover: none), (pointer: coarse) {
   #admin-nav button:hover { transform: none; }
