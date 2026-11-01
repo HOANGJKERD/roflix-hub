@@ -70,7 +70,7 @@
     box-sizing:border-box !important;
   }
   html.rh-flix .header-ios > .max-w-7xl > div:last-child > button[onclick*="toggleTheme"] { grid-column:1; grid-row:2; }
-  html.rh-flix .header-ios > .max-w-7xl > div:last-child > div:has(#notif-badge) { grid-column:2; grid-row:2; }
+  html.rh-flix .header-ios > .max-w-7xl > div:last-child > div:has(#notif-badge) { grid-column:2; grid-row:2; display:flex !important; align-items:center; justify-content:center; min-width:0; }
   html.rh-flix .header-ios #user-nav-container { grid-column:3; grid-row:2; min-width:0 !important; }
   html.rh-flix .header-ios #user-nav-container > button { overflow:hidden; }
   html.rh-flix .header-ios #user-nav-container > button span { display:none !important; }
