@@ -508,20 +508,28 @@
       if(img.dataset.readerWired==='1')return;
       img.dataset.readerWired='1';
       const page=Number((img.alt||'').match(/(\\d+)/)?.[1]||Array.from(container.querySelectorAll('img')).indexOf(img)+1);
+      const wrapper=document.createElement('figure');
+      wrapper.className='reader-page';
+      img.parentNode.insertBefore(wrapper,img);
+      wrapper.appendChild(img);
       const report=document.createElement('button');
       report.type='button';report.className='reader-page-report';report.textContent='⚑ Báo lỗi trang '+page;
+      report.hidden=true;
       report.addEventListener('click',()=>reportReaderIssue(page));
-      img.insertAdjacentElement('afterend',report);
+      wrapper.appendChild(report);
+      img.addEventListener('load',()=>{img.classList.remove('reader-image-error');report.hidden=true;wrapper.classList.remove('has-error');},{once:false});
       img.addEventListener('error',()=>{
         img.classList.add('reader-image-error');
-        if(img.dataset.roRetry==='1'){img.alt='Không tải được ảnh trang '+page;return;}
-        img.dataset.roRetry='1';
-        const original=img.getAttribute('src');
-        if(original && original.startsWith('/api/mangadex-image?')){
-          try{const u=new URL(original,location.origin);u.searchParams.set('retry',String(Date.now()));img.src=u.pathname+u.search;return;}catch(_){}
+        if(img.dataset.roRetry==='1'){
+          img.alt='Không tải được ảnh trang '+page;
+          report.hidden=false;wrapper.classList.add('has-error');return;
         }
-        if(original){img.src=original;return;}
-        img.alt='Không tải được ảnh. Hãy tải lại chương.';
+        img.dataset.roRetry='1';
+        const fallback=img.getAttribute('data-saver');
+        if(fallback && !img.dataset.saverTried){
+          img.dataset.saverTried='1';img.src=fallback;return;
+        }
+        report.hidden=false;wrapper.classList.add('has-error');
       });
     });
     applyReaderPrefs();
