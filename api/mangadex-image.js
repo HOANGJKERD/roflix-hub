@@ -12,8 +12,8 @@ function sendError(res, status, code, message, extra) {
   return res.status(status).json(Object.assign({ error: message, code }, extra || {}));
 }
 function allowedHost(value) {
-  const host = String(value || DEFAULT_HOST).toLowerCase().replace(/\\.$/, '');
-  return host === 'uploads.mangadex.org' || host === 'mangadex.org' || /^[a-z0-9-]+\\.mangadex\\.network$/.test(host);
+  const host = String(value || DEFAULT_HOST).toLowerCase().replace(/\.$/, '');
+  return host === 'uploads.mangadex.org' || host === 'mangadex.org' || /^[a-z0-9-]+\.mangadex\.network$/.test(host);
 }
 function resolveImagePath(parts) {
   if (parts.length === 3 && ['data', 'data-saver'].includes(parts[0]) && HASH.test(parts[1]) && FILE.test(parts[2]) && parts[2] !== '.' && parts[2] !== '..') {
