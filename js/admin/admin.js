@@ -134,33 +134,7 @@
     const rows=data||[];
     body.innerHTML=rows.length?rows.map(x=>'<tr><td>'+fmtDate(x.created_at)+'</td><td>'+(x.user_id?'<b>'+esc(x.display_name||'Thành viên')+'</b><br><small>'+esc(x.user_email||x.user_id)+'</small>':'<b>Khách</b><br><small>Guest session</small>')+'</td><td>'+esc(x.event_type==='movie_play'?'▶ Phát phim':x.event_type==='movie_view'?'👁 Mở phim':x.event_type==='movie_detail'?'ℹ Chi tiết phim':'🌐 Truy cập')+'</td><td><b>'+esc(x.movie_title||'—')+'</b><br><small>'+esc(x.movie_slug||x.page||'')+'</small></td><td><code>'+esc(x.session_id)+'</code></td></tr>').join(''):'<tr><td colspan="6" class="empty">Chưa có lịch sử. Khách truy cập mới sẽ được ghi nhận từ phiên bản này.</td></tr>';
   }
-  async function loadWatchHistory(){
-    const body=$('watch-history-body');if(!body)return;
-    const {data,error}=await sb.rpc('roflix_admin_watch_history',{p_limit:250});
-    if(error){body.innerHTML='<tr><td colspan="5" class="danger-text">'+esc(error.message)+'</td></tr>';return;}
-    const rows=data||[];
-    body.innerHTML=rows.length?rows.map(x=>'<tr><td>'+fmtDate(x.created_at)+'</td><td>'+(x.user_id?'<b>'+esc(x.display_name||'Thành viên')+'</b><br><small>'+esc(x.user_email||x.user_id)+'</small>':'<b>Khách</b><br><small>Guest session</small>')+'</td><td>'+esc(x.event_type==='movie_play'?'▶ Phát phim':x.event_type==='movie_view'?'👁 Mở phim':x.event_type==='movie_detail'?'ℹ Chi tiết phim':'🌐 Truy cập')+'</td><td><b>'+esc(x.movie_title||'—')+'</b><br><small>'+esc(x.movie_slug||x.page||'')+'</small></td><td><code>'+esc(x.session_id)+'</code></td></tr>').join(''):'<tr><td colspan="5" class="empty">Chưa có lịch sử. Khách truy cập mới sẽ được ghi nhận từ phiên bản này.</td></tr>';
-  }
-  window.rfAdminRefreshWatchHistory=loadWatchHistory;
-  function formatWatchTime(seconds){const n=Math.max(0,Math.floor(Number(seconds)||0));return Math.floor(n/3600)+'h '+Math.floor(n%3600/60)+'m';}
-  async function loadWatchMetrics(){
-    const host=$('watch-metrics');if(!host)return;
-    const {data,error}=await sb.rpc('roflix_admin_watch_metrics');
-    if(error){host.innerHTML='<p class="danger-text">'+esc(error.message)+'</p>';return;}
-    const d=data||{};
-    host.innerHTML='<div class="grid four"><div class="card"><div class="stat-label">⏱ Tổng thời gian xem</div><div class="stat-value accent-blue">'+formatWatchTime(d.total_watch_seconds)+'</div></div><div class="card"><div class="stat-label">🏁 Phiên xem hoàn tất</div><div class="stat-value accent-green">'+fmtNum(d.completed_sessions)+'</div></div><div class="card"><div class="stat-label">📈 Tỷ lệ hoàn tất</div><div class="stat-value accent-amber">'+(d.completion_rate??0)+'%</div></div><div class="card"><div class="stat-label">📺 Phim có dữ liệu xem</div><div class="stat-value accent-purple">'+fmtNum((d.top_watch_time||[]).length)+'</div></div></div><div class="grid two" style="margin-top:14px"><div><h4>Top theo thời lượng xem</h4>'+(d.top_watch_time||[]).map(x=>'<div class="movie-rank"><b>'+esc(x.movie_title||x.movie_slug)+'</b><span>'+formatWatchTime(x.seconds)+'</span></div>').join('')+'</div><div><h4>Top theo số phiên xem hoàn tất</h4>'+(d.top_completed||[]).map(x=>'<div class="movie-rank"><b>'+esc(x.movie_title||x.movie_slug)+'</b><span>'+fmtNum(x.completed)+' / '+fmtNum(x.sessions)+'</span></div>').join('')+'</div></div>';
-  }
-  function sampleConcurrent(){
-    const host=$('concurrent-viewers-chart');if(!host||state.currentPage!=='analytics')return;
-    const active=document.querySelectorAll('#live-viewers-body tr').length;
-    const value=active&&document.querySelector('#live-viewers-body tr td.empty')?0:active;
-    const now=new Date(),label=now.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    if(!state.concurrentSamples)state.concurrentSamples=[];
-    state.concurrentSamples.push({label,value});if(state.concurrentSamples.length>80)state.concurrentSamples.shift();
-    const labels=state.concurrentSamples.map(x=>x.label),data=state.concurrentSamples.map(x=>x.value),ctx=host.getContext('2d');if(!ctx)return;
-    if(state.charts.concurrent){state.charts.concurrent.data.labels=labels;state.charts.concurrent.data.datasets[0].data=data;state.charts.concurrent.update('none');}
-    else state.charts.concurrent=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Phiên online đồng thời',data,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.12)',fill:true,tension:.25}]},options:chartCommon()});
-  }
+
   async function loadAudit(){
     const {data,error}=await sb.from('roflix_admin_audit_logs').select('id,admin_id,action,target_user_id,details,created_at').order('created_at',{ascending:false}).limit(100);
     const host=$('dashboard-admin-activity');
