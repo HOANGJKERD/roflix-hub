@@ -15,6 +15,10 @@
 })();
 
 async function playMovie(slug, preferredSrc) {
+    if (window.rfWatchPartyBlocksControl && window.rfWatchPartyBlocksControl()) {
+        showToast('warning', 'Phòng xem chung', 'Chỉ host được đổi phim. Bạn đang xem theo host.');
+        return;
+    }
     window.__ROFLIX_ANIME_MODE__ = false;
     try {
         await viewMovieDetail(slug, preferredSrc);
@@ -77,6 +81,10 @@ function renderPlayerServerBar() {
 
 /** Phát bằng embed VidSrc (giống tester https://vidsrc.sh/#tester) */
 function playOnVidSrc(season, episode) {
+    if (window.rfWatchPartyBlocksControl && window.rfWatchPartyBlocksControl()) {
+        showToast('warning', 'Phòng xem chung', 'Chỉ host được đổi nguồn phát.');
+        return;
+    }
     const warning = 'Cảnh báo: VidSrc là trình phát bên thứ ba và có thể mở tab quảng cáo, chuyển hướng hoặc trang cài ứng dụng. RoFlix không kiểm soát được popup bên trong trình phát này. Chỉ tiếp tục nếu bạn chấp nhận rủi ro; không tải ứng dụng lạ và không nhập thông tin cá nhân.';
     if (!window.__RF_VIDSRC_WARNING_ACCEPTED__) {
         const accepted = window.confirm(warning + '\n\nBạn có muốn tiếp tục mở VidSrc không?');
@@ -136,6 +144,10 @@ function playOnVidSrc(season, episode) {
 }
 
 async function playMovieByIndex(index, options = {}) {
+    if ((!options || !options.fromParty) && window.rfWatchPartyBlocksControl && window.rfWatchPartyBlocksControl()) {
+        showToast('warning', 'Phòng xem chung', 'Chỉ host được đổi tập. Bạn đang xem theo host.');
+        return;
+    }
     const ep = currentEpisodeList[index];
     if (!ep) { showToast('error', 'Lỗi', 'Không có tập này!'); return; }
     window.__RF_LAST_EP_INDEX__ = index;
