@@ -673,3 +673,23 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .reader-chapter-nav span{font-size:12px;color:color-mix(in srgb,var(--reader-fg,#fff) 72%,transparent);text-align:center}
 .reader-modal[data-reader-mode="single"] .reader-content{padding-top:12px!important}
 @media(max-width:640px){.reader-modal .reader-top{gap:8px;padding:12px}.reader-tool-button{font-size:11px;padding:8px}.reader-tools{top:65px;gap:8px 14px}.reader-tools label{gap:5px}.reader-tools select{max-width:120px}.reader-chapter-nav button{padding:9px 10px;font-size:12px}.reader-chapter-nav span{max-width:90px}}
+
+
+/* RoTruyen shell alignment: keep the RoHub bridge and local navigation stacked. */
+html.rh-story .rt-site-header{position:sticky!important;top:40px!important;z-index:70!important;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;min-height:60px}
+html.rh-story .rt-site-header>.rt-brand{justify-self:start;min-width:0}
+html.rh-story .rt-site-header>nav{justify-self:center;position:static}
+html.rh-story .rt-site-header>.rt-header-actions{justify-self:end;min-width:0}
+html.rh-story .rt-site-header nav a{white-space:nowrap}
+html.rh-story section.hero.rt-banner{isolation:isolate}
+html.rh-story section.hero.rt-banner .rt-banner-media{z-index:0;pointer-events:none}
+html.rh-story section.hero.rt-banner .rt-banner-shade{z-index:1;pointer-events:none}
+html.rh-story section.hero.rt-banner .rt-banner-copy,html.rh-story section.hero.rt-banner .rt-banner-rail,html.rh-story section.hero.rt-banner .rt-banner-bar{z-index:2}
+html.rh-story .cover img{z-index:0}
+html.rh-story .cover-missing .cover-fallback-icon{position:absolute;inset:0;display:grid;place-items:center;font-size:38px;color:#c4b5fd;pointer-events:none}
+@media(max-width:650px){
+ html.rh-story .rt-site-header{display:flex;top:40px!important;gap:10px;min-height:58px}
+ html.rh-story .rt-site-header>.rt-brand{flex:1}
+ html.rh-story .rt-site-header>.rt-header-actions{flex:0 0 auto}
+ html.rh-story .rt-site-header>nav{position:absolute;top:100%;left:0;right:0;z-index:75}
+}
