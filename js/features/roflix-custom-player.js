@@ -84,7 +84,7 @@
       status('Đã hết tập');
       if (q('[data-autonext]').checked && typeof w.playMovieByIndex === 'function') {
         const next = (Number(w.__RF_LAST_EP_INDEX__) || 0) + 1;
-        if (Array.isArray(w.currentEpisodeList) && next < w.currentEpisodeList.length) w.playMovieByIndex(next);
+        w.playMovieByIndex(next);
       }
     });
     q('[data-autonext]').addEventListener('change', e => { state.autoNext = e.target.checked; });
