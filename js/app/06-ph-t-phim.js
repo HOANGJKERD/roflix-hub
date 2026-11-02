@@ -334,6 +334,7 @@ function playMovieByLink(link, title, epName) {
 }
 
 function goBackFromPlay() {
+    cleanupCatalogVideo();
     window.roflixAnimePlayer?.stop?.();
     const player = document.getElementById('movie-player');
     if (player) player.src = '';
