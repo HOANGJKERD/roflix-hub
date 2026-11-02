@@ -152,6 +152,76 @@ function playOnVidSrc(season, episode) {
     } catch (_) {}
 }
 
+let rfCatalogHlsInstance = null;
+let rfCatalogVideoElement = null;
+
+function cleanupCatalogVideo() {
+    if (rfCatalogHlsInstance) {
+        try { rfCatalogHlsInstance.destroy(); } catch (_) {}
+        rfCatalogHlsInstance = null;
+    }
+    if (rfCatalogVideoElement) {
+        try { rfCatalogVideoElement.pause(); rfCatalogVideoElement.removeAttribute('src'); rfCatalogVideoElement.load(); } catch (_) {}
+        rfCatalogVideoElement.remove();
+        rfCatalogVideoElement = null;
+    }
+    const frame = document.getElementById('movie-player');
+    if (frame) frame.style.display = '';
+}
+
+async function playCatalogHls(url, title) {
+    const frame = document.getElementById('movie-player');
+    if (!frame || !frame.parentElement) throw new Error('Không tìm thấy vùng phát phim.');
+    cleanupCatalogVideo();
+    const video = document.createElement('video');
+    video.id = 'rf-catalog-video';
+    video.controls = true;
+    video.playsInline = true;
+    video.autoplay = true;
+    video.preload = 'auto';
+    video.setAttribute('aria-label', title || 'RoFlix Player');
+    video.style.cssText = 'display:block;width:100%;height:100%;min-height:240px;max-height:75vh;background:#000;object-fit:contain;';
+    frame.style.display = 'none';
+    frame.parentElement.appendChild(video);
+    rfCatalogVideoElement = video;
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+    } else {
+        if (!window.Hls) {
+            let script = document.getElementById('rf-catalog-hls-js');
+            if (!script) {
+                script = document.createElement('script');
+                script.id = 'rf-catalog-hls-js';
+                script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';
+                document.head.appendChild(script);
+            }
+            await new Promise((resolve, reject) => {
+                if (window.Hls) return resolve();
+                script.addEventListener('load', resolve, { once: true });
+                script.addEventListener('error', () => reject(new Error('Không tải được thư viện HLS.')), { once: true });
+            });
+        }
+        if (!window.Hls || !window.Hls.isSupported()) throw new Error('Trình duyệt không hỗ trợ phát HLS.');
+        rfCatalogHlsInstance = new window.Hls({ enableWorker: true, lowLatencyMode: false });
+        rfCatalogHlsInstance.on(window.Hls.Events.ERROR, (_event, data) => {
+            if (data && data.fatal) {
+                console.error('[RoFlix HLS]', data.type, data.details);
+                showToast('error', 'Nguồn phim gặp lỗi', 'Không tải được luồng video. Hãy thử tập khác hoặc đổi nguồn.');
+            }
+        });
+        rfCatalogHlsInstance.loadSource(url);
+        rfCatalogHlsInstance.attachMedia(video);
+    }
+
+    video.addEventListener('error', () => {
+        const code = video.error && video.error.code;
+        console.error('[RoFlix video] media error', code);
+        showToast('error', 'Không phát được video', 'Nguồn HLS có thể đã hết hạn hoặc máy chủ từ chối kết nối.');
+    }, { once: true });
+    try { await video.play(); } catch (_) {}
+}
+
 async function playMovieByIndex(index, options = {}) {
     if ((!options || !options.fromParty) && window.rfWatchPartyBlocksControl && window.rfWatchPartyBlocksControl()) {
         showToast('warning', 'Phòng xem chung', 'Chỉ host được đổi tập. Bạn đang xem theo host.');
@@ -190,24 +260,36 @@ async function playMovieByIndex(index, options = {}) {
     renderPlayEpisodeGrid(index);
     navigateTo('play-page');
 
-    // Mặc định: link KKPhim/VSMOV (không auto VidSrc)
+    // Mặc định: embed dùng iframe; HLS/MP4 dùng video element tương thích.
     if (ep.__rfAniMapper && window.roflixAnimePlayer?.mount) {
         try {
+            cleanupCatalogVideo();
             await window.roflixAnimePlayer.mount(ep.link, `${title} - ${ep.name}`, ep.__rfAniSource?.type);
         } catch (error) {
             console.warn('[RoFlix Anime] custom mount failed', error);
-            showToast('error', 'Lỗi phát Anime', 'Nguồn phát không mở được.');
+            showToast('error', 'Lỗi phát Anime', error?.message || 'Nguồn phát không mở được.');
             return;
         }
     } else if (player) {
-        // Gỡ sandbox riêng của VidSrc khi quay lại server mặc định.
         try {
             player.removeAttribute('sandbox');
             delete player.dataset.rfVidsrcSandboxed;
             player.removeAttribute('referrerpolicy');
             player.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
         } catch (_) {}
-        player.src = ep.link;
+        const isHls = ep.linkType === 'hls' || /\\.m3u8(?:[?#]|$)/i.test(ep.link);
+        const isDirectVideo = /\\.(mp4|webm|ogg)(?:[?#]|$)/i.test(ep.link);
+        if (isHls) {
+            try { await playCatalogHls(ep.link, `${title} - ${ep.name}`); }
+            catch (error) {
+                console.error('[RoFlix HLS] setup failed', error);
+                showToast('error', 'Không khởi tạo được trình phát', error?.message || 'Nguồn HLS không khả dụng.');
+            }
+        } else {
+            cleanupCatalogVideo();
+            player.src = ep.link;
+            if (isDirectVideo) player.src = ep.link;
+        }
     }
 
     try { if (window.rfAnalytics) window.rfAnalytics.movie('movie_play', currentSlug || '', title); } catch (_) {}
