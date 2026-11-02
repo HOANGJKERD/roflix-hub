@@ -15,37 +15,40 @@
     button.textContent = 'Đang tải lại…';
 
     try {
-      const episodes = Array.isArray(window.currentEpisodeList) ? window.currentEpisodeList : [];
-      const index = Number.isInteger(window.__RF_LAST_EP_INDEX__) ? window.__RF_LAST_EP_INDEX__ : 0;
-      const episode = episodes[index];
-
-      // Anime provider: resolve the current episode again, then remount its player.
-      if (episode && episode.__rfAniMapper && window.roflixAnimePlayer?.resolveEpisode && window.roflixAnimePlayer?.mount) {
-        const meta = episode.__rfAniMapper;
-        const source = await window.roflixAnimePlayer.resolveEpisode(
-          meta.mediaId, meta.provider, meta.episode, meta.index
-        );
-        episode.link = source.url;
-        episode.__rfAniSource = source;
-        await window.roflixAnimePlayer.mount(source.url, window.currentMovieTitle || 'RoFlix', source.type);
+      // Prefer the active player implementation. HLS.js must be recreated
+      // from its original manifest URL, not by assigning its blob URL to video.src.
+      if (typeof window.__rfReloadCatalogPlayer === 'function') {
+        await window.__rfReloadCatalogPlayer();
       } else {
-        const frame = document.getElementById('movie-player');
-        const video = document.getElementById('rf-anime-video');
-        if (video) {
-          const currentSrc = video.currentSrc || video.src;
-          if (!currentSrc) throw new Error('Không tìm thấy nguồn video hiện tại.');
-          video.pause();
-          video.src = currentSrc;
-          video.load();
-          try { await video.play(); } catch (_) {}
-        } else if (frame) {
-          const currentSrc = frame.getAttribute('src') || frame.src;
-          if (!currentSrc || currentSrc === 'about:blank') throw new Error('Trình phát chưa có nguồn để tải lại.');
-          // Reassigning src reloads only this iframe. Keep sandbox/allow/referrer settings intact.
-          frame.src = 'about:blank';
-          requestAnimationFrame(() => { frame.src = currentSrc; });
+        const episodes = Array.isArray(window.currentEpisodeList) ? window.currentEpisodeList : [];
+        const index = Number.isInteger(window.__RF_LAST_EP_INDEX__) ? window.__RF_LAST_EP_INDEX__ : 0;
+        const episode = episodes[index];
+
+        if (episode && episode.__rfAniMapper && window.roflixAnimePlayer?.resolveEpisode && window.roflixAnimePlayer?.mount) {
+          const meta = episode.__rfAniMapper;
+          const source = await window.roflixAnimePlayer.resolveEpisode(
+            meta.mediaId, meta.provider, meta.episode, meta.index
+          );
+          episode.link = source.url;
+          episode.__rfAniSource = source;
+          await window.roflixAnimePlayer.mount(source.url, window.currentMovieTitle || 'RoFlix', source.type);
         } else {
-          throw new Error('Không tìm thấy trình phát hiện tại.');
+          const video = document.getElementById('rf-catalog-video') || document.getElementById('rf-anime-video');
+          const frame = document.getElementById('movie-player');
+          if (video) {
+            const currentSrc = video.currentSrc || video.src;
+            if (!currentSrc || currentSrc.startsWith('blob:')) throw new Error('Không lấy được URL gốc để tải lại video.');
+            video.pause();
+            video.src = currentSrc;
+            video.load();
+            try { await video.play(); } catch (_) {}
+          } else if (frame) {
+            const currentSrc = frame.getAttribute('src') || frame.src;
+            if (!currentSrc || currentSrc === 'about:blank') throw new Error('Trình phát chưa có nguồn để tải lại.');
+            frame.src = currentSrc;
+          } else {
+            throw new Error('Không tìm thấy trình phát hiện tại.');
+          }
         }
       }
       toast('success', 'Trình phát', 'Đã gửi yêu cầu tải lại trình phát hiện tại.');
