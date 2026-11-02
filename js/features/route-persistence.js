@@ -4,6 +4,8 @@
   'use strict';
   const KEY='roflix:last-route:v1';
   let restoring=false;
+  let lastSlug='';
+  let lastSource='';
   function readRoute(){
     const u=new URL(location.href);
     const mode=u.searchParams.get('rf');
@@ -35,11 +37,12 @@
     window[name]=wrapped;
   }
   wrap('viewMovieDetail',original=>async function(slug,src){
+    if(slug){lastSlug=String(slug);lastSource=src||'';}
     if(!restoring && slug)writeRoute({mode:'detail',movie:String(slug),src:src||''});
     return original.apply(this,arguments);
   });
   wrap('playMovieByIndex',original=>async function(index,options){
-    if(!restoring && window.currentSlug)writeRoute({mode:'play',movie:String(window.currentSlug),ep:Number(index)||0,src:window.currentSourceId||''});
+    if(!restoring && lastSlug)writeRoute({mode:'play',movie:lastSlug,ep:Number(index)||0,src:lastSource});
     return original.apply(this,arguments);
   });
   wrap('navigateTo',original=>function(target){
@@ -52,6 +55,7 @@
     restoring=true;
     try{
       if(typeof window.viewMovieDetail!=='function')return;
+      lastSlug=route.movie;lastSource=route.src||'';
       await window.viewMovieDetail(route.movie,route.src||undefined);
       if(route.mode==='play'){
         const list=window.currentEpisodeList||[];
