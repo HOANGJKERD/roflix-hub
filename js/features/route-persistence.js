@@ -58,7 +58,7 @@
       lastSlug=route.movie;lastSource=route.src||'';
       await window.viewMovieDetail(route.movie,route.src||undefined);
       if(route.mode==='play'){
-        const list=window.currentEpisodeList||[];
+        const list=typeof currentEpisodeList!=='undefined'?currentEpisodeList:[];
         if(list.length){
           const index=Math.min(route.ep,Math.max(0,list.length-1));
           if(typeof window.playMovieByIndex==='function')await window.playMovieByIndex(index);
