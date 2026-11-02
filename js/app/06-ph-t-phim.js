@@ -156,7 +156,6 @@ let rfCatalogHlsInstance = null;
 let rfCatalogVideoElement = null;
 
 function cleanupCatalogVideo() {
-    window.__rfReloadCatalogPlayer = null;
     if (rfCatalogHlsInstance) {
         try { rfCatalogHlsInstance.destroy(); } catch (_) {}
         rfCatalogHlsInstance = null;
@@ -171,9 +170,6 @@ function cleanupCatalogVideo() {
 }
 
 async function playCatalogHls(url, title) {
-    // Expose a player-aware reload hook so the reload button never targets
-    // the hidden iframe while an HLS video element is active.
-    window.__rfReloadCatalogPlayer = () => playCatalogHls(url, title);
     const frame = document.getElementById('movie-player');
     if (!frame || !frame.parentElement) throw new Error('Không tìm thấy vùng phát phim.');
     cleanupCatalogVideo();
