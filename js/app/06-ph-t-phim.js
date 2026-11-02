@@ -161,6 +161,7 @@ function cleanupCatalogVideo() {
         rfCatalogHlsInstance = null;
     }
     if (rfCatalogVideoElement) {
+        try { if (window.RoFlixCustomPlayer) window.RoFlixCustomPlayer.destroy(); } catch (_) {}
         try { rfCatalogVideoElement.pause(); rfCatalogVideoElement.removeAttribute('src'); rfCatalogVideoElement.load(); } catch (_) {}
         rfCatalogVideoElement.remove();
         rfCatalogVideoElement = null;
@@ -175,7 +176,7 @@ async function playCatalogHls(url, title) {
     cleanupCatalogVideo();
     const video = document.createElement('video');
     video.id = 'rf-catalog-video';
-    video.controls = true;
+    video.controls = false;
     video.playsInline = true;
     video.autoplay = true;
     video.preload = 'auto';
@@ -184,6 +185,7 @@ async function playCatalogHls(url, title) {
     frame.style.display = 'none';
     frame.parentElement.appendChild(video);
     rfCatalogVideoElement = video;
+    if (window.RoFlixCustomPlayer) window.RoFlixCustomPlayer.mountVideo(video);
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
@@ -279,7 +281,7 @@ async function playMovieByIndex(index, options = {}) {
         } catch (_) {}
         const isHls = ep.linkType === 'hls' || /\\.m3u8(?:[?#]|$)/i.test(ep.link);
         const isDirectVideo = /\\.(mp4|webm|ogg)(?:[?#]|$)/i.test(ep.link);
-        if (isHls) {
+        if (isHls || isDirectVideo) {
             try { await playCatalogHls(ep.link, `${title} - ${ep.name}`); }
             catch (error) {
                 console.error('[RoFlix HLS] setup failed', error);
@@ -288,7 +290,7 @@ async function playMovieByIndex(index, options = {}) {
         } else {
             cleanupCatalogVideo();
             player.src = ep.link;
-            if (isDirectVideo) player.src = ep.link;
+            if (window.RoFlixCustomPlayer) window.RoFlixCustomPlayer.mountFrame(player);
         }
     }
 
@@ -337,7 +339,7 @@ function goBackFromPlay() {
     cleanupCatalogVideo();
     window.roflixAnimePlayer?.stop?.();
     const player = document.getElementById('movie-player');
-    if (player) player.src = '';
+    if (player) { player.src = ''; if (window.RoFlixCustomPlayer) window.RoFlixCustomPlayer.destroy(); }
     navigateTo('detail-page');
 }
 
