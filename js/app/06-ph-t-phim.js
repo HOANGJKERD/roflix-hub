@@ -21,7 +21,16 @@ async function playMovie(slug, preferredSrc) {
     }
     window.__ROFLIX_ANIME_MODE__ = false;
     try {
-        await viewMovieDetail(slug, preferredSrc);
+        // Nếu người xem vừa mở trang chi tiết phim này, tái sử dụng dữ liệu/tập đã tải.
+        // Trước đây playMovie luôn gọi viewMovieDetail lần nữa, tạo request chi tiết
+        // trùng lặp và có thể gọi AniMapper metadata lần thứ hai trước khi phát.
+        const alreadyLoaded = currentSlug === slug
+            && currentMovieData
+            && Array.isArray(currentEpisodeList)
+            && currentEpisodeList.length > 0;
+        if (!alreadyLoaded) {
+            await viewMovieDetail(slug, preferredSrc);
+        }
         let tries = 0;
         while (currentEpisodeList.length === 0 && tries < 15) {
             await new Promise(r => setTimeout(r, 120));
