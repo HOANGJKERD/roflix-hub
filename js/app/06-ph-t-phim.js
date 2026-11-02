@@ -185,7 +185,8 @@ async function playCatalogHls(url, title) {
     frame.style.display = 'none';
     frame.parentElement.appendChild(video);
     rfCatalogVideoElement = video;
-    if (window.RoFlixCustomPlayer) window.RoFlixCustomPlayer.mountVideo(video);
+    // Custom controls tạm ngắt để ưu tiên kiểm chứng luồng phát ổn định.
+    video.controls = true;
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
