@@ -51,11 +51,14 @@
                 movie.episodes.forEach(epGroup => {
                     if (epGroup.server_data && epGroup.server_data.length > 0) {
                         epGroup.server_data.forEach(ep => {
-                            const link = ep.link_embed || ep.link_m3u8 || '';
+                            const embed = String(ep.link_embed || '').trim();
+                            const hls = String(ep.link_m3u8 || '').trim();
+                            const link = embed || hls;
                             if (!link) return;
                             epList.push({
                                 name: String(ep.name || ep.slug || 'Full'),
-                                link: link
+                                link: link,
+                                linkType: embed ? 'embed' : 'hls'
                             });
                         });
                     }
