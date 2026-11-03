@@ -9,7 +9,8 @@
             
             const movieData = await fetchMovieDetail(slug, preferredSrc);
             if (!movieData) return;
-            
+            // Detail payload phải được chuẩn hóa như catalog để tách đúng thumb_url/poster_url.
+            if (typeof normalizeNguoncMovie === 'function') normalizeNguoncMovie(movieData);
             const movie = mapMovieData(movieData);
             let aniMeta = null;
             const aniId = movieData.anilistId || movieData.animeId || movieData.aniMapperId;
