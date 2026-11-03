@@ -161,7 +161,6 @@ function cleanupCatalogVideo() {
         rfCatalogHlsInstance = null;
     }
     if (rfCatalogVideoElement) {
-        try { if (window.RoFlixCustomPlayer) window.RoFlixCustomPlayer.destroy(); } catch (_) {}
         try { rfCatalogVideoElement.pause(); rfCatalogVideoElement.removeAttribute('src'); rfCatalogVideoElement.load(); } catch (_) {}
         rfCatalogVideoElement.remove();
         rfCatalogVideoElement = null;
@@ -185,7 +184,6 @@ async function playCatalogHls(url, title) {
     frame.style.display = 'none';
     frame.parentElement.appendChild(video);
     rfCatalogVideoElement = video;
-    // Custom controls tạm ngắt để ưu tiên kiểm chứng luồng phát ổn định.
     video.controls = true;
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -291,7 +289,6 @@ async function playMovieByIndex(index, options = {}) {
         } else {
             cleanupCatalogVideo();
             player.src = ep.link;
-            if (window.RoFlixCustomPlayer) window.RoFlixCustomPlayer.mountFrame(player);
         }
     }
 
@@ -340,7 +337,7 @@ function goBackFromPlay() {
     cleanupCatalogVideo();
     window.roflixAnimePlayer?.stop?.();
     const player = document.getElementById('movie-player');
-    if (player) { player.src = ''; if (window.RoFlixCustomPlayer) window.RoFlixCustomPlayer.destroy(); }
+    if (player) player.src = '';
     navigateTo('detail-page');
 }
 
