@@ -81,15 +81,14 @@
             renderMoviesFromAPI(1);
         }
 
+        // Danh mục dùng đúng slug endpoint được NguonC hỗ trợ.
         const LIST_ENDPOINTS = {
             'phim-moi': 'phim-moi-cap-nhat',
+            'phim-moi-cap-nhat': 'phim-moi-cap-nhat',
             'phim-le': 'phim-le',
             'phim-bo': 'phim-bo',
-            'dang-chieu': 'dang-chieu',
-            '4k': '4k',
-            'long-tieng': 'long-tieng',
-            'thuyet-minh': 'thuyet-minh',
-            'subteam': 'subteam'
+            'hoat-hinh': 'hoat-hinh',
+            'tv-shows': 'tv-shows'
         };
 
         async function filterByList(endpointKey, title) {
@@ -111,21 +110,31 @@
 
         // Chuẩn hóa thể loại theo slug mà API VSMOV/KKPhim sử dụng.
         // Tránh gửi các slug tự đặt/không tồn tại khiến API trả danh sách rỗng.
+        // Slug thể loại theo taxonomy NguonC, không dùng slug từ KKPhim/OPhim.
         const GENRE_ALIASES = {
-            'chinh-kich':'chinh-kich', 'drama':'chinh-kich', 'tam-ly':'tam-ly', 'psychological':'tam-ly',
-            'hai':'hai-huoc', 'hai-huoc':'hai-huoc', 'hai-hước':'hai-huoc', 'comedy':'hai-huoc',
-            'bi-an':'bi-an', 'mystery':'bi-an', 'gia-dinh':'gia-dinh', 'family':'gia-dinh',
-            'hanh-dong':'hanh-dong', 'action':'hanh-dong', 'vien-tuong':'vien-tuong', 'sci-fi':'vien-tuong',
-            'khoa-hoc-vien-tuong':'khoa-hoc-vien-tuong', 'khoa-hoc':'khoa-hoc-vien-tuong',
-            'hinh-su':'hinh-su', 'crime':'hinh-su', 'kinh-di':'kinh-di', 'horror':'kinh-di',
-            'phieu-luu':'phieu-luu', 'adventure':'phieu-luu', 'co-trang':'co-trang', 'period':'co-trang',
-            'vo-thuat':'vo-thuat', 'martial-arts':'vo-thuat', 'lang-man':'tinh-cam', 'tinh-cam':'tinh-cam', 'romance':'tinh-cam',
-            'gia-tuong':'than-thoai', 'than-thoai':'than-thoai', 'fantasy':'than-thoai',
-            'chien-tranh':'chien-tranh', 'war':'chien-tranh', 'hoc-duong':'hoc-duong', 'school':'hoc-duong',
-            'hoat-hinh':'hoat-hinh', 'animation':'hoat-hinh', 'tai-lieu':'tai-lieu', 'documentary':'tai-lieu',
-            'am-nhac':'am-nhac', 'music':'am-nhac', 'the-thao':'the-thao', 'sports':'the-thao',
-            'kinh-dien':'kinh-dien', 'classic':'kinh-dien', 'lich-su':'lich-su', 'history':'lich-su',
-            'mien-tay':'mien-tay', 'western':'mien-tay'
+            'dam-my':'dam-my', 'đam mỹ':'dam-my',
+            'hanh-dong':'hanh-dong', 'hành động':'hanh-dong', 'action':'hanh-dong',
+            'phieu-luu':'phieu-luu', 'phiêu lưu':'phieu-luu', 'adventure':'phieu-luu',
+            'hoat-hinh':'hoat-hinh', 'hoạt hình':'hoat-hinh', 'animation':'hoat-hinh',
+            'phim-hai':'phim-hai', 'hai':'phim-hai', 'hài':'phim-hai', 'hai-huoc':'phim-hai', 'hài hước':'phim-hai', 'comedy':'phim-hai',
+            'hinh-su':'hinh-su', 'hình sự':'hinh-su', 'crime':'hinh-su',
+            'tai-lieu':'tai-lieu', 'tài liệu':'tai-lieu', 'documentary':'tai-lieu',
+            'chinh-kich':'chinh-kich', 'chính kịch':'chinh-kich', 'drama':'chinh-kich',
+            'gia-dinh':'gia-dinh', 'gia đình':'gia-dinh', 'family':'gia-dinh',
+            'gia-tuong':'gia-tuong', 'giả tưởng':'gia-tuong', 'fantasy':'gia-tuong',
+            'lich-su':'lich-su', 'lịch sử':'lich-su', 'history':'lich-su',
+            'kinh-di':'kinh-di', 'kinh dị':'kinh-di', 'horror':'kinh-di',
+            'phim-nhac':'phim-nhac', 'âm nhạc':'phim-nhac', 'am-nhac':'phim-nhac', 'music':'phim-nhac',
+            'bi-an':'bi-an', 'bí ẩn':'bi-an', 'mystery':'bi-an',
+            'lang-man':'lang-man', 'lãng mạn':'lang-man', 'romance':'lang-man',
+            'khoa-hoc-vien-tuong':'khoa-hoc-vien-tuong', 'khoa học viễn tưởng':'khoa-hoc-vien-tuong', 'sci-fi':'khoa-hoc-vien-tuong',
+            'gay-can':'gay-can', 'gây cấn':'gay-can', 'thriller':'gay-can',
+            'chien-tranh':'chien-tranh', 'chiến tranh':'chien-tranh', 'war':'chien-tranh',
+            'tam-ly':'tam-ly', 'tâm lý':'tam-ly', 'psychological':'tam-ly',
+            'tinh-cam':'tinh-cam', 'tình cảm':'tinh-cam', 'romantic':'tinh-cam',
+            'co-trang':'co-trang', 'cổ trang':'co-trang', 'period':'co-trang',
+            'mien-tay':'mien-tay', 'miền tây':'mien-tay', 'western':'mien-tay',
+            'phim-18':'phim-18', 'phim 18+':'phim-18', '18+':'phim-18'
         };
         function resolveGenreSlug(value, title) {
             const raw = String(value || '').trim().toLowerCase();
