@@ -341,8 +341,6 @@ async function fetchHomePriorityMovies(page = 1) {
 }
 
 async function fetchMovieDetail(slug, preferredSrc) {
-    const first = preferredSrc || currentSourceId;
-    const other = '';
     const order = ['nguonc'];
     let lastErr = null;
     for (const sid of order) {
