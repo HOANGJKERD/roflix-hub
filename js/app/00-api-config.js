@@ -42,7 +42,7 @@ function srcDetailUrls(slug, sid) {
     const src = getSource(sid);
     const enc = encodeURIComponent(slug);
     if (sid === 'kkphim') {
-        return [src.detailBase + '/phim/' + enc, src.listBase + '/phim/' + enc];
+        // KKPhim khuyến nghị endpoint chi tiết v1; API cũ chỉ là fallback tương thích.\n        return [src.listBase + '/phim/' + enc, src.detailBase + '/phim/' + enc];
     }
     return [src.detailBase + '/phim/' + enc];
 }
