@@ -14,7 +14,7 @@
     return base + '?keyword=' + encodeURIComponent(q) + '&page=1';
   }
   function itemsOf(d) {
-    const x = d?.items || d?.data?.items || d?.data || d?.movies || [];
+    const x = d?.items || d?.data?.items || (Array.isArray(d?.data) ? d.data : null) || d?.movies || [];
     return Array.isArray(x) ? x : [];
   }
   function posterOf(m, sid) {
