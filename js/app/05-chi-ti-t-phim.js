@@ -112,11 +112,10 @@
                 : '';
             
             const detailBanner = movie.banner && isValidPosterUrl(movie.banner) ? movie.banner : '';
-            const detailBannerStyle = detailBanner
-                ? `background-image: linear-gradient(90deg, rgba(9,10,15,.94) 0%, rgba(9,10,15,.52) 52%, rgba(9,10,15,.78) 100%), linear-gradient(0deg, rgba(9,10,15,.96), transparent 58%), url('${detailBanner}');`
-                : 'background-image: radial-gradient(ellipse at 70% 20%, rgba(245,158,11,.18), transparent 45%), linear-gradient(135deg,#171923,#090a0f);';
             document.getElementById('detail-content-container').innerHTML = `
-                <section class="relative w-full aspect-video max-h-[min(62vw,560px)] min-h-[190px] md:min-h-[300px] rounded-3xl overflow-hidden mb-6 border border-white/10 bg-gray-950 shadow-2xl" aria-label="Ảnh nền phim" style="${detailBannerStyle};background-size:cover;background-position:center 30%;">
+                <section class="relative w-full aspect-video max-h-[min(62vw,560px)] min-h-[190px] md:min-h-[300px] rounded-3xl overflow-hidden mb-6 border border-white/10 bg-gray-950 shadow-2xl" aria-label="Ảnh nền phim" style="background:radial-gradient(ellipse at 70% 20%,rgba(245,158,11,.18),transparent 45%),linear-gradient(135deg,#171923,#090a0f);">
+                    ${detailBanner ? `<img src="${escapeHtml(detailBanner)}" alt="" aria-hidden="true" class="absolute inset-0 w-full h-full object-cover object-center opacity-0 transition-opacity duration-500" fetchpriority="high" decoding="async" loading="eager" onload="if(this.naturalWidth/this.naturalHeight>=1.35){this.classList.remove('opacity-0');this.classList.add('opacity-100')}else{this.remove()}" onerror="this.remove()">` : ''}
+                    <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(90deg,rgba(9,10,15,.88) 0%,rgba(9,10,15,.42) 52%,rgba(9,10,15,.72) 100%),linear-gradient(0deg,rgba(9,10,15,.96),transparent 65%);"></div>
                     <div class="absolute inset-0 flex items-end p-5 md:p-10">
                         <div class="max-w-3xl">
                             <span class="inline-flex items-center gap-2 text-[10px] md:text-xs uppercase tracking-[.24em] font-bold text-amber-300 mb-2"><i class="fa-solid fa-film"></i> RoFlix · Chi tiết phim</span>
