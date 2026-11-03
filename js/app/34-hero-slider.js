@@ -26,24 +26,24 @@
             try {
                 const res1 = await fetchListWithFallback('/phim-moi-cap-nhat?page=1');
                 heroSlides = mapListResultItems(res1)
-                    .filter(m => m.slug && m.banner && isValidPosterUrl(m.banner))
+                    .filter(m => m.slug && isValidPosterUrl(m.thumb || m.poster))
                     .slice(0, 8);
 
-                // Không dùng poster dọc làm ảnh thay thế cho hero ngang.
+                // Giữ cách hiển thị KKPhim cũ: ưu tiên thumb, fallback poster.
 
                 if (!heroSlides.length) {
-                    const descEl = document.getElementById('hero-desc');
-                    if (descEl) descEl.textContent = 'Chưa có ảnh ngang phù hợp từ NguonC. Kéo xuống để xem danh sách phim.';
-                    return;
+                    const res2 = await fetchListWithFallback('/tim-kiem?keyword=2024&page=1');
+                    heroSlides = mapListResultItems(res2).filter(m => m.slug && isValidPosterUrl(m.thumb || m.poster)).slice(0, 8);
                 }
+                if (!heroSlides.length) return;
                 renderHeroDots();
-                const firstImage = heroSlides[0].banner;
+                const firstImage = heroSlides[0].thumb || heroSlides[0].poster;
                 await warmHeroImage(firstImage);
                 showHeroSlide(0, false);
                 startHeroAutoplay();
 
                 // Tải trước slide kế tiếp ở nền, không chặn nội dung đầu trang.
-                if (heroSlides[1]) warmHeroImage(heroSlides[1].banner);
+                if (heroSlides[1]) warmHeroImage(heroSlides[1].thumb || heroSlides[1].poster);
                 const section = document.getElementById('hero-section');
                 if (section) {
                     section.addEventListener('mouseenter', stopHeroAutoplay, {passive:true});
@@ -72,7 +72,7 @@
             const bg = document.getElementById('hero-background');
 
             const apply = () => {
-                const poster = m.banner;
+                const poster = m.thumb || m.poster;
                 if (bg && poster) {
                     bg.style.backgroundImage = `
                         linear-gradient(135deg, rgba(9,10,15,0.92) 0%, rgba(18,20,29,0.72) 45%, rgba(9,10,15,0.92) 100%),
@@ -139,7 +139,7 @@
                 }
             };
 
-            const nextUrl = m.banner;
+            const nextUrl = m.thumb || m.poster;
             const applyWhenReady = () => {
                 if (animate && box) {
                     box.classList.add('is-fading');
@@ -147,7 +147,7 @@
                     requestAnimationFrame(() => requestAnimationFrame(apply));
                 } else apply();
                 const next = heroSlides[(heroIndex + 1) % heroSlides.length];
-                if (next && next !== m) warmHeroImage(next.banner);
+                if (next && next !== m) warmHeroImage(next.thumb || next.poster);
             };
             if (nextUrl && heroImageCache.has(nextUrl)) {
                 warmHeroImage(nextUrl).then(applyWhenReady);
