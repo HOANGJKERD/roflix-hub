@@ -29,11 +29,12 @@ function pickPoster(item, sid) {
 }
 
 function unwrapList(data) {
-    const items = data.items || (data.data && data.data.items) || data.data || data.movies || [];
+    const items = data.items || (data.data && data.data.items) || (Array.isArray(data.data) ? data.data : null) || data.movies || [];
     const pag = data.pagination
         || (data.data && data.data.params && data.data.params.pagination)
         || (data.params && data.params.pagination)
         || (data.paginate && { currentPage: data.paginate.current_page, totalPages: data.paginate.total_page, totalItems: data.paginate.total_items })
+        || (data.data && data.data.paginate && { currentPage: data.data.paginate.current_page, totalPages: data.data.paginate.total_page, totalItems: data.data.paginate.total_items })
         || {};
     return { items: Array.isArray(items) ? items : [], pag };
 }
@@ -45,23 +46,53 @@ function normalizeNguoncMovie(movie, episodes) {
     movie.lang = movie.lang || movie.language || '';
     movie.episode_current = movie.episode_current || movie.current_episode || '';
     movie.episode_total = movie.episode_total || movie.total_episodes || '';
-    movie.actor = movie.actor || movie.casts || [];
+    movie.actor = movie.actor || (movie.casts ? String(movie.casts).split(/,\\s*/) : []);
+    const groups = Array.isArray(movie.category) ? movie.category : [];
+    movie.nguonc_category_groups = groups;
+    const flatCategories = [];
+    groups.forEach(group => {
+        const groupName = String(group?.group?.name || '').toLowerCase();
+        const values = Array.isArray(group?.list) ? group.list : [];
+        values.forEach(value => {
+            const name = value?.name || value;
+            if (!name) return;
+            if (groupName.includes('năm') && !movie.year) movie.year = name;
+            else if (groupName.includes('quốc gia')) {
+                movie.country = (movie.country || []).concat([{name, slug:value?.slug || ''}]);
+            } else if (!groupName.includes('năm')) flatCategories.push({name,slug:value?.slug || ''});
+            const normalized = String(name).toLowerCase();
+            if (normalized.includes('phim bộ')) movie.type = 'series';
+            else if (normalized.includes('phim lẻ')) movie.type = 'single';
+            else if (normalized.includes('tv show')) movie.type = 'tvshows';
+            else if (normalized.includes('hoạt hình')) movie.type = 'hoathinh';
+            if (normalized.includes('đang chiếu')) movie.status = 'ongoing';
+        });
+    });
+    if (groups.length) movie.category = flatCategories;
     const rawEpisodes = Array.isArray(episodes) ? episodes : (Array.isArray(movie.episodes) ? movie.episodes : []);
     movie.episodes = rawEpisodes.map(group => {
         if (Array.isArray(group.server_data)) return group;
         const items = Array.isArray(group.items) ? group.items : [];
-        return { server_name: group.server_name || group.name || 'NguonC',
-            server_data: items.map(ep => ({ name: ep.name || ep.slug || 'Tập', slug: ep.slug || ep.name || '',
-                filename: ep.filename || '', link_embed: ep.embed || ep.link_embed || '',
-                link_m3u8: ep.m3u8 || ep.link_m3u8 || '' })) };
+        return {
+            server_name: group.server_name || group.name || 'NguonC',
+            server_data: items.map(ep => ({
+                name: ep.name || ep.slug || 'Tập',
+                slug: ep.slug || ep.name || '',
+                filename: ep.filename || '',
+                link_embed: ep.embed || ep.link_embed || '',
+                link_m3u8: ep.m3u8 || ep.link_m3u8 || ''
+            }))
+        };
     });
     return movie;
 }
 
 function unwrapDetailPayload(data) {
     if (!data || typeof data !== 'object') return null;
-    // KKPhim v1: { data: { item: { ..., episodes: [...] } } }
+    // NguonC: { status: 'success', movie: { ... } } and KKPhim-compatible payloads.
     const candidates = [
+        data.movie,
+        data.data && data.data.movie,
         data.data && data.data.item,
         data.item,
         data.movie,
