@@ -48,7 +48,9 @@ function normalizeNguoncMovie(movie, episodes) {
     movie.episode_current = movie.episode_current || movie.current_episode || '';
     movie.episode_total = movie.episode_total || movie.total_episodes || '';
     movie.actor = movie.actor || (movie.casts ? String(movie.casts).split(/,\s*/) : []);
-    const groups = Array.isArray(movie.category) ? movie.category : [];
+    const groups = Array.isArray(movie.category)
+        ? movie.category
+        : (movie.category && typeof movie.category === 'object' ? Object.values(movie.category) : []);
     movie.nguonc_category_groups = groups;
     const flatCategories = [];
     groups.forEach(group => {
@@ -70,6 +72,11 @@ function normalizeNguoncMovie(movie, episodes) {
         });
     });
     if (groups.length) movie.category = flatCategories;
+    if (!movie.type && movie.tmdb && movie.tmdb.type) {
+        const tmdbType = String(movie.tmdb.type).toLowerCase();
+        if (tmdbType === 'tv') movie.type = 'series';
+        else if (tmdbType === 'movie') movie.type = 'single';
+    }
     const rawEpisodes = Array.isArray(episodes) ? episodes : (Array.isArray(movie.episodes) ? movie.episodes : []);
     movie.episodes = rawEpisodes.map(group => {
         if (Array.isArray(group.server_data)) return group;
@@ -141,7 +148,27 @@ function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function nguoncProxyUrl(url) {
+    try {
+        const parsed = new URL(url, 'https://roflix.invalid');
+        if (parsed.hostname !== 'phim.nguonc.com' || !parsed.pathname.startsWith('/api/')) return '';
+        return '/api/nguonc' + parsed.pathname.slice(4) + parsed.search;
+    } catch (_) { return ''; }
+}
+
 async function fetchJson(url) {
+    const proxied = nguoncProxyUrl(url);
+    if (!proxied) return fetchJsonDirect(url);
+    try {
+        return await fetchJsonDirect(proxied);
+    } catch (error) {
+        const status = Number(error && error.status);
+        if (status === 404 || status === 422) throw error;
+        return fetchJsonDirect(url);
+    }
+}
+
+async function fetchJsonDirect(url) {
     const hit = _apiCache.get(url);
     if (hit && (Date.now() - hit.time) < API_CACHE_TTL) return hit.data;
     const inflight = _apiInflight.get(url);
