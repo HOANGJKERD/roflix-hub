@@ -13,7 +13,7 @@
   async function detail(slug,source){
     const sid=source==='vsmov'?'vsmov':'kkphim',key=sid+':'+slug;
     if(cache.has(key))return cache.get(key);
-    const p=(async()=>{try{const r=await fetch(SOURCES[sid]+(sid==='kkphim'?'/film/':'/phim/')+encodeURIComponent(slug),{cache:'no-store'});if(!r.ok)return null;const d=await r.json();return d?.movie||d?.data?.movie||d?.data?.item||d?.data||d||null}catch(_){return null}})();
+    const p=(async()=>{try{const r=await fetch(SOURCES[sid]+(sid==='kkphim'?'/api/film/':'/phim/')+encodeURIComponent(slug),{cache:'no-store'});if(!r.ok)return null;const d=await r.json();return d?.movie||d?.data?.movie||d?.data?.item||d?.data||d||null}catch(_){return null}})();
     cache.set(key,p);return p;
   }
   async function adminOverride(slug,source){try{const sb=window.rfSupabase;if(!sb)return null;const r=await sb.from('roflix_movie_overrides').select('locked,hidden').eq('source_id',source||'kkphim').eq('movie_slug',slug).maybeSingle();return r.data||null}catch(_){return null}}
