@@ -58,7 +58,9 @@
                             epList.push({
                                 name: String(ep.name || ep.slug || 'Full'),
                                 link: link,
-                                linkType: embed ? 'embed' : 'hls'
+                                linkType: embed ? 'embed' : 'hls',
+                                sources: { embed, hls },
+                                activeSource: embed ? 'embed' : 'hls'
                             });
                         });
                     }
