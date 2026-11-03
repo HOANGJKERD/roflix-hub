@@ -112,10 +112,10 @@
                 ? `<button onclick="playOnVidSrcFromDetail()" class="mt-2 w-full px-4 py-2.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white transition"><i class="fa-solid fa-play"></i> Xem qua VidSrc</button>`
                 : '';
             
-            const detailBanner = movie.banner && isValidPosterUrl(movie.banner) ? movie.banner : '';
+            const detailBanner = movie.thumb || movie.banner || movie.poster || '';
             document.getElementById('detail-content-container').innerHTML = `
                 <section class="relative w-full aspect-video max-h-[min(62vw,560px)] min-h-[190px] md:min-h-[300px] rounded-3xl overflow-hidden mb-6 border border-white/10 bg-gray-950 shadow-2xl" aria-label="Ảnh nền phim" style="background:radial-gradient(ellipse at 70% 20%,rgba(245,158,11,.18),transparent 45%),linear-gradient(135deg,#171923,#090a0f);">
-                    ${detailBanner ? `<img src="${escapeHtml(detailBanner)}" alt="" aria-hidden="true" class="absolute inset-0 w-full h-full object-cover object-center opacity-0 transition-opacity duration-500" fetchpriority="high" decoding="async" loading="eager" onload="if(this.naturalWidth/this.naturalHeight>=1.35){this.classList.remove('opacity-0');this.classList.add('opacity-100')}else{this.remove()}" onerror="this.remove()">` : ''}
+                    ${detailBanner ? `<img src="${escapeHtml(detailBanner)}" alt="" aria-hidden="true" class="absolute inset-0 w-full h-full object-cover object-center opacity-0 transition-opacity duration-500" fetchpriority="high" decoding="async" loading="eager" onload="this.classList.remove('opacity-0');this.classList.add('opacity-100')" onerror="this.remove()">` : ''}
                     <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(90deg,rgba(9,10,15,.88) 0%,rgba(9,10,15,.42) 52%,rgba(9,10,15,.72) 100%),linear-gradient(0deg,rgba(9,10,15,.96),transparent 65%);"></div>
                     <div class="absolute inset-0 flex items-end p-5 md:p-10">
                         <div class="max-w-3xl">
