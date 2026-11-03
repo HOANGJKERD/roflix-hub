@@ -9,14 +9,14 @@
   async function isAdmin(){ const {data,error}=await sb.auth.getUser(); if(error||!data?.user)return false; const {data:p,error:pe}=await sb.from('profiles').select('role').eq('id',data.user.id).maybeSingle(); return !pe&&p?.role==='admin'; }
   async function sync(){ try{await sb.rpc('roflix_sync_release_schedule');}catch(_){} }
   const SOURCES={
-    kkphim:{list:'https://phimapi.com/v1/api',detail:'https://phimapi.com',name:'KKPhim'},
+    kkphim:{list:'https://phim.nguonc.com/api',detail:'https://phim.nguonc.com/api',name:'NguonC'},
     vsmov:{list:'https://vsmov.com/api',detail:'https://vsmov.com/api',name:'VSMOV'}
   };
   function pickPoster(m,sid){
     const raw=m.poster_url||m.thumb_url||m.poster||m.thumb||'';
     if(!raw)return '';
     if(/^https?:\/\//i.test(raw))return raw;
-    return sid==='kkphim' ? 'https://phimimg.com/'+String(raw).replace(/^\//,'') : raw;
+    return raw;
   }
   function unwrap(data){return data?.items||(data?.data?.items)||data?.data||data?.movies||[];}
   async function searchScheduleMovies(){
@@ -26,7 +26,7 @@
     if(!q){box.innerHTML='<div class="muted">Nhập tên phim trước đã.</div>';return;}
     box.innerHTML='<div class="muted">🔎 Đang tìm phim...</div>';
     try{
-      const url=SOURCES[sid].list+'/tim-kiem?keyword='+encodeURIComponent(q)+'&page=1';
+      const url=SOURCES[sid].list+(sid==='kkphim'?'/films/search':'/tim-kiem')+'?keyword='+encodeURIComponent(q)+'&page=1';
       const r=await fetch(url,{cache:'no-store'});
       if(!r.ok)throw new Error('HTTP '+r.status);
       const d=await r.json();
@@ -53,8 +53,8 @@
     const poster=pickPoster(m,sid); if(poster)$('sch-poster').value=poster;
     if($('sch-pick-results'))$('sch-pick-results').innerHTML='<div class="selected-movie">✅ Đã chọn: <b>'+esc($('sch-title').value)+'</b> <span>'+esc(slug)+'</span></div>';
     try{
-      const r=await fetch(SOURCES[sid].detail+'/phim/'+encodeURIComponent(slug),{cache:'no-store'});
-      if(r.ok){const d=await r.json(); const movie=d.movie||d.data||d; const p=pickPoster(movie,sid); if(p)$('sch-poster').value=p; if(movie.origin_name)$('sch-origin').value=movie.origin_name; if(movie.content&&!$('sch-summary').value)$('sch-summary').value=String(movie.content).replace(/<[^>]*>/g,'').trim();}
+      const r=await fetch(SOURCES[sid].detail+(sid==='kkphim'?'/film/':'/phim/')+encodeURIComponent(slug),{cache:'no-store'});
+      if(r.ok){const d=await r.json(); const movie=d.movie||d.data?.movie||d.data?.item||d.data||d; const p=pickPoster(movie,sid); if(p)$('sch-poster').value=p; if(movie.origin_name)$('sch-origin').value=movie.origin_name; if(movie.content&&!$('sch-summary').value)$('sch-summary').value=String(movie.content).replace(/<[^>]*>/g,'').trim();}
     }catch(_){}
   }
 
