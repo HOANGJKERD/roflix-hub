@@ -1,7 +1,6 @@
 // ============================================================
 // PHÁT PHIM
-// Mặc định: KKPhim/VSMOV (ep.link)
-// Tùy chọn: VidSrc embed khi user bấm (cần IMDb/TMDB)
+// Nguồn phát catalog duy nhất: NguonC. VidSrc chỉ là trình phát ngoài do người dùng chủ động chọn.
 // ============================================================
 
 // Load helper VidSrc nếu chưa có (không cần sửa index.html)
@@ -208,7 +207,7 @@ async function playCatalogHls(url, title) {
         rfCatalogHlsInstance.on(window.Hls.Events.ERROR, (_event, data) => {
             if (data && data.fatal) {
                 console.error('[RoFlix HLS]', data.type, data.details);
-                showToast('error', 'Nguồn phim gặp lỗi', 'Không tải được luồng video. Hãy thử tập khác hoặc đổi nguồn.');
+                showToast('error', 'Nguồn phim gặp lỗi', 'Không tải được luồng video. Hãy thử tập khác.');
             }
         });
         rfCatalogHlsInstance.loadSource(url);
@@ -275,49 +274,6 @@ function episodesFromPayload(movie) {
     return epList;
 }
 
-async function kkphimStreamAlive(link) {
-    let file = '';
-    try {
-        const parsed = new URL(link);
-        if (!/(^|\.)phimapi\.com$/i.test(parsed.hostname)) return true;
-        file = parsed.searchParams.get('url') || '';
-    } catch (_) { return true; }
-    if (!/^https:\/\//i.test(file)) return false;
-    try {
-        const response = await fetch('/api/source-status?u=' + encodeURIComponent(file));
-        if (!response.ok) return true;
-        const data = await response.json();
-        return !!data.ok;
-    } catch (_) { return true; }
-}
-
-async function useVsmovPlayback(slug, title) {
-    async function take(movie) {
-        const episodes = episodesFromPayload(movie);
-        if (!episodes.length) return false;
-        currentEpisodeList = episodes;
-        currentMovieTitle = (movie && (movie.name || movie.title)) || title || currentMovieTitle;
-        currentMovieData = Object.assign({}, movie, { _src: 'vsmov' });
-        return true;
-    }
-    try {
-        const direct = await fetchJson('https://vsmov.com/api/phim/' + encodeURIComponent(slug));
-        const movie = typeof unwrapDetailPayload === 'function' ? unwrapDetailPayload(direct) : direct;
-        if (await take(movie)) return true;
-    } catch (_) {}
-    if (!title) return false;
-    try {
-        const found = await fetchJson('https://vsmov.com/api/tim-kiem?keyword=' + encodeURIComponent(title) + '&page=1');
-        const items = found.items || (found.data && found.data.items) || [];
-        const wanted = String(title).toLowerCase().replace(/\s+/g, ' ').trim();
-        const pick = items.find(item => String(item.name || '').toLowerCase().trim() === wanted) || items[0];
-        if (!pick || !pick.slug || pick.slug === slug) return false;
-        const direct = await fetchJson('https://vsmov.com/api/phim/' + encodeURIComponent(pick.slug));
-        const movie = typeof unwrapDetailPayload === 'function' ? unwrapDetailPayload(direct) : direct;
-        return take(movie);
-    } catch (_) { return false; }
-}
-
 async function playMovieByIndex(index, options = {}) {
     if ((!options || !options.fromParty) && window.rfWatchPartyBlocksControl && window.rfWatchPartyBlocksControl()) {
         showToast('warning', 'Phòng xem chung', 'Chỉ host được đổi tập. Bạn đang xem theo host.');
@@ -342,20 +298,7 @@ async function playMovieByIndex(index, options = {}) {
         }
     }
     if (!ep.link) { showToast('error', 'Lỗi', 'Không có link phát cho tập này!'); return; }
-    if (!options.skipSourceCheck && /player\.phimapi\.com/i.test(ep.link)) {
-        const alive = await kkphimStreamAlive(ep.link);
-        if (!alive) {
-            const moved = await useVsmovPlayback(currentSlug, currentMovieTitle);
-            if (moved) {
-                showToast('warning', 'Đổi nguồn phát', 'NguonC không còn file video. Đã chuyển sang VSMOV.');
-                return playMovieByIndex(0, Object.assign({}, options, { skipSourceCheck: true }));
-            }
-            navigateTo('play-page');
-            showPlayerError('Nguồn KKPhim đang lỗi: file video không còn. Phim này chưa có trên nguồn dự phòng.');
-            return;
-        }
-    }
-    clearPlayerError();
+        clearPlayerError();
 
     const title = currentMovieTitle || 'Đang phát';
     try {
