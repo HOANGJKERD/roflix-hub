@@ -106,11 +106,11 @@
                 const btnDetail = document.getElementById('hero-btn-detail');
                 const btnPlay = document.getElementById('hero-btn-play');
                 if (btnDetail) {
-                    btnDetail.onclick = slugSafe ? () => viewMovieDetail(m.slug) : null;
+                    btnDetail.onclick = slugSafe ? () => viewMovieDetail(m.slug, m._src || currentSourceId) : null;
                     btnDetail.disabled = !slugSafe;
                 }
                 if (btnPlay) {
-                    btnPlay.onclick = slugSafe ? () => playMovie(m.slug) : null;
+                    btnPlay.onclick = slugSafe ? () => playMovie(m.slug, m._src || currentSourceId) : null;
                     btnPlay.disabled = !slugSafe;
                 }
 
