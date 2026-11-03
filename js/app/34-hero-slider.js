@@ -29,10 +29,7 @@
                     .filter(m => m.slug && isValidPosterUrl(m.banner))
                     .slice(0, 8);
 
-                if (!heroSlides.length) {
-                    const res2 = await fetchListWithFallback('/tim-kiem?keyword=2024&page=1');
-                    heroSlides = mapListResultItems(res2).filter(m => m.slug && isValidPosterUrl(m.poster)).slice(0, 8);
-                }
+                // Không dùng poster dọc làm ảnh thay thế cho hero ngang.
 
                 if (!heroSlides.length) return;
                 renderHeroDots();
