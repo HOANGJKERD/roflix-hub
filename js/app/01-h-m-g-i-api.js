@@ -77,10 +77,10 @@ function normalizeNguoncMovie(movie, episodes) {
         if (tmdbType === 'tv') movie.type = 'series';
         else if (tmdbType === 'movie') movie.type = 'single';
     }
-    const rawEpisodes = Array.isArray(episodes) ? episodes : (Array.isArray(movie.episodes) ? movie.episodes : []);
+    const rawEpisodes = Array.isArray(movie.episodes) ? movie.episodes : (Array.isArray(episodes) ? episodes : []);
     movie.episodes = rawEpisodes.map(group => {
         if (Array.isArray(group.server_data)) return group;
-        const items = Array.isArray(group.items) ? group.items : [];
+        const items = Array.isArray(group.items) ? group.items : (Array.isArray(group.server_data) ? group.server_data : []);
         return {
             server_name: group.server_name || group.name || 'NguonC',
             server_data: items.map(ep => ({
@@ -98,16 +98,7 @@ function normalizeNguoncMovie(movie, episodes) {
 function unwrapDetailPayload(data) {
     if (!data || typeof data !== 'object') return null;
     // NguonC: { status: 'success', movie: { ... } } and KKPhim-compatible payloads.
-    const candidates = [
-        data.movie,
-        data.data && data.data.movie,
-        data.data && data.data.item,
-        data.item,
-        data.movie,
-        data.data && data.data.movie,
-        data.data,
-        data
-    ];
+    const candidates = [data.movie, data.data && data.data.movie, data.data && data.data.item, data.item, data.data, data];
     const movie = candidates.find(item => item && typeof item === 'object'
         && (item.slug || item.name || item.origin_name));
     if (!movie) return null;
@@ -241,7 +232,7 @@ async function fetchMoviesFromSource(sid, page) {
     const data = await fetchJson(srcListUrl(buildListPath(page), sid));
     const { items, pag } = unwrapList(data);
     const movies = items
-        .map(m => { if (sid === 'kkphim') normalizeNguoncMovie(m); m._src = sid; return m; })
+        .map(m => { if (sid === 'nguonc') normalizeNguoncMovie(m); m._src = sid; return m; })
         .filter(m => !!pickPoster(m, sid));
 
     return {
@@ -265,12 +256,12 @@ function applyListPagination(pagination, requestedPage, movieCount) {
 // tự chuyển sang nguồn còn lại (VSMOV <-> KKPhim) để trang không bị "trắng" khi 1 nguồn sập.
 // path: đường dẫn KHÔNG kèm domain, ví dụ '/quoc-gia/au-my?page=1'
 async function fetchListWithFallback(path) {
-    const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['kkphim', 'vsmov'];
+    const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['nguonc'];
     let lastErr = null;
     for (const sid of ids) {
         try {
             const data = await fetchJson(srcListUrl(path, sid));
-            const items = unwrapList(data).items.map(m => { if (sid === 'kkphim') normalizeNguoncMovie(m); m._src = sid; return m; });
+            const items = unwrapList(data).items.map(m => { if (sid === 'nguonc') normalizeNguoncMovie(m); m._src = sid; return m; });
             if (items.length || sid === ids[ids.length - 1]) {
                 return { data: { items, pagination: unwrapList(data).pag || {} }, sid };
             }
@@ -295,7 +286,7 @@ async function fetchMovies(page = 1) {
             && currentListEndpoint === 'phim-moi-cap-nhat') {
             return await fetchHomePriorityMovies(page);
         }
-        const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['kkphim', 'vsmov'];
+        const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['nguonc'];
         let lastErr = null;
         let lastEmpty = null;
         for (const sid of ids) {
@@ -325,7 +316,7 @@ async function fetchMovies(page = 1) {
 async function fetchHomePriorityMovies(page = 1) {
     // Một request catalog duy nhất để có nội dung đầu tiên nhanh nhất.
     // Banner/đề xuất được tải riêng ở nền sau khi grid đã có dữ liệu.
-    const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['kkphim', 'vsmov'];
+    const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['nguonc'];
     let lastErr = null;
     for (const sid of ids) {
         try {
@@ -334,7 +325,7 @@ async function fetchHomePriorityMovies(page = 1) {
                 : `/danh-sach/phim-moi-cap-nhat?page=${page}`;
             const data = await fetchJson(srcListUrl(path, sid));
             const wrapped = unwrapList(data);
-            const movies = wrapped.items.map(m => { if (sid === 'kkphim') normalizeNguoncMovie(m); m._src = sid; return m; }).filter(m => pickPoster(m, sid));
+            const movies = wrapped.items.map(m => { if (sid === 'nguonc') normalizeNguoncMovie(m); m._src = sid; return m; }).filter(m => pickPoster(m, sid));
             if (movies.length || sid === ids[ids.length - 1]) {
                 applyListPagination({
                     currentPage: page,
@@ -351,9 +342,8 @@ async function fetchHomePriorityMovies(page = 1) {
 
 async function fetchMovieDetail(slug, preferredSrc) {
     const first = preferredSrc || currentSourceId;
-    const other = first === 'kkphim' ? 'vsmov' : 'kkphim';
-    const order = [first];
-    if (other !== first) order.push(other);
+    const other = '';
+    const order = ['nguonc'];
     let lastErr = null;
     for (const sid of order) {
         const urls = (typeof srcDetailUrls === 'function') ? srcDetailUrls(slug, sid) : [srcDetailUrl(slug, sid)];
