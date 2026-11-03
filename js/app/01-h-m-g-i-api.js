@@ -47,7 +47,7 @@ function normalizeNguoncMovie(movie, episodes) {
     movie.lang = movie.lang || movie.language || '';
     movie.episode_current = movie.episode_current || movie.current_episode || '';
     movie.episode_total = movie.episode_total || movie.total_episodes || '';
-    movie.actor = movie.actor || (movie.casts ? String(movie.casts).split(/,\\s*/) : []);
+    movie.actor = movie.actor || (movie.casts ? String(movie.casts).split(/,\s*/) : []);
     const groups = Array.isArray(movie.category) ? movie.category : [];
     movie.nguonc_category_groups = groups;
     const flatCategories = [];
