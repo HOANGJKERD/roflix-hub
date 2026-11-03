@@ -143,3 +143,63 @@
   html.rh-flix #view-play-page > .header-ios > .max-w-7xl { padding-inline:10px !important; }
   html.rh-flix #view-play-page .glass-premium.p-4 > div:last-child { grid-template-columns:1fr !important; }
 }
+
+/* Follow-up fixes from real-device screenshots (Nov 03). */
+@media (max-width:760px) {
+  /* Keep the player page compact and keep the cloud launcher out of the episode grid. */
+  html.rh-flix #view-play-page #rf-cloud-open,
+  html.rh-flix #view-play-page .rf-cloud-launcher,
+  html.rh-flix #view-play-page .cloud-center-launcher {
+    display:none !important;
+  }
+
+  /* A compact, predictable header: one menu control, no accidental third row. */
+  html.rh-flix #view-main-site .header-ios > .max-w-7xl > div:last-child {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) repeat(4,42px) !important;
+    grid-template-rows:42px 42px !important;
+    grid-auto-flow:row !important;
+    align-items:center !important;
+    justify-content:stretch !important;
+    gap:8px !important;
+  }
+  html.rh-flix #view-main-site .header-ios .search-ios-mobile {
+    grid-column:1 / -1 !important;
+    grid-row:1 !important;
+  }
+  html.rh-flix #view-main-site .header-ios > .max-w-7xl > div:last-child > button[onclick*="toggleTheme"] {
+    grid-column:2 !important; grid-row:2 !important;
+  }
+  html.rh-flix #view-main-site .header-ios > .max-w-7xl > div:last-child > div:has(#notif-badge) {
+    grid-column:3 !important; grid-row:2 !important;
+  }
+  html.rh-flix #view-main-site .header-ios #user-nav-container {
+    grid-column:4 !important; grid-row:2 !important;
+  }
+  html.rh-flix #view-main-site .header-ios > .max-w-7xl > div:last-child > button[onclick*="toggleMobileMenu"] {
+    grid-column:5 !important; grid-row:2 !important;
+    justify-self:end !important;
+  }
+
+  /* The cloud launcher is useful, but must never cover the hero's primary actions. */
+  html.rh-flix #view-main-site #rf-cloud-open,
+  html.rh-flix #view-main-site .rf-cloud-launcher,
+  html.rh-flix #view-main-site .cloud-center-launcher {
+    right:10px !important;
+    bottom:calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index:80 !important;
+    transform:scale(.82) !important;
+    transform-origin:bottom right !important;
+  }
+  html.rh-flix #view-main-site #mobile-menu:not(.hidden) {
+    position:absolute !important;
+    top:100% !important;
+    left:10px !important;
+    right:10px !important;
+    width:auto !important;
+    max-height:calc(100svh - 190px) !important;
+    overflow-y:auto !important;
+    overscroll-behavior:contain !important;
+    z-index:170 !important;
+  }
+}
