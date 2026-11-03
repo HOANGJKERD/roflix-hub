@@ -10,17 +10,16 @@
   const timeLabel = v => v ? new Date(v).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '--:--';
   const fullDate = v => v ? new Date(v).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}) : '';
   const sourceUrl = {
-    kkphim: slug => `https://phim.nguonc.com/api/film/${encodeURIComponent(slug)}`,
-    vsmov: slug => `https://vsmov.com/api/phim/${encodeURIComponent(slug)}`
+    nguonc: slug => `https://phim.nguonc.com/api/film/${encodeURIComponent(slug)}`
   };
   const ratingCache = new Map();
 
   async function getRating(item) {
     if (!item?.movie_slug) return '';
-    const key = `${item.source_id || 'kkphim'}:${item.movie_slug}`;
+    const key = `${'nguonc'}:${item.movie_slug}`;
     if (ratingCache.has(key)) return ratingCache.get(key);
     try {
-      const r = await fetch(sourceUrl[item.source_id || 'kkphim'](item.movie_slug), {cache:'no-store'});
+      const r = await fetch(sourceUrl.nguonc(item.movie_slug), {cache:'no-store'});
       if (!r.ok) throw new Error('HTTP '+r.status);
       const d = await r.json();
       const m = d?.movie || d?.data?.movie || d?.data || d;
