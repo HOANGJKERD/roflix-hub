@@ -1,4 +1,4 @@
-/* RoFlix movie-only autocomplete: KKPhim first, VSMOV fallback */
+/* RoFlix movie-only autocomplete: NguonC first, VSMOV fallback */
 (function () {
   'use strict';
   const IDS = ['search-input', 'search-input-mobile'];
@@ -10,8 +10,8 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pick = (...v) => v.find(x => x !== undefined && x !== null && String(x).trim()) || '';
   function sourceUrl(sid, q) {
-    const base = sid === 'kkphim' ? 'https://phimapi.com/v1/api' : 'https://vsmov.com/api';
-    return base + '/tim-kiem?keyword=' + encodeURIComponent(q) + '&page=1';
+    const base = sid === 'kkphim' ? 'https://phim.nguonc.com/api/films/search' : 'https://vsmov.com/api/tim-kiem';
+    return base + '?keyword=' + encodeURIComponent(q) + '&page=1';
   }
   function itemsOf(d) {
     const x = d?.items || d?.data?.items || d?.data || d?.movies || [];
@@ -21,7 +21,7 @@
     const raw = pick(m.poster_url, m.thumb_url, m.poster, m.thumb);
     if (!raw) return '';
     if (/^https?:\/\//i.test(raw)) return raw;
-    return sid === 'kkphim' ? 'https://phimimg.com/' + raw.replace(/^\//,'') : '';
+    return new URL(raw, sid === 'kkphim' ? 'https://phim.nguonc.com/' : 'https://vsmov.com/').href;
   }
   function mapItem(m, sid) {
     const lang = pick(m.lang, m.language, m.episode_current, '');
