@@ -37,6 +37,7 @@ function srcListUrl(path, sid) {
     if (sourceId === 'kkphim') {
         const base = getSource(sourceId).listBase;
         if (path.startsWith('/tim-kiem')) return base + path.replace('/tim-kiem', '/films/search');
+        if (path.startsWith('/danh-sach/phim-moi-cap-nhat')) return base + '/films/phim-moi-cap-nhat' + path.slice('/danh-sach/phim-moi-cap-nhat'.length);
         if (path.startsWith('/danh-sach/')) return base + path.replace('/danh-sach/', '/films/danh-sach/');
         if (path.startsWith('/the-loai/')) return base + path.replace('/the-loai/', '/films/the-loai/');
         if (path.startsWith('/quoc-gia/')) return base + path.replace('/quoc-gia/', '/films/quoc-gia/');
@@ -45,7 +46,8 @@ function srcListUrl(path, sid) {
     return getSource(sourceId).listBase + path;
 }
 function srcDetailUrl(slug, sid) {
-    return getSource(sid || currentSourceId).detailBase + '/phim/' + encodeURIComponent(slug);
+    const sourceId = sid || currentSourceId;
+    return getSource(sourceId).detailBase + (sourceId === 'kkphim' ? '/film/' : '/phim/') + encodeURIComponent(slug);
 }
 function srcDetailUrls(slug, sid) {
     const src = getSource(sid);
