@@ -1,0 +1,145 @@
+/* RoFlix mobile refinement: focused player layout and compact controls.
+   Desktop styles are intentionally untouched. */
+@media (max-width: 760px) {
+  html.rh-flix #view-play-page {
+    display:flex;
+    min-height:calc(100svh - 42px) !important;
+    padding:0 !important;
+    gap:0 !important;
+    justify-content:flex-start !important;
+    overflow:visible !important;
+  }
+  /* The shared mobile header grid is for the home header only.
+     Restore a compact, single-row player header. */
+  html.rh-flix #view-play-page > .header-ios {
+    position:relative !important;
+    inset:auto !important;
+    top:auto !important;
+    z-index:30 !important;
+    flex:0 0 auto !important;
+    width:100% !important;
+    min-height:54px !important;
+    padding:0 !important;
+    background:rgba(8,6,16,.98) !important;
+    border-bottom:1px solid rgba(255,255,255,.1) !important;
+  }
+  html.rh-flix #view-play-page > .header-ios > .max-w-7xl {
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:10px !important;
+    width:100% !important;
+    max-width:none !important;
+    min-height:54px !important;
+    margin:0 !important;
+    padding:8px 14px !important;
+    box-sizing:border-box !important;
+  }
+  html.rh-flix #view-play-page > .header-ios > .max-w-7xl > button {
+    flex:0 0 auto !important;
+    min-height:40px !important;
+    padding:0 14px !important;
+    border-radius:12px !important;
+    font-size:13px !important;
+  }
+  html.rh-flix #view-play-page > .header-ios > .max-w-7xl > div:nth-child(2) {
+    flex:0 1 auto !important;
+    width:auto !important;
+    margin:0 !important;
+    font-size:17px !important;
+    white-space:nowrap !important;
+  }
+  html.rh-flix #view-play-page > .header-ios > .max-w-7xl > div:last-child {
+    display:none !important;
+  }
+  html.rh-flix #view-play-page > main {
+    width:100% !important;
+    max-width:none !important;
+    margin:0 !important;
+    padding:12px 12px 28px !important;
+    box-sizing:border-box !important;
+  }
+  html.rh-flix #view-play-page > main > .grid {
+    display:flex !important;
+    flex-direction:column !important;
+    gap:14px !important;
+    width:100% !important;
+  }
+  html.rh-flix #view-play-page #movie-player {
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
+    border:0 !important;
+  }
+  html.rh-flix #view-play-page > main .aspect-video {
+    width:100% !important;
+    aspect-ratio:16 / 9 !important;
+    height:auto !important;
+    min-height:0 !important;
+    border-radius:14px !important;
+    overflow:hidden !important;
+  }
+  html.rh-flix #view-play-page .glass-premium {
+    min-width:0 !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+  }
+  html.rh-flix #view-play-page .glass-premium.p-4 {
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:12px !important;
+    padding:14px !important;
+    border-radius:16px !important;
+  }
+  html.rh-flix #view-play-page .glass-premium.p-4 > div:last-child {
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:8px !important;
+    width:100% !important;
+  }
+  html.rh-flix #view-play-page .glass-premium.p-4 > div:last-child button {
+    justify-content:center !important;
+    min-width:0 !important;
+    padding:11px 8px !important;
+    white-space:normal !important;
+    font-size:12px !important;
+  }
+  html.rh-flix #view-play-page .grid > div:last-child {
+    width:100% !important;
+    min-width:0 !important;
+  }
+  /* Floating utility controls must not cover player actions or server choices. */
+  html.rh-flix #view-play-page .cloud-center,
+  html.rh-flix #view-play-page #cloud-center,
+  html.rh-flix #view-play-page [id*="cloud-center"] {
+    max-width:calc(100vw - 24px) !important;
+  }
+  html.rh-flix #view-play-page .cloud-center button,
+  html.rh-flix #view-play-page #cloud-center button {
+    max-width:100% !important;
+  }
+
+  /* Home hero: keep text, description and CTAs comfortably inside the screen. */
+  html.rh-flix #view-main-site #hero-section .hero-actions {
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  html.rh-flix #view-main-site #hero-section .hero-actions > button {
+    width:100% !important;
+    min-width:0 !important;
+    white-space:normal !important;
+    line-height:1.25 !important;
+  }
+  html.rh-flix #view-main-site .header-ios > .max-w-7xl > div:last-child {
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    grid-template-rows:42px 42px !important;
+  }
+}
+@media (max-width:390px) {
+  html.rh-flix #view-play-page > main { padding-inline:9px !important; }
+  html.rh-flix #view-play-page > .header-ios > .max-w-7xl { padding-inline:10px !important; }
+  html.rh-flix #view-play-page .glass-premium.p-4 > div:last-child { grid-template-columns:1fr !important; }
+}
