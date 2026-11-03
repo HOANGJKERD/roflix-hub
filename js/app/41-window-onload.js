@@ -9,16 +9,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     bindRandomChips();
     updateSourceUi();
+    // Ưu tiên catalog trước. Hero/banner và các khối đề xuất chạy sau ở nền.
     renderMoviesFromAPI(1);
-    requestAnimationFrame(() => { initHeroSlider(); });
     const loadSecondary = () => {
-        loadWeeklyPicks();
-        renderBottomBoards();
-        renderRecoPreferences();
-        refreshRecommendations(false);
+        try { initHeroSlider(); } catch (error) { console.warn('[RoFlix] hero background load failed', error); }
+        try { loadWeeklyPicks(); } catch (error) { console.warn('[RoFlix] weekly picks failed', error); }
+        try { renderBottomBoards(); } catch (error) { console.warn('[RoFlix] bottom boards failed', error); }
+        try { renderRecoPreferences(); } catch (error) { console.warn('[RoFlix] reco preferences failed', error); }
+        try { refreshRecommendations(false); } catch (error) { console.warn('[RoFlix] recommendations failed', error); }
     };
-    if ('requestIdleCallback' in window) requestIdleCallback(loadSecondary, { timeout: 2500 });
-    else setTimeout(loadSecondary, 500);
+    if ('requestIdleCallback' in window) requestIdleCallback(loadSecondary, { timeout: 1800 });
+    else setTimeout(loadSecondary, 700);
     checkUserAuthStatus();
     if (!localStorage.getItem('roflix-profile')) localStorage.setItem('roflix-profile', JSON.stringify({name:'Người dùng',avatar:'default',bio:'Chào mừng đến với RoFlix! 🎬',banner:'default',country:'Việt Nam',favoriteMovie:'',birthday:'',joinDate:new Date().toISOString().split('T')[0]}));
     if (!localStorage.getItem('roflix-level')) localStorage.setItem('roflix-level',JSON.stringify({level:1,exp:0}));
