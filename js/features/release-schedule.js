@@ -10,7 +10,7 @@
   const timeLabel = v => v ? new Date(v).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '--:--';
   const fullDate = v => v ? new Date(v).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}) : '';
   const sourceUrl = {
-    kkphim: slug => `https://phimapi.com/phim/${encodeURIComponent(slug)}`,
+    kkphim: slug => `https://phim.nguonc.com/api/film/${encodeURIComponent(slug)}`,
     vsmov: slug => `https://vsmov.com/api/phim/${encodeURIComponent(slug)}`
   };
   const ratingCache = new Map();
