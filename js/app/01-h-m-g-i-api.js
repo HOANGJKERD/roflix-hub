@@ -9,10 +9,14 @@ function absImage(url, sid) {
     if (!url || typeof url !== 'string') return '';
     url = url.trim();
     if (!url) return '';
-    if (/^https?:\/\//i.test(url)) return url;
-    const cdn = getSource(sid || currentSourceId).cdn;
-    if (!cdn) return '';
-    return cdn.replace(/\/$/, '') + '/' + url.replace(/^\//, '');
+    if (/^(https?:)?\/\//i.test(url)) return url.startsWith('//') ? location.protocol + url : url;
+    try {
+        const source = getSource(sid || currentSourceId);
+        // Resolve relative paths against the configured source origin only.
+        // Never fabricate a separate CDN hostname for a source without one.
+        const base = source.cdn || new URL(source.listBase).origin;
+        return new URL(url, base.replace(/\/$/, '') + '/').href;
+    } catch (_) { return ''; }
 }
 
 function pickPoster(item, sid) {
@@ -68,20 +72,20 @@ function mergeMovieLists(groups) {
 // request trùng nhau khi người dùng bấm nhanh/chuyển trang liên tục.
 const _apiCache = new Map();
 const _apiInflight = new Map();
-const API_CACHE_TTL = 120000; // 2 phút
-const API_CACHE_MAX = 60; // tránh phình bộ nhớ khi lướt nhiều trang
-const API_REQUEST_TIMEOUT = 8000; // tối đa 8 giây cho một request
+const API_CACHE_TTL = 180000; // 3 phút
+const API_CACHE_STALE_TTL = 900000; // cho phép dùng cache cũ tối đa 15 phút khi API lỗi
+const API_CACHE_MAX = 80;
+const API_REQUEST_TIMEOUT = 5000; // giới hạn mỗi request, không để chuỗi fallback kéo dài
 
 async function fetchJson(url) {
     const hit = _apiCache.get(url);
-    if (hit && (Date.now() - hit.time) < API_CACHE_TTL) {
-        return hit.data;
-    }
+    if (hit && (Date.now() - hit.time) < API_CACHE_TTL) return hit.data;
 
     const inflight = _apiInflight.get(url);
     if (inflight) return inflight;
 
     const request = (async () => {
+        let staleHit = hit && (Date.now() - hit.time) < API_CACHE_STALE_TTL ? hit : null;
         let timer = null;
         let controller = null;
         try {
@@ -101,9 +105,11 @@ async function fetchJson(url) {
             _apiCache.set(url, { data, time: Date.now() });
             return data;
         } catch (error) {
-            if (error && error.name === 'AbortError') {
-                throw new Error('API timeout after ' + (API_REQUEST_TIMEOUT / 1000) + 's');
+            if (staleHit) {
+                console.warn('[RoFlix API] dùng cache cũ do request lỗi:', url, error);
+                return staleHit.data;
             }
+            if (error && error.name === 'AbortError') throw new Error('API timeout after ' + (API_REQUEST_TIMEOUT / 1000) + 's');
             throw error;
         } finally {
             if (timer) clearTimeout(timer);
@@ -210,44 +216,30 @@ async function fetchMovies(page = 1) {
 }
 
 async function fetchHomePriorityMovies(page = 1) {
+    // Một request catalog duy nhất để có nội dung đầu tiên nhanh nhất.
+    // Banner/đề xuất được tải riêng ở nền sau khi grid đã có dữ liệu.
     const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['kkphim', 'vsmov'];
     let lastErr = null;
     for (const sid of ids) {
         try {
-            const [auData, krData] = await Promise.all([
-                fetchJson(srcListUrl(`/quoc-gia/au-my?page=${page}`, sid)),
-                fetchJson(srcListUrl(`/quoc-gia/han-quoc?page=${page}`, sid))
-            ]);
-            const auWrap = unwrapList(auData);
-            const krWrap = unwrapList(krData);
-
-            const au = auWrap.items.map(m => { m._src = sid; return m; }).filter(m => pickPoster(m, sid));
-            const kr = krWrap.items.map(m => { m._src = sid; return m; }).filter(m => pickPoster(m, sid));
-
-            const merged = [];
-            let i = 0, j = 0;
-            while (i < au.length || j < kr.length) {
-                if (i < au.length) merged.push(au[i++]);
-                if (i < au.length) merged.push(au[i++]);
-                if (j < kr.length) merged.push(kr[j++]);
+            const path = sid === 'vsmov'
+                ? `/danh-sach/phim-moi-cap-nhat?page=${page}`
+                : `/danh-sach/phim-moi-cap-nhat?page=${page}`;
+            const data = await fetchJson(srcListUrl(path, sid));
+            const wrapped = unwrapList(data);
+            const movies = wrapped.items.map(m => { m._src = sid; return m; }).filter(m => pickPoster(m, sid));
+            if (movies.length || sid === ids[ids.length - 1]) {
+                applyListPagination({
+                    currentPage: page,
+                    totalPages: wrapped.pag.totalPages || data.last_page || data.total_pages || 1,
+                    totalItems: wrapped.pag.totalItems || data.total || movies.length
+                }, page, movies.length);
+                return movies;
             }
-
-            const auPages = (auWrap.pag && auWrap.pag.totalPages) || 1;
-            const krPages = (krWrap.pag && krWrap.pag.totalPages) || 1;
-            const pagination = {
-                currentPage: page,
-                totalPages: Math.max(auPages, krPages),
-                totalItems: ((auWrap.pag && auWrap.pag.totalItems) || 0)
-                    + ((krWrap.pag && krWrap.pag.totalItems) || 0)
-            };
-            if (merged.length || sid === ids[ids.length - 1]) {
-                applyListPagination(pagination, page, merged.length);
-                return merged;
-            }
-        } catch (e) { lastErr = e; }
+        } catch (error) { lastErr = error; }
     }
     if (lastErr) throw lastErr;
-    throw new Error('home priority fetch failed');
+    throw new Error('home catalog fetch failed');
 }
 
 async function fetchMovieDetail(slug, preferredSrc) {
