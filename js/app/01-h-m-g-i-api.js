@@ -53,17 +53,34 @@ function normalizeNguoncMovie(movie, episodes) {
         : (movie.category && typeof movie.category === 'object' ? Object.values(movie.category) : []);
     movie.nguonc_category_groups = groups;
     const flatCategories = [];
+    movie.country = Array.isArray(movie.country) ? movie.country : [];
     groups.forEach(group => {
-        const groupName = String(group?.group?.name || '').toLowerCase();
+        const groupName = String(group?.group?.name || '').trim().toLowerCase();
         const values = Array.isArray(group?.list) ? group.list : [];
         values.forEach(value => {
             const name = value?.name || value;
             if (!name) return;
-            if (groupName.includes('năm') && !movie.year) movie.year = name;
-            else if (groupName.includes('quốc gia')) {
-                movie.country = (movie.country || []).concat([{name, slug:value?.slug || ''}]);
-            } else if (!groupName.includes('năm')) flatCategories.push({name,slug:value?.slug || ''});
-            const normalized = String(name).toLowerCase();
+            const normalized = String(name).trim().toLowerCase();
+            const entry = {name: String(name).trim(), slug: value?.slug || ''};
+            if (groupName.includes('năm')) {
+                if (!movie.year) movie.year = entry.name;
+                return;
+            }
+            if (groupName.includes('quốc gia') || groupName.includes('country')) {
+                if (!movie.country.some(x => String(x.name || x).toLowerCase() === entry.name.toLowerCase())) movie.country.push(entry);
+                return;
+            }
+            // Định dạng là loại phim, tuyệt đối không trộn vào thể loại.
+            if (groupName.includes('định dạng') || groupName.includes('format') || groupName.includes('loại phim')) {
+                if (normalized.includes('phim bộ') || normalized.includes('series')) movie.type = 'series';
+                else if (normalized.includes('phim lẻ') || normalized.includes('movie')) movie.type = 'single';
+                else if (normalized.includes('tv show')) movie.type = 'tvshows';
+                else if (normalized.includes('hoạt hình')) movie.type = 'hoathinh';
+                return;
+            }
+            if (groupName.includes('thể loại') || groupName.includes('genre') || !groupName) {
+                flatCategories.push(entry);
+            }
             if (normalized.includes('phim bộ')) movie.type = 'series';
             else if (normalized.includes('phim lẻ')) movie.type = 'single';
             else if (normalized.includes('tv show')) movie.type = 'tvshows';
