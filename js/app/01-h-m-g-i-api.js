@@ -33,8 +33,29 @@ function unwrapList(data) {
     const pag = data.pagination
         || (data.data && data.data.params && data.data.params.pagination)
         || (data.params && data.params.pagination)
+        || (data.paginate && { currentPage: data.paginate.current_page, totalPages: data.paginate.total_page, totalItems: data.paginate.total_items })
         || {};
     return { items: Array.isArray(items) ? items : [], pag };
+}
+
+function normalizeNguoncMovie(movie, episodes) {
+    if (!movie || typeof movie !== 'object') return movie;
+    movie.origin_name = movie.origin_name || movie.original_name || '';
+    movie.content = movie.content || movie.description || '';
+    movie.lang = movie.lang || movie.language || '';
+    movie.episode_current = movie.episode_current || movie.current_episode || '';
+    movie.episode_total = movie.episode_total || movie.total_episodes || '';
+    movie.actor = movie.actor || movie.casts || [];
+    const rawEpisodes = Array.isArray(episodes) ? episodes : (Array.isArray(movie.episodes) ? movie.episodes : []);
+    movie.episodes = rawEpisodes.map(group => {
+        if (Array.isArray(group.server_data)) return group;
+        const items = Array.isArray(group.items) ? group.items : [];
+        return { server_name: group.server_name || group.name || 'NguonC',
+            server_data: items.map(ep => ({ name: ep.name || ep.slug || 'Tập', slug: ep.slug || ep.name || '',
+                filename: ep.filename || '', link_embed: ep.embed || ep.link_embed || '',
+                link_m3u8: ep.m3u8 || ep.link_m3u8 || '' })) };
+    });
+    return movie;
 }
 
 function unwrapDetailPayload(data) {
@@ -44,6 +65,7 @@ function unwrapDetailPayload(data) {
         data.data && data.data.item,
         data.item,
         data.movie,
+        data.data && data.data.movie,
         data.data,
         data
     ];
@@ -54,8 +76,7 @@ function unwrapDetailPayload(data) {
     // Episodes thuộc item là nguồn ưu tiên; một số API cũ đặt episodes ở root.
     const episodes = Array.isArray(movie.episodes) ? movie.episodes
         : (Array.isArray(data.episodes) ? data.episodes : []);
-    movie.episodes = episodes;
-    return movie;
+    return normalizeNguoncMovie(movie, episodes);
 }
 
 function mergeMovieLists(groups) {
@@ -140,7 +161,7 @@ async function fetchMoviesFromSource(sid, page) {
     const data = await fetchJson(srcListUrl(buildListPath(page), sid));
     const { items, pag } = unwrapList(data);
     const movies = items
-        .map(m => { m._src = sid; return m; })
+        .map(m => { if (sid === 'kkphim') normalizeNguoncMovie(m); m._src = sid; return m; })
         .filter(m => !!pickPoster(m, sid));
 
     return {
@@ -169,7 +190,7 @@ async function fetchListWithFallback(path) {
     for (const sid of ids) {
         try {
             const data = await fetchJson(srcListUrl(path, sid));
-            const items = unwrapList(data).items.map(m => { m._src = sid; return m; });
+            const items = unwrapList(data).items.map(m => { if (sid === 'kkphim') normalizeNguoncMovie(m); m._src = sid; return m; });
             if (items.length || sid === ids[ids.length - 1]) {
                 return { data: { items, pagination: unwrapList(data).pag || {} }, sid };
             }
@@ -233,7 +254,7 @@ async function fetchHomePriorityMovies(page = 1) {
                 : `/danh-sach/phim-moi-cap-nhat?page=${page}`;
             const data = await fetchJson(srcListUrl(path, sid));
             const wrapped = unwrapList(data);
-            const movies = wrapped.items.map(m => { m._src = sid; return m; }).filter(m => pickPoster(m, sid));
+            const movies = wrapped.items.map(m => { if (sid === 'kkphim') normalizeNguoncMovie(m); m._src = sid; return m; }).filter(m => pickPoster(m, sid));
             if (movies.length || sid === ids[ids.length - 1]) {
                 applyListPagination({
                     currentPage: page,
