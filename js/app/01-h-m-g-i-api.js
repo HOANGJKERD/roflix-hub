@@ -39,15 +39,21 @@ function unwrapList(data) {
 
 function unwrapDetailPayload(data) {
     if (!data || typeof data !== 'object') return null;
-    let movie = null;
-    let episodes = Array.isArray(data.episodes) ? data.episodes : [];
-    if (data.movie && typeof data.movie === 'object') movie = data.movie;
-    else if (data.data && data.data.item && typeof data.data.item === 'object') movie = data.data.item;
-    else if (data.data && (data.data.slug || data.data.name)) movie = data.data;
-    else if (data.item && (data.item.slug || data.item.name)) movie = data.item;
-    else if (data.slug || data.name) movie = data;
+    // KKPhim v1: { data: { item: { ..., episodes: [...] } } }
+    const candidates = [
+        data.data && data.data.item,
+        data.item,
+        data.movie,
+        data.data,
+        data
+    ];
+    const movie = candidates.find(item => item && typeof item === 'object'
+        && (item.slug || item.name || item.origin_name));
     if (!movie) return null;
-    if (Array.isArray(movie.episodes) && movie.episodes.length) episodes = movie.episodes;
+
+    // Episodes thuộc item là nguồn ưu tiên; một số API cũ đặt episodes ở root.
+    const episodes = Array.isArray(movie.episodes) ? movie.episodes
+        : (Array.isArray(data.episodes) ? data.episodes : []);
     movie.episodes = episodes;
     return movie;
 }
