@@ -24,14 +24,18 @@
 
         async function initHeroSlider() {
             try {
-                const res1 = await fetchListWithFallback('/quoc-gia/au-my?page=1');
+                const res1 = await fetchListWithFallback('/phim-moi-cap-nhat?page=1');
                 heroSlides = mapListResultItems(res1)
-                    .filter(m => m.slug && isValidPosterUrl(m.banner))
+                    .filter(m => m.slug && m.banner && isValidPosterUrl(m.banner))
                     .slice(0, 8);
 
                 // Không dùng poster dọc làm ảnh thay thế cho hero ngang.
 
-                if (!heroSlides.length) return;
+                if (!heroSlides.length) {
+                    const descEl = document.getElementById('hero-desc');
+                    if (descEl) descEl.textContent = 'Chưa có ảnh ngang phù hợp từ NguonC. Kéo xuống để xem danh sách phim.';
+                    return;
+                }
                 renderHeroDots();
                 const firstImage = heroSlides[0].banner;
                 await warmHeroImage(firstImage);
