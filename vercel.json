@@ -1,4 +1,8 @@
 {
   "rewrites": [
+    {
+      "source": "/api/nguonc/:path*",
+      "destination": "/api/animapper?path=nguonc/:path*"
+    }
   ]
 }
