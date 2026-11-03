@@ -3,7 +3,7 @@
   'use strict';
   if(window.__rfMovieLockUI)return; window.__rfMovieLockUI=true;
   const cache=new Map();
-  const SOURCES={kkphim:'https://phimapi.com',vsmov:'https://vsmov.com/api'};
+  const SOURCES={kkphim:'https://phim.nguonc.com/api',vsmov:'https://vsmov.com/api'};
   function is18(values){
     const flat=[];
     const walk=v=>{if(Array.isArray(v))return v.forEach(walk);if(v&&typeof v==='object')return Object.values(v).forEach(walk);if(v!=null)flat.push(String(v).toLowerCase())};
@@ -13,7 +13,7 @@
   async function detail(slug,source){
     const sid=source==='vsmov'?'vsmov':'kkphim',key=sid+':'+slug;
     if(cache.has(key))return cache.get(key);
-    const p=(async()=>{try{const r=await fetch(SOURCES[sid]+'/phim/'+encodeURIComponent(slug),{cache:'no-store'});if(!r.ok)return null;const d=await r.json();return d?.movie||d?.data||d||null}catch(_){return null}})();
+    const p=(async()=>{try{const r=await fetch(SOURCES[sid]+(sid==='kkphim'?'/film/':'/phim/')+encodeURIComponent(slug),{cache:'no-store'});if(!r.ok)return null;const d=await r.json();return d?.movie||d?.data?.movie||d?.data?.item||d?.data||d||null}catch(_){return null}})();
     cache.set(key,p);return p;
   }
   async function adminOverride(slug,source){try{const sb=window.rfSupabase;if(!sb)return null;const r=await sb.from('roflix_movie_overrides').select('locked,hidden').eq('source_id',source||'kkphim').eq('movie_slug',slug).maybeSingle();return r.data||null}catch(_){return null}}
