@@ -72,7 +72,7 @@ async function run(){
  await Promise.all(['profiles','rohub_theme_versions','rotruyen_series','rotruyen_chapters','roflix_active_sessions','roflix_admin_audit_logs'].map(t=>checkTable(db,t)));
  await Promise.all(['js/config/supabase.config.js','js/core/supabase.js','js/admin/admin.js','js/admin/rotruyen-admin.js','js/admin/admin-v3.js','css/admin/admin.css','css/admin/admin-v3.css','js/rotruyen/published-theme-runtime.js'].map(checkAsset));
  await Promise.all([
-  checkApi('Nguồn phim KKPhim','https://phimapi.com/v1/api/danh-sach/phim-moi-cap-nhat?page=1',p=>!!p&&(Array.isArray(p.data)||Array.isArray(p.items)||Array.isArray(p.items?.data))),
+  checkApi('Nguồn phim NguonC','https://phim.nguonc.com/api/films/phim-moi-cap-nhat?page=1',p=>p?.status==='success'&&Array.isArray(p.items)),
   checkApi('Nguồn phim VSMOV','https://vsmov.com/api/danh-sach/phim-moi-cap-nhat?page=1',p=>!!p&&(Array.isArray(p.data)||Array.isArray(p.items)||Array.isArray(p.results))),
   checkApi('Nguồn truyện MangaDex qua RoHub','/api/mangadex/manga?limit=1&includes%5B%5D=cover_art',p=>!!p&&Array.isArray(p.data))
  ]);
