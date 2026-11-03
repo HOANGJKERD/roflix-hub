@@ -51,8 +51,16 @@
                 movie.episodes.forEach(epGroup => {
                     if (epGroup.server_data && epGroup.server_data.length > 0) {
                         epGroup.server_data.forEach(ep => {
-                            const embed = String(ep.link_embed || '').trim();
-                            const hls = String(ep.link_m3u8 || '').trim();
+                            const isSafeHttpUrl = value => {
+                                if (typeof value !== 'string' || !value.trim()) return false;
+                                try {
+                                    const parsed = new URL(value.trim());
+                                    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+                                } catch (_) { return false; }
+                            };
+                            const embed = isSafeHttpUrl(ep.link_embed) ? ep.link_embed.trim() : '';
+                            const hls = isSafeHttpUrl(ep.link_m3u8) ? ep.link_m3u8.trim() : '';
+                            // Chỉ dùng HLS khi không có embed hợp lệ và link HLS là URL HTTP(S).
                             const link = embed || hls;
                             if (!link) return;
                             epList.push({
