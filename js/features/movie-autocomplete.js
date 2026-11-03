@@ -10,7 +10,7 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pick = (...v) => v.find(x => x !== undefined && x !== null && String(x).trim()) || '';
   function sourceUrl(sid, q) {
-    const base = sid === 'kkphim' ? 'https://phim.nguonc.com/api/films/search' : 'https://vsmov.com/api/tim-kiem';
+    const base = 'https://phim.nguonc.com/api/films/search';
     return base + '?keyword=' + encodeURIComponent(q) + '&page=1';
   }
   function itemsOf(d) {
@@ -21,7 +21,7 @@
     const raw = pick(m.poster_url, m.thumb_url, m.poster, m.thumb);
     if (!raw) return '';
     if (/^https?:\/\//i.test(raw)) return raw;
-    return new URL(raw, sid === 'kkphim' ? 'https://phim.nguonc.com/' : 'https://vsmov.com/').href;
+    return new URL(raw, 'https://phim.nguonc.com/').href;
   }
   function mapItem(m, sid) {
     const lang = pick(m.lang, m.language, m.episode_current, '');
@@ -91,7 +91,7 @@
     box.innerHTML = '<div class="rf-suggest-loading">Đang tìm phim…</div>';
     box.hidden = false;
     let found = [];
-    for (const sid of ['kkphim','vsmov']) {
+    for (const sid of ['nguonc']) {
       try {
         let res;
         for (let attempt=0; attempt<2; attempt++) {
