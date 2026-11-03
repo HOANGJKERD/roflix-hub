@@ -53,7 +53,7 @@
     const poster=pickPoster(m,sid); if(poster)$('sch-poster').value=poster;
     if($('sch-pick-results'))$('sch-pick-results').innerHTML='<div class="selected-movie">✅ Đã chọn: <b>'+esc($('sch-title').value)+'</b> <span>'+esc(slug)+'</span></div>';
     try{
-      const r=await fetch(SOURCES[sid].detail+(sid==='kkphim'?'/film/':'/phim/')+encodeURIComponent(slug),{cache:'no-store'});
+      const r=await fetch(SOURCES[sid].detail+(sid==='kkphim'?'/film/':'/film/')+encodeURIComponent(slug),{cache:'no-store'});
       if(r.ok){const d=await r.json(); const movie=d.movie||d.data?.movie||d.data?.item||d.data||d; const p=pickPoster(movie,sid); if(p)$('sch-poster').value=p; if(movie.origin_name)$('sch-origin').value=movie.origin_name; if(movie.content&&!$('sch-summary').value)$('sch-summary').value=String(movie.content).replace(/<[^>]*>/g,'').trim();}
     }catch(_){}
   }
