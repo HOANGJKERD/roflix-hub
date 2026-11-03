@@ -26,7 +26,7 @@
             try {
                 const res1 = await fetchListWithFallback('/quoc-gia/au-my?page=1');
                 heroSlides = mapListResultItems(res1)
-                    .filter(m => m.slug && isValidPosterUrl(m.poster))
+                    .filter(m => m.slug && isValidPosterUrl(m.banner))
                     .slice(0, 8);
 
                 if (!heroSlides.length) {
@@ -36,13 +36,13 @@
 
                 if (!heroSlides.length) return;
                 renderHeroDots();
-                const firstImage = heroSlides[0].thumb || heroSlides[0].poster;
+                const firstImage = heroSlides[0].banner;
                 await warmHeroImage(firstImage);
                 showHeroSlide(0, false);
                 startHeroAutoplay();
 
                 // Tải trước slide kế tiếp ở nền, không chặn nội dung đầu trang.
-                if (heroSlides[1]) warmHeroImage(heroSlides[1].thumb || heroSlides[1].poster);
+                if (heroSlides[1]) warmHeroImage(heroSlides[1].banner);
                 const section = document.getElementById('hero-section');
                 if (section) {
                     section.addEventListener('mouseenter', stopHeroAutoplay, {passive:true});
@@ -71,7 +71,7 @@
             const bg = document.getElementById('hero-background');
 
             const apply = () => {
-                const poster = m.thumb || m.poster;
+                const poster = m.banner;
                 if (bg && poster) {
                     bg.style.backgroundImage = `
                         linear-gradient(135deg, rgba(9,10,15,0.92) 0%, rgba(18,20,29,0.72) 45%, rgba(9,10,15,0.92) 100%),
@@ -138,7 +138,7 @@
                 }
             };
 
-            const nextUrl = m.thumb || m.poster;
+            const nextUrl = m.banner;
             const applyWhenReady = () => {
                 if (animate && box) {
                     box.classList.add('is-fading');
@@ -146,7 +146,7 @@
                     requestAnimationFrame(() => requestAnimationFrame(apply));
                 } else apply();
                 const next = heroSlides[(heroIndex + 1) % heroSlides.length];
-                if (next && next !== m) warmHeroImage(next.thumb || next.poster);
+                if (next && next !== m) warmHeroImage(next.banner);
             };
             if (nextUrl && heroImageCache.has(nextUrl)) {
                 warmHeroImage(nextUrl).then(applyWhenReady);
