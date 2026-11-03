@@ -165,9 +165,10 @@
             if (key === 'list') return filterByList(value, arguments[2] || value);
             if (key === 'genre') {
                 const normalized = String(value || '').trim().toLowerCase();
-                if (['chiếu rạp','chieu rap','phim 18+','18+'].includes(normalized)) {
-                    return filterByList('phim-le', value === 'Chiếu Rạp' ? 'Chiếu Rạp · Phim lẻ' : value);
+                if (['chiếu rạp','chieu rap'].includes(normalized)) {
+                    return filterByList('phim-le', 'Chiếu Rạp · Phim lẻ');
                 }
+                // Phim 18+ là một thể loại NguonC riêng, không phải danh mục Phim lẻ.
                 return filterByGenre(value, value);
             }
             if (key === 'rating') {
