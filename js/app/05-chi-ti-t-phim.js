@@ -111,7 +111,20 @@
                 ? `<button onclick="playOnVidSrcFromDetail()" class="mt-2 w-full px-4 py-2.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white transition"><i class="fa-solid fa-play"></i> Xem qua VidSrc</button>`
                 : '';
             
+            const detailBanner = movie.banner && isValidPosterUrl(movie.banner) ? movie.banner : '';
+            const detailBannerStyle = detailBanner
+                ? `background-image: linear-gradient(90deg, rgba(9,10,15,.94) 0%, rgba(9,10,15,.52) 52%, rgba(9,10,15,.78) 100%), linear-gradient(0deg, rgba(9,10,15,.96), transparent 58%), url('${detailBanner}');`
+                : 'background-image: radial-gradient(ellipse at 70% 20%, rgba(245,158,11,.18), transparent 45%), linear-gradient(135deg,#171923,#090a0f);';
             document.getElementById('detail-content-container').innerHTML = `
+                <section class="relative w-full aspect-video max-h-[min(62vw,560px)] min-h-[190px] md:min-h-[300px] rounded-3xl overflow-hidden mb-6 border border-white/10 bg-gray-950 shadow-2xl" aria-label="Ảnh nền phim" style="${detailBannerStyle};background-size:cover;background-position:center 30%;">
+                    <div class="absolute inset-0 flex items-end p-5 md:p-10">
+                        <div class="max-w-3xl">
+                            <span class="inline-flex items-center gap-2 text-[10px] md:text-xs uppercase tracking-[.24em] font-bold text-amber-300 mb-2"><i class="fa-solid fa-film"></i> RoFlix · Chi tiết phim</span>
+                            <h1 class="text-2xl md:text-4xl lg:text-5xl font-black text-white drop-shadow-lg">${escapeHtml(movie.title)}</h1>
+                            <p class="text-xs md:text-sm text-gray-200 mt-2">${escapeHtml(movie.origin_name || '')}</p>
+                        </div>
+                    </div>
+                </section>
                 <div class="glass-premium p-5 md:p-8 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div>
                         <div class="aspect-[2/3] rounded-2xl overflow-hidden border border-gray-800 shadow-xl">
