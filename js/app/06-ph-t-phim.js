@@ -347,7 +347,7 @@ async function playMovieByIndex(index, options = {}) {
         if (!alive) {
             const moved = await useVsmovPlayback(currentSlug, currentMovieTitle);
             if (moved) {
-                showToast('warning', 'Đổi nguồn phát', 'KKPhim không còn file video. Đã chuyển sang VSMOV.');
+                showToast('warning', 'Đổi nguồn phát', 'NguonC không còn file video. Đã chuyển sang VSMOV.');
                 return playMovieByIndex(0, Object.assign({}, options, { skipSourceCheck: true }));
             }
             navigateTo('play-page');
