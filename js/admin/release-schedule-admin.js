@@ -8,10 +8,7 @@
   function toast(msg){ if(typeof window.showToastPro==='function') window.showToastPro('info','Lịch phim',msg); else alert(msg); }
   async function isAdmin(){ const {data,error}=await sb.auth.getUser(); if(error||!data?.user)return false; const {data:p,error:pe}=await sb.from('profiles').select('role').eq('id',data.user.id).maybeSingle(); return !pe&&p?.role==='admin'; }
   async function sync(){ try{await sb.rpc('roflix_sync_release_schedule');}catch(_){} }
-  const SOURCES={
-    kkphim:{list:'https://phim.nguonc.com/api',detail:'https://phim.nguonc.com/api',name:'NguonC'},
-    vsmov:{list:'https://vsmov.com/api',detail:'https://vsmov.com/api',name:'VSMOV'}
-  };
+  const SOURCES={nguonc:{list:'https://phim.nguonc.com/api',detail:'https://phim.nguonc.com/api',name:'NguonC'}};
   function pickPoster(m,sid){
     const raw=m.poster_url||m.thumb_url||m.poster||m.thumb||'';
     if(!raw)return '';
@@ -21,12 +18,12 @@
   function unwrap(data){return data?.items||(data?.data?.items)||data?.data||data?.movies||[];}
   async function searchScheduleMovies(){
     const q=($('sch-pick-search')?.value||'').trim();
-    const sid=$('sch-pick-source')?.value||'kkphim';
+    const sid=$('sch-pick-source')?.value||'nguonc';
     const box=$('sch-pick-results');
     if(!q){box.innerHTML='<div class="muted">Nhập tên phim trước đã.</div>';return;}
     box.innerHTML='<div class="muted">🔎 Đang tìm phim...</div>';
     try{
-      const url=SOURCES[sid].list+(sid==='kkphim'?'/films/search':'/tim-kiem')+'?keyword='+encodeURIComponent(q)+'&page=1';
+      const url=SOURCES[sid].list+(sid==='nguonc'?'/films/search':'/tim-kiem')+'?keyword='+encodeURIComponent(q)+'&page=1';
       const r=await fetch(url,{cache:'no-store'});
       if(!r.ok)throw new Error('HTTP '+r.status);
       const d=await r.json();
