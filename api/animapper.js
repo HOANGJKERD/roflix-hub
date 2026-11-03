@@ -29,6 +29,40 @@ async function fetchOnce(target, signal) {
   });
 }
 
+const NGUONC_ORIGIN = 'https://phim.nguonc.com/api/';
+const NGUONC_PATH_OK = /^(?:films\/(?:phim-moi-cap-nhat|search|danh-sach\/[a-z0-9-]+|the-loai\/[a-z0-9-]+|quoc-gia\/[a-z0-9-]+|nam-phat-hanh\/\d{4}|ngon-ngu\/[a-z0-9-]+)|film\/[a-z0-9-]+)$/;
+
+async function handleNguonc(req, res, rawPath) {
+  const path = String(rawPath || '').replace(/^nguonc\//, '').replace(/^\//, '');
+  if (!NGUONC_PATH_OK.test(path)) {
+    return res.status(400).json({ status: 'error', message: 'Path is not an allowed Nguonc catalog route' });
+  }
+  const params = new URLSearchParams();
+  for (const key of ['page', 'keyword']) {
+    const value = req.query && req.query[key];
+    if (typeof value === 'string' && value.trim()) params.set(key, value.trim().slice(0, 120));
+  }
+  const target = NGUONC_ORIGIN + path + (params.toString() ? '?' + params.toString() : '');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  try {
+    const upstream = await fetch(target, {
+      headers: { Accept: 'application/json', 'User-Agent': 'RoFlix-NguonC/1.0' },
+      signal: controller.signal
+    });
+    const body = await upstream.text();
+    res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', upstream.ok ? 'public, s-maxage=60, stale-while-revalidate=180' : 'no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    return res.status(upstream.status).send(body);
+  } catch (error) {
+    const status = error && error.name === 'AbortError' ? 504 : 502;
+    return res.status(status).json({ status: 'error', message: 'Could not reach NguonC API' });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 module.exports = async function handler(req, res) {
   const started = Date.now();
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -37,6 +71,7 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return jsonError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   const rawPath = String((req.query && req.query.path) || '');
+  if (rawPath.startsWith('nguonc/')) return handleNguonc(req, res, rawPath);
   let parsed;
   try { parsed = new URL(rawPath, 'https://x.invalid'); }
   catch (_) { return jsonError(res, 400, 'INVALID_PATH', 'Invalid path'); }
