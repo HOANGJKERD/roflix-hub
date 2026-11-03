@@ -269,6 +269,18 @@ function rfTryAlternateEpisodeSource(ep, index, error) {
     playMovieByIndex(index, { sourceFallback: true });
     return true;
 }
+function rfMarkEmbedLoaded() {
+    clearTimeout(window.__RF_EMBED_WAIT_TIMER__);
+    const status = document.getElementById('rf-player-status');
+    if (!status) return;
+    status.dataset.state = 'uncertain';
+    status.textContent = 'Đã mở trang nguồn. RoFlix không thể xác nhận video bên trong iframe khác domain. Nếu màn hình vẫn đen, ';
+    const button = document.createElement('button');
+    button.type = 'button'; button.textContent = 'Thử nguồn còn lại';
+    button.style.cssText = 'margin-left:8px;padding:6px 10px;border-radius:7px;background:#f59e0b;color:#111;font-weight:700;';
+    button.onclick = rfTryCurrentEpisodeAlternate;
+    status.appendChild(button);
+}
 function rfTryCurrentEpisodeAlternate() {
     const index = Number(window.__RF_LAST_EP_INDEX__) || 0;
     const ep = currentEpisodeList[index];
@@ -354,6 +366,7 @@ async function playMovieByIndex(index, options = {}) {
             player.onerror = () => {
                 if (!rfTryAlternateEpisodeSource(ep, index, new Error('Không tải được trang phát.'))) showPlayerError('Nhà cung cấp không tải được trình phát.');
             };
+            player.onload = rfMarkEmbedLoaded;
             ep.__rfTriedSources.push(ep.activeSource || 'embed');
             player.src = playUrl;
             // iframe load không chứng minh video chạy; timeout chỉ báo trạng thái,
