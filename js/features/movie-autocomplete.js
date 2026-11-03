@@ -14,7 +14,7 @@
     return base + '?keyword=' + encodeURIComponent(q) + '&page=1';
   }
   function itemsOf(d) {
-    const x = d?.items || d?.data?.items || (Array.isArray(d?.data) ? d.data : null) || d?.movies || [];
+    const x = d?.items || d?.data?.items || d?.result?.items || (Array.isArray(d?.data) ? d.data : null) || d?.movies || d?.results || [];
     return Array.isArray(x) ? x : [];
   }
   function posterOf(m, sid) {
@@ -93,8 +93,19 @@
     let found = [];
     for (const sid of ['kkphim','vsmov']) {
       try {
-        const res = await fetch(sourceUrl(sid,q), {signal:controller.signal, headers:{'Accept':'application/json'}});
+        let res;
+        for (let attempt=0; attempt<2; attempt++) {
+          res = await fetch(sourceUrl(sid,q), {signal:controller.signal, headers:{'Accept':'application/json'}});
+          if (res.status===429 && attempt===0) {
+            const retry=Number(res.headers.get('Retry-After'));
+            await new Promise(resolve=>setTimeout(resolve,Math.min(3000,Math.max(500,retry>0?retry*1000:1000))));
+            continue;
+          }
+          break;
+        }
         if (!res.ok) throw new Error('HTTP '+res.status);
+        const type=res.headers.get('content-type')||'';
+        if(type && !/json/i.test(type)) throw new Error('API không trả JSON: '+type);
         const data = await res.json();
         const rows = itemsOf(data).map(m=>mapItem(m,sid)).filter(m=>m.slug);
         found = found.concat(rows);
