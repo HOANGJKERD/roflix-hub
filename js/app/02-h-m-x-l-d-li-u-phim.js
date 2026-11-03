@@ -59,6 +59,8 @@ function mapMovieData(item) {
         _src: item._src || currentSourceId,
         poster: pickPoster(item, item._src) || 'https://placehold.co/300x400/1a1a1a/666?text=No+Image',
         thumb: absImage(item.thumb_url, item._src) || pickPoster(item, item._src),
+        // Ảnh ngang riêng cho banner/hero; tuyệt đối không fallback sang poster dọc.
+        banner: absImage(item.thumb_url, item._src) || '',
         summary: summary,
         episodes: item.episodes || [],
         quality: item.quality || 'HD',
