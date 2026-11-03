@@ -1,13 +1,13 @@
 // ============================================================
-// CẤU HÌNH API — KKPhim (chính) · VSMOV (dự phòng cuối)
+// CẤU HÌNH API — NguonC (thay KKPhim tạm thời) · VSMOV (dự phòng)
 // ============================================================
 const SOURCES = {
     kkphim: {
         id: 'kkphim',
-        name: 'KKPhim',
-        listBase: 'https://phimapi.com/v1/api',
-        detailBase: 'https://phimapi.com',
-        cdn: 'https://phimimg.com'
+        name: 'NguonC',
+        listBase: 'https://phim.nguonc.com/api',
+        detailBase: 'https://phim.nguonc.com/api',
+        cdn: ''
     },
     vsmov: {
         id: 'vsmov',
@@ -33,7 +33,16 @@ function getSource(id) {
 }
 function srcListUrl(path, sid) {
     if (!path.startsWith('/')) path = '/' + path;
-    return getSource(sid || currentSourceId).listBase + path;
+    const sourceId = sid || currentSourceId;
+    if (sourceId === 'kkphim') {
+        const base = getSource(sourceId).listBase;
+        if (path.startsWith('/tim-kiem')) return base + path.replace('/tim-kiem', '/films/search');
+        if (path.startsWith('/danh-sach/')) return base + path.replace('/danh-sach/', '/films/danh-sach/');
+        if (path.startsWith('/the-loai/')) return base + path.replace('/the-loai/', '/films/the-loai/');
+        if (path.startsWith('/quoc-gia/')) return base + path.replace('/quoc-gia/', '/films/quoc-gia/');
+        if (path.startsWith('/phim-moi-cap-nhat')) return base + '/films/phim-moi-cap-nhat' + path.slice('/phim-moi-cap-nhat'.length);
+    }
+    return getSource(sourceId).listBase + path;
 }
 function srcDetailUrl(slug, sid) {
     return getSource(sid || currentSourceId).detailBase + '/phim/' + encodeURIComponent(slug);
@@ -42,7 +51,7 @@ function srcDetailUrls(slug, sid) {
     const src = getSource(sid);
     const enc = encodeURIComponent(slug);
     if (sid === 'kkphim') {
-        // KKPhim khuyến nghị endpoint chi tiết v1; API cũ chỉ là fallback tương thích.\n        return [src.listBase + '/phim/' + enc, src.detailBase + '/phim/' + enc];
+        // KKPhim khuyến nghị endpoint chi tiết v1; API cũ chỉ là fallback tương thích.\n        return [src.detailBase + '/film/' + enc];
     }
     return [src.detailBase + '/phim/' + enc];
 }
@@ -56,7 +65,7 @@ function updateSourceUi() {
     if (note) {
         note.textContent = currentSourceId === 'vsmov'
             ? 'Đang dùng VSMOV (dự phòng)'
-            : 'Ưu tiên KKPhim · VSMOV chỉ khi KKPhim lỗi/trống';
+            : 'Ưu tiên NguonC · VSMOV tự dự phòng khi NguonC lỗi/trống';
     }
     try {
         if (window.RoflixVidSrc && typeof window.RoflixVidSrc.injectSourcePill === 'function') {
@@ -82,7 +91,7 @@ function switchSource(id) {
     updateSourceUi();
     if (typeof showToastPro === 'function') {
         showToastPro('info', 'Nguồn phim', id === 'kkphim'
-            ? 'KKPhim là nguồn chính. VSMOV chỉ dùng khi KKPhim lỗi.'
+            ? 'NguonC là nguồn chính tạm thời thay KKPhim. VSMOV tự dự phòng khi cần.'
             : 'Đang xem riêng VSMOV.');
     }
     if (typeof renderMoviesFromAPI === 'function') renderMoviesFromAPI(1);
