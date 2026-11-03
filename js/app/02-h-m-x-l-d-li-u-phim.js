@@ -17,7 +17,7 @@ function asNameList(val) {
 function mapMovieData(item) {
     const categories = Array.isArray(item.category)
         ? item.category.map(c => c.name || c).filter(Boolean)
-        : [];
+        : (Array.isArray(item.nguonc_category_groups) ? item.nguonc_category_groups.flatMap(g => (g.list || []).map(x => x.name || x)).filter(Boolean) : []);
 
     let type = 'Phim Lẻ';
     const epCur = item.episode_current == null ? '' : String(item.episode_current);
