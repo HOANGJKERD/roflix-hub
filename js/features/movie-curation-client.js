@@ -39,7 +39,7 @@
     const key=normalizeTitle(title);
     if(resolveCache.has(key))return resolveCache.get(key);
     const promise=(async()=>{
-      const ids=['kkphim','vsmov'];
+      const ids=['nguonc'];
       let fallback=null;
       for(const sid of ids){
         try{
