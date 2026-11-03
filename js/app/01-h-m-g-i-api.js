@@ -29,12 +29,13 @@ function pickPoster(item, sid) {
 }
 
 function unwrapList(data) {
-    const items = data.items || (data.data && data.data.items) || (Array.isArray(data.data) ? data.data : null) || data.movies || [];
+    const items = data.items || data.data?.items || data.result?.items || (Array.isArray(data.data) ? data.data : null) || data.movies || data.results || [];
     const pag = data.pagination
         || (data.data && data.data.params && data.data.params.pagination)
         || (data.params && data.params.pagination)
         || (data.paginate && { currentPage: data.paginate.current_page, totalPages: data.paginate.total_page, totalItems: data.paginate.total_items })
         || (data.data && data.data.paginate && { currentPage: data.data.paginate.current_page, totalPages: data.data.paginate.total_page, totalItems: data.data.paginate.total_items })
+        || (data.paginate && { currentPage: data.paginate.current_page || data.paginate.currentPage, totalPages: data.paginate.total_page || data.paginate.totalPage || data.paginate.total_pages, totalItems: data.paginate.total_items || data.paginate.totalItems })
         || {};
     return { items: Array.isArray(items) ? items : [], pag };
 }
@@ -133,48 +134,69 @@ const _apiInflight = new Map();
 const API_CACHE_TTL = 180000; // 3 phút
 const API_CACHE_STALE_TTL = 900000; // cho phép dùng cache cũ tối đa 15 phút khi API lỗi
 const API_CACHE_MAX = 80;
-const API_REQUEST_TIMEOUT = 5000; // giới hạn mỗi request, không để chuỗi fallback kéo dài
+const API_REQUEST_TIMEOUT = 10000;
+const API_429_MAX_WAIT = 3000;
+
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 async function fetchJson(url) {
     const hit = _apiCache.get(url);
     if (hit && (Date.now() - hit.time) < API_CACHE_TTL) return hit.data;
-
     const inflight = _apiInflight.get(url);
     if (inflight) return inflight;
 
     const request = (async () => {
-        let staleHit = hit && (Date.now() - hit.time) < API_CACHE_STALE_TTL ? hit : null;
-        let timer = null;
-        let controller = null;
+        const staleHit = hit && (Date.now() - hit.time) < API_CACHE_STALE_TTL ? hit : null;
         try {
-            if (typeof AbortController !== 'undefined') controller = new AbortController();
-            timer = setTimeout(() => {
-                try { if (controller) controller.abort(); } catch (_) {}
-            }, API_REQUEST_TIMEOUT);
-
-            const options = controller ? { signal: controller.signal } : undefined;
-            const res = await fetch(url, options);
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const data = await res.json();
-            if (_apiCache.size >= API_CACHE_MAX) {
-                const oldestKey = _apiCache.keys().next().value;
-                _apiCache.delete(oldestKey);
+            for (let attempt = 0; attempt < 2; attempt++) {
+                let controller = null;
+                const timer = setTimeout(() => { try { controller?.abort(); } catch (_) {} }, API_REQUEST_TIMEOUT);
+                try {
+                    if (typeof AbortController !== 'undefined') controller = new AbortController();
+                    const res = await fetch(url, {
+                        headers: { Accept: 'application/json' },
+                        signal: controller ? controller.signal : undefined
+                    });
+                    if (res.status === 429 && attempt === 0) {
+                        const retryHeader = Number(res.headers.get('Retry-After'));
+                        const waitMs = Math.min(API_429_MAX_WAIT, Math.max(500, Number.isFinite(retryHeader) && retryHeader > 0 ? retryHeader * 1000 : 1000));
+                        await wait(waitMs);
+                        continue;
+                    }
+                    if (!res.ok) {
+                        const error = new Error('NguonC/API HTTP ' + res.status);
+                        error.status = res.status;
+                        throw error;
+                    }
+                    const type = res.headers.get('content-type') || '';
+                    if (type && !/json/i.test(type)) throw new Error('API returned non-JSON response (' + type + ')');
+                    const data = await res.json();
+                    if (!data || typeof data !== 'object') throw new Error('API returned invalid JSON payload');
+                    if (_apiCache.size >= API_CACHE_MAX) _apiCache.delete(_apiCache.keys().next().value);
+                    _apiCache.set(url, { data, time: Date.now() });
+                    return data;
+                } finally {
+                    clearTimeout(timer);
+                }
             }
-            _apiCache.set(url, { data, time: Date.now() });
-            return data;
+            const rateError = new Error('NguonC/API HTTP 429: rate limited after retry');
+            rateError.status = 429;
+            throw rateError;
         } catch (error) {
-            if (staleHit) {
-                console.warn('[RoFlix API] dùng cache cũ do request lỗi:', url, error);
+            // 404/422/429 là lỗi request/giới hạn: không che bằng dữ liệu cache cũ.
+            const clientError = error && Number(error.status) >= 400 && Number(error.status) < 500;
+            if (staleHit && !clientError) {
+                console.warn('[RoFlix API] dùng cache cũ do lỗi mạng/server:', url, error);
                 return staleHit.data;
             }
             if (error && error.name === 'AbortError') throw new Error('API timeout after ' + (API_REQUEST_TIMEOUT / 1000) + 's');
             throw error;
         } finally {
-            if (timer) clearTimeout(timer);
             _apiInflight.delete(url);
         }
     })();
-
     _apiInflight.set(url, request);
     return request;
 }
