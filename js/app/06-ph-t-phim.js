@@ -13,7 +13,7 @@
     (document.head || document.documentElement).appendChild(s);
 })();
 
-async function playMovie(slug, preferredSrc) {
+async function playMovie(slug, preferredSrc, titleHint) {
     if (window.rfWatchPartyBlocksControl && window.rfWatchPartyBlocksControl()) {
         showToast('warning', 'Phòng xem chung', 'Chỉ host được đổi phim. Bạn đang xem theo host.');
         return;
@@ -28,7 +28,9 @@ async function playMovie(slug, preferredSrc) {
             && Array.isArray(currentEpisodeList)
             && currentEpisodeList.length > 0;
         if (!alreadyLoaded) {
-            await viewMovieDetail(slug, preferredSrc);
+            currentEpisodeList = [];
+            currentMovieData = null;
+            await viewMovieDetail(slug, preferredSrc, titleHint);
         }
         let tries = 0;
         while (currentEpisodeList.length === 0 && tries < 15) {
@@ -36,12 +38,12 @@ async function playMovie(slug, preferredSrc) {
             tries++;
         }
         if (currentEpisodeList.length === 0) {
-            const title = currentMovieTitle || currentMovieData?.title || currentMovieData?.name || '';
+            const title = titleHint || currentMovieTitle || currentMovieData?.title || currentMovieData?.name || '';
             const kkRecovered = await useKkphimPlayback(slug, title);
             if (kkRecovered) showToast('warning', 'Nguồn dự phòng', 'Đã tìm thấy tập phát từ KKPhim.');
         }
         if (currentEpisodeList.length === 0) {
-            const recovered = await useVsmovPlayback(slug, currentMovieTitle || currentMovieData?.title || '');
+            const recovered = await useVsmovPlayback(slug, titleHint || currentMovieTitle || currentMovieData?.title || '');
             if (recovered) showToast('warning', 'Nguồn dự phòng', 'Đã tìm thấy tập phát từ VSMOV.');
         }
         if (currentEpisodeList.length > 0) {

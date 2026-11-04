@@ -61,12 +61,12 @@
             }
             
             container.innerHTML = mappedMovies.map((m, index) => `
-                <div onclick="viewMovieDetail('${m.slug}', '${m._src || ''}', '${escapeHtml(m.title)}')" class="movie-card-premium card-stagger" data-rf-title="${escapeHtml(m.title + " " + (m.origin_name || ""))}" data-rf-year="${escapeHtml(m.year || "")}" data-rf-rating="${escapeHtml(parseFloat(m.rating) || 0)}" data-rf-genre="${escapeHtml((m.genre || []).join("|"))}" data-rf-type="${escapeHtml(m.type === "Phim Bộ" ? "series" : "single")}">
+                <div onclick="viewMovieDetail('${String(m.slug).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}', '${m._src || ''}', '${String(m.title || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/[\\r\\n]/g,' ')}')" class="movie-card-premium card-stagger" data-rf-title="${escapeHtml(m.title + " " + (m.origin_name || ""))}" data-rf-year="${escapeHtml(m.year || "")}" data-rf-rating="${escapeHtml(parseFloat(m.rating) || 0)}" data-rf-genre="${escapeHtml((m.genre || []).join("|"))}" data-rf-type="${escapeHtml(m.type === "Phim Bộ" ? "series" : "single")}">
                     <div class="card-poster">
                         <img src="${m.poster}" alt="${escapeHtml(m.title)}" loading="lazy" decoding="async"
                              onerror="this.src='https://placehold.co/300x400/1a1a1a/666?text=No+Image'">
                         <div class="card-overlay">
-                            <button class="watch-btn btn-ripple" onclick="event.stopPropagation(); playMovie('${m.slug}', '${m._src || ''}')">
+                            <button class="watch-btn btn-ripple" onclick="event.stopPropagation(); playMovie('${String(m.slug).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}', '${m._src || ''}', '${String(m.title || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/[\\r\\n]/g,' ')}')">
                                 <i class="fa-solid fa-play"></i> Xem Ngay
                             </button>
                             <div class="card-actions">
