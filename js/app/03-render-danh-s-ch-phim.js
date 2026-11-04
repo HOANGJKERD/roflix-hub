@@ -70,10 +70,10 @@
                                 <i class="fa-solid fa-play"></i> Xem Ngay
                             </button>
                             <div class="card-actions">
-                                <button type="button" data-rf-favorite="1" title="Yêu thích"> title="Yêu thích">
+                                <button type="button" data-rf-favorite="1" title="Yêu thích">
                                     <i class="fa-${isFavorite(m.slug) ? 'solid' : 'regular'} fa-heart"></i>
                                 </button>
-                                <button type="button" data-rf-detail="1" title="Chi tiết"> title="Chi tiết">
+                                <button type="button" data-rf-detail="1" title="Chi tiết">
                                     <i class="fa-solid fa-circle-info"></i>
                                 </button>
                             </div>
