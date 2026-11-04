@@ -61,32 +61,8 @@ function getStats() {
     };
 }
 function saveStats(data) { localStorage.setItem('roflix-stats', JSON.stringify(data)); }
-function getCards() { return JSON.parse(localStorage.getItem('roflix-cards')) || []; }
-function saveCards(data) { localStorage.setItem('roflix-cards', JSON.stringify(data)); }
 
 // ============================================================
-// GACHA SELL-BACK
-// ============================================================
-const RF_CARD_SELL_VALUES = { common: 10, rare: 20, 'super-rare': 40, epic: 80, legendary: 150, secret: 300 };
-function rfCardSellValue(card) { return RF_CARD_SELL_VALUES[card?.rarity] || 10; }
-function rfSellGachaCard(baseId) {
-    const cards = getCards();
-    const index = cards.findIndex(c => String(c.baseId || c.id) === String(baseId));
-    if (index < 0) {
-        try { showToast('error', 'Không thể bán', 'Bạn không sở hữu thẻ này.'); } catch (_) {}
-        return false;
-    }
-    const card = cards[index];
-    const reward = rfCardSellValue(card);
-    cards.splice(index, 1);
-    saveCards(cards);
-    addGem(reward, true);
-    try { showToast('success', 'Đã bán thẻ', `${card.name || 'Thẻ Gacha'} → +${reward} 💎`); } catch (_) {}
-    try { renderCollection(); } catch (_) {}
-    try { updateProfileUI(); } catch (_) {}
-    return true;
-}
-
 function rfRemoveOldRewardUI() {
     const selectors = [
         '[data-tab="achievements"]', '.tab-btn[data-tab="achievements"]',
@@ -111,38 +87,4 @@ function rfRemoveOldRewardUI() {
     });
 }
 
-function rfInstallSellStyle() {
-    if (document.getElementById('rf-card-sell-style')) return;
-    const style = document.createElement('style');
-    style.id = 'rf-card-sell-style';
-    style.textContent = `.rf-card-sell{position:absolute;z-index:20;left:7px;right:7px;bottom:7px;padding:6px 7px;border-radius:9px;background:rgba(0,0,0,.82);border:1px solid rgba(251,191,36,.4);color:#fbbf24;font-size:9px;font-weight:900;text-align:center;cursor:pointer;backdrop-filter:blur(7px)}.rf-card-sell:hover{background:#fbbf24;color:#111827}`;
-    document.head.appendChild(style);
-}
-function rfInstallCardSellControls() {
-    const grid = document.getElementById('card-grid');
-    if (!grid) return;
-    grid.querySelectorAll('.rf-gacha-card:not(.is-locked)').forEach(cardEl => {
-        if (cardEl.querySelector('.rf-card-sell')) return;
-        const baseId = cardEl.dataset.gachaId;
-        if (!baseId) return;
-        const owned = Number(cardEl.dataset.owned || 0);
-        if (owned < 1) return;
-        const card = getCards().find(c => String(c.baseId || c.id) === String(baseId));
-        if (!card) return;
-        const sell = document.createElement('span');
-        sell.className = 'rf-card-sell';
-        sell.setAttribute('role', 'button');
-        sell.setAttribute('tabindex', '0');
-        sell.textContent = `Bán +${rfCardSellValue(card)} 💎`;
-        const act = e => { e.preventDefault(); e.stopPropagation(); rfSellGachaCard(baseId); };
-        sell.addEventListener('click', act);
-        sell.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') act(e); });
-        cardEl.appendChild(sell);
-    });
-}
-
-setInterval(() => {
-    rfRemoveOldRewardUI();
-    rfInstallSellStyle();
-    rfInstallCardSellControls();
-}, 1500);
+setInterval(rfRemoveOldRewardUI, 1500);

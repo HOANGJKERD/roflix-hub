@@ -64,10 +64,8 @@ function renderProfile() {
     }
 
     setText('profile-movie-count', stats.totalMoviesWatched || 0);
-    setText('gacha-gem-count', gems);
 
     // Daily/login reward UI has intentionally been removed. Do not call the old quest renderer.
-    if (typeof rfRenderGachaAlbum === 'function') rfRenderGachaAlbum();
     if (typeof renderFavoritesTab === 'function') renderFavoritesTab();
     if (typeof renderHistoryTab === 'function') renderHistoryTab();
 }
