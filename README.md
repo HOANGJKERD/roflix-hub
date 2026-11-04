@@ -1,7 +1,7 @@
 # 🌌 RoHUB — Một hệ sinh thái, nhiều cách khám phá
 
 <p align="center">
-  <strong>RoFlix · RoTruyen · RoHub Admin</strong><br>
+  <strong>RoFlix · RoTruyen · RoBong · RoHub Admin</strong><br>
   <em>Được xây dựng từng bước bằng sự tò mò, thử nghiệm và mong muốn tạo ra một sản phẩm của riêng mình.</em>
 </p>
 
@@ -53,11 +53,12 @@ Mình không xem việc làm ra một trang web có thể mở được là đí
 |---|---|
 | **RoFlix** | Trải nghiệm khám phá và xem nội dung phim |
 | **RoTruyen** | Nền tảng khám phá và đọc truyện, hướng tới các tính năng tài khoản và cộng đồng |
+| **RoBong** | Cổng bóng đá tổng hợp lịch thi đấu, tỷ số, giải đấu, tin tức có dẫn nguồn và liên kết xem bên ngoài |
 | **RoHub Admin** | Trung tâm quản trị tập trung cho các nền tảng |
 
 Mục tiêu dài hạn là để các thành phần có thể chia sẻ những nguyên tắc thiết kế và công cụ quản trị chung, nhưng vẫn giữ được trải nghiệm phù hợp với từng sản phẩm.
 
-## 🎬 Hai nền tảng chính
+## 🌐 Các ứng dụng trong hệ sinh thái
 
 ### 🍿 RoFlix — Khám phá thế giới phim
 
@@ -90,12 +91,19 @@ Các nhóm tính năng mục tiêu:
 
 Những tính năng này không nhất thiết đã hoàn tất cùng lúc. Chúng là phạm vi phát triển để RoTruyen tiến dần từ một website đọc truyện thành một nền tảng có nhiều trải nghiệm liên kết với nhau.
 
+### ⚽ RoBong — Trung tâm khám phá bóng đá
+
+RoBong là nhánh bóng đá trong hệ sinh thái RoHUB. Phạm vi sản phẩm gồm lịch thi đấu, tỷ số trực tiếp, bảng xếp hạng, hồ sơ đội bóng, tin tức tổng hợp có ghi nguồn và danh mục liên kết xem trận đấu từ các nhà cung cấp bên ngoài. RoBong không tự lưu trữ hoặc phát sóng video.
+
+Giai đoạn 1 đã tạo trang giao diện độc lập, điều hướng từ cổng RoHub và bố cục responsive. Các khu vực dữ liệu hiện hiển thị trạng thái chưa kết nối, không sử dụng tỷ số giả. Tích hợp API, tin tức và xác minh nguồn phát sẽ được triển khai ở các giai đoạn tiếp theo.
+
 ### 🔗 Truy cập mã nguồn
 
 - [Repository RoHUB trên GitHub](https://github.com/HOANGJKERD/roflix-hub)
 - [Trang chọn nền tảng](./index.html)
 - [RoFlix](./roflix.html)
 - [RoTruyen](./rotruyen.html)
+- [RoBong](./robong.html)
 - [RoHub Admin](./admin.html)
 
 Các liên kết trên trỏ tới tệp trong repository. Việc có tệp trong GitHub không tự động có nghĩa website đã được deploy hoặc tính năng đã được kiểm thử trên môi trường đang chạy.
