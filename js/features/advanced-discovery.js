@@ -29,16 +29,16 @@
     addStyle();
     const box=document.createElement('section');box.id='rf-discovery';
     box.innerHTML=`
-      <div class="rf-head"><div><div class="rf-title">🎬 Khám phá & lọc phim</div><div class="rf-note">Tìm nhanh theo gu của bạn, không cần đăng nhập.</div></div><button type="button" class="rf-chip" id="rf-advanced-toggle" aria-expanded="false">⚙️ Bộ lọc nâng cao</button></div>
-      <div class="rf-actions" id="rf-presets">
-        <button type="button" class="rf-chip active" data-preset="all">✨ Tổng hợp</button>
-        <button type="button" class="rf-chip" data-preset="top">⭐ Điểm cao</button>
-        <button type="button" class="rf-chip" data-preset="year">🆕 Phim mới</button>
-        <button type="button" class="rf-chip" data-preset="classic">🏆 Kinh điển</button>
-        <button type="button" class="rf-chip" data-preset="action">💥 Hành động</button>
-        <button type="button" class="rf-chip" data-preset="animation">🎨 Hoạt hình</button>
-      </div>
+      <div class="rf-head"><div><div class="rf-title">Bộ lọc phim</div><div class="rf-note" id="rf-filter-context">Đang xem danh sách phim. Mở bộ lọc khi muốn thu hẹp kết quả.</div></div><button type="button" class="rf-chip" id="rf-advanced-toggle" aria-expanded="false">⚙️ Bộ lọc</button></div>
       <div id="rf-advanced-fields" hidden>
+        <div class="rf-actions" id="rf-presets">
+          <button type="button" class="rf-chip active" data-preset="all">✨ Tất cả</button>
+          <button type="button" class="rf-chip" data-preset="top">⭐ Điểm cao</button>
+          <button type="button" class="rf-chip" data-preset="year">🆕 Phim mới</button>
+          <button type="button" class="rf-chip" data-preset="classic">🏆 Kinh điển</button>
+          <button type="button" class="rf-chip" data-preset="action">💥 Hành động</button>
+          <button type="button" class="rf-chip" data-preset="animation">🎨 Hoạt hình</button>
+        </div>
         <div class="rf-fields">
           <label>Thể loại<select id="rf-filter-genre"><option value="">Tất cả thể loại</option></select></label>
           <label>Năm từ<input id="rf-year-from" type="number" min="1900" max="2099" placeholder="Ví dụ: 2010"></label>
@@ -52,7 +52,9 @@
     host.insertBefore(box,host.firstChild);
     const gs=box.querySelector('#rf-filter-genre');
     GENRES.forEach(g=>{const o=document.createElement('option');o.value=g.toLowerCase();o.textContent=g;gs.appendChild(o)});
-    box.querySelector('#rf-advanced-toggle').addEventListener('click',()=>{const f=box.querySelector('#rf-advanced-fields');f.hidden=!f.hidden;box.querySelector('#rf-advanced-toggle').setAttribute('aria-expanded',String(!f.hidden))});
+    box.querySelector('#rf-advanced-toggle').addEventListener('click',()=>{const f=box.querySelector('#rf-advanced-fields');f.hidden=!f.hidden;box.querySelector('#rf-advanced-toggle').setAttribute('aria-expanded',String(!f.hidden));box.querySelector('#rf-advanced-toggle').textContent=f.hidden?'⚙️ Bộ lọc':'✕ Đóng bộ lọc';});
+    const context=box.querySelector('#rf-filter-context');
+    if(context){const current=typeof currentGenreSlug!=='undefined'?currentGenreSlug:'';context.textContent=current?'Thể loại đang chọn: '+current+' · Các tiêu chí bổ sung sẽ lọc sâu danh sách này.':'Mở bộ lọc khi muốn thu hẹp danh sách phim.';}
     box.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{box.querySelectorAll('[data-preset]').forEach(x=>x.classList.toggle('active',x===b));applyPreset(b.dataset.preset)}));
     box.querySelector('#rf-apply').addEventListener('click',applyFilters);
     box.querySelector('#rf-reset').addEventListener('click',()=>{box.querySelectorAll('select,input').forEach(x=>x.value='');box.querySelector('#rf-rating-min').value='0';box.querySelector('#rf-sort').value='default';box.querySelectorAll('[data-preset]').forEach(x=>x.classList.toggle('active',x.dataset.preset==='all'));applyPreset('all')});
@@ -70,6 +72,7 @@
     if(p==='animation')box.querySelector('#rf-filter-genre').value='hoạt hình';
     box.querySelector('#rf-advanced-fields').hidden=false;
     box.querySelector('#rf-advanced-toggle').setAttribute('aria-expanded','true');
+    box.querySelector('#rf-advanced-toggle').textContent='✕ Đóng bộ lọc';
     // Thoát chế độ trang chủ chỉ tuyển phim Âu Mỹ/Hàn; chuyển sang danh sách catalog phân trang.
     if(typeof homePriorityMode!=='undefined') homePriorityMode=false;
     if(typeof currentCountrySlug!=='undefined') currentCountrySlug='';
