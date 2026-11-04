@@ -1,64 +1,70 @@
 // ============================================================
-// CẤU HÌNH API — NGUONC DUY NHẤT
+// CẤU HÌNH API: NGUONC CHÍNH + VSMOV PHỤ, GỘP TỰ ĐỘNG
 // ============================================================
 const SOURCES = {
     nguonc: {
-        id: 'nguonc',
-        name: 'NguonC',
+        id: 'nguonc', name: 'NguonC',
         listBase: 'https://phim.nguonc.com/api',
-        detailBase: 'https://phim.nguonc.com/api',
-        cdn: ''
+        detailBase: 'https://phim.nguonc.com/api', cdn: ''
+    },
+    vsmov: {
+        id: 'vsmov', name: 'VSMOV',
+        listBase: 'https://vsmov.com/api',
+        detailBase: 'https://vsmov.com/api', cdn: ''
     }
 };
 
-let sourceMode = 'nguonc';
+let sourceMode = 'auto';
 let currentSourceId = 'nguonc';
 try {
-    localStorage.setItem('roflix-source-mode', 'nguonc');
+    localStorage.setItem('roflix-source-mode', 'auto');
     localStorage.setItem('roflix-source-v2', 'nguonc');
 } catch (_) {}
 
-function activeSourceIds() { return ['nguonc']; }
-function getSource(id) { return SOURCES.nguonc; }
+function activeSourceIds() { return ['nguonc', 'vsmov']; }
+function getSource(id) { return SOURCES[id] || SOURCES.nguonc; }
 
-function srcListUrl(path) {
+function srcListUrl(path, sid) {
     if (!path.startsWith('/')) path = '/' + path;
-    const base = SOURCES.nguonc.listBase;
-    if (path.startsWith('/tim-kiem')) return base + path.replace('/tim-kiem', '/films/search');
-    if (path.startsWith('/danh-sach/phim-moi-cap-nhat')) return base + '/films/phim-moi-cap-nhat' + path.slice('/danh-sach/phim-moi-cap-nhat'.length);
-    if (path.startsWith('/danh-sach/')) return base + path.replace('/danh-sach/', '/films/danh-sach/');
-    if (path.startsWith('/the-loai/')) return base + path.replace('/the-loai/', '/films/the-loai/');
-    if (path.startsWith('/quoc-gia/')) return base + path.replace('/quoc-gia/', '/films/quoc-gia/');
-    if (path.startsWith('/phim-moi-cap-nhat')) return base + '/films/phim-moi-cap-nhat' + path.slice('/phim-moi-cap-nhat'.length);
-    return base + path;
+    const source = getSource(sid || currentSourceId);
+    if (source.id === 'nguonc') {
+        const base = source.listBase;
+        if (path.startsWith('/tim-kiem')) return base + path.replace('/tim-kiem', '/films/search');
+        if (path.startsWith('/danh-sach/phim-moi-cap-nhat')) return base + '/films/phim-moi-cap-nhat' + path.slice('/danh-sach/phim-moi-cap-nhat'.length);
+        if (path.startsWith('/danh-sach/')) return base + path.replace('/danh-sach/', '/films/danh-sach/');
+        if (path.startsWith('/the-loai/')) return base + path.replace('/the-loai/', '/films/the-loai/');
+        if (path.startsWith('/quoc-gia/')) return base + path.replace('/quoc-gia/', '/films/quoc-gia/');
+        if (path.startsWith('/phim-moi-cap-nhat')) return base + '/films/phim-moi-cap-nhat' + path.slice('/phim-moi-cap-nhat'.length);
+    }
+    return source.listBase + path;
 }
-function srcDetailUrl(slug) {
-    return SOURCES.nguonc.detailBase + '/film/' + encodeURIComponent(slug);
+function srcDetailUrl(slug, sid) {
+    const source = getSource(sid || currentSourceId);
+    return source.detailBase + (source.id === 'nguonc' ? '/film/' : '/phim/') + encodeURIComponent(slug);
 }
-function srcDetailUrls(slug) { return [srcDetailUrl(slug)]; }
+function srcDetailUrls(slug, sid) { return [srcDetailUrl(slug, sid)]; }
 
 const API_BASE = srcListUrl('');
 function updateSourceUi() {
     const box = document.getElementById('source-switch');
-    if (box) box.innerHTML = '<span class="src-label">Nguồn phim</span><span class="source-pill active" data-source="nguonc">NguonC · nguồn duy nhất</span>';
+    if (box) box.innerHTML = '<span class="src-label">Nguồn phim</span><span class="source-pill active" data-source="auto">NguonC + VSMOV</span>';
     const note = document.getElementById('source-note');
-    if (note) note.textContent = 'Đang sử dụng API NguonC';
+    if (note) note.textContent = 'Đang gộp NguonC (chính) + VSMOV (phụ)';
 }
 function switchSource(id) {
     if (id === 'vidsrc') {
         if (window.RoflixVidSrc && typeof window.RoflixVidSrc.openTester === 'function') window.RoflixVidSrc.openTester();
         return;
     }
-    if (id !== 'nguonc') return;
-    currentSourceId = sourceMode = 'nguonc';
+    if (id !== 'auto' && id !== 'nguonc' && id !== 'vsmov') return;
+    sourceMode = 'auto';
+    currentSourceId = 'nguonc';
+    try { localStorage.setItem('roflix-source-mode', 'auto'); localStorage.setItem('roflix-source-v2', 'nguonc'); } catch (_) {}
     updateSourceUi();
     if (typeof renderMoviesFromAPI === 'function') renderMoviesFromAPI(1);
-}
-function loadOptionalSource(src, flag) {
-    if (window[flag] || document.querySelector('script[src*="' + src.split('/').pop() + '"]')) return;
-    const s = document.createElement('script'); s.src = src; s.async = true;
-    s.onload = updateSourceUi;
-    (document.head || document.documentElement).appendChild(s);
+    if (typeof initHeroSlider === 'function') initHeroSlider();
+    if (typeof refreshRecommendations === 'function') refreshRecommendations(true);
+    if (typeof loadWeeklyPicks === 'function') loadWeeklyPicks();
 }
 loadOptionalSource('js/app/00b-vidsrc.js', 'RoflixVidSrc');
 const ITEMS_PER_PAGE = 24;
