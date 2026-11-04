@@ -61,19 +61,19 @@
             }
             
             container.innerHTML = mappedMovies.map((m, index) => `
-                <div onclick="viewMovieDetail('${String(m.slug).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}', '${m._src || ''}', '${String(m.title || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/[\\r\\n]/g,' ')}')" class="movie-card-premium card-stagger" data-rf-title="${escapeHtml(m.title + " " + (m.origin_name || ""))}" data-rf-year="${escapeHtml(m.year || "")}" data-rf-rating="${escapeHtml(parseFloat(m.rating) || 0)}" data-rf-genre="${escapeHtml((m.genre || []).join("|"))}" data-rf-type="${escapeHtml(m.type === "Phim Bộ" ? "series" : "single")}">
+                <div data-rf-card="1" data-rf-slug="${escapeHtml(m.slug)}" data-rf-source="${escapeHtml(m._src || '')}" data-rf-movie-title="${escapeHtml(m.title || '')}" class="movie-card-premium card-stagger" data-rf-title="${escapeHtml(m.title + " " + (m.origin_name || ""))}" data-rf-year="${escapeHtml(m.year || "")}" data-rf-rating="${escapeHtml(parseFloat(m.rating) || 0)}" data-rf-genre="${escapeHtml((m.genre || []).join("|"))}" data-rf-type="${escapeHtml(m.type === "Phim Bộ" ? "series" : "single")}">
                     <div class="card-poster">
                         <img src="${m.poster}" alt="${escapeHtml(m.title)}" loading="lazy" decoding="async"
                              onerror="this.src='https://placehold.co/300x400/1a1a1a/666?text=No+Image'">
                         <div class="card-overlay">
-                            <button class="watch-btn btn-ripple" onclick="event.stopPropagation(); playMovie('${String(m.slug).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}', '${m._src || ''}', '${String(m.title || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/[\\r\\n]/g,' ')}')">
+                            <button type="button" class="watch-btn btn-ripple" data-rf-watch="1">
                                 <i class="fa-solid fa-play"></i> Xem Ngay
                             </button>
                             <div class="card-actions">
-                                <button onclick="event.stopPropagation(); toggleFavorite('${m.slug}')" title="Yêu thích">
+                                <button type="button" data-rf-favorite="1" title="Yêu thích"> title="Yêu thích">
                                     <i class="fa-${isFavorite(m.slug) ? 'solid' : 'regular'} fa-heart"></i>
                                 </button>
-                                <button onclick="event.stopPropagation(); viewMovieDetail('${m.slug}', '${m._src || ''}', '${escapeHtml(m.title)}')" title="Chi tiết">
+                                <button type="button" data-rf-detail="1" title="Chi tiết"> title="Chi tiết">
                                     <i class="fa-solid fa-circle-info"></i>
                                 </button>
                             </div>
@@ -95,6 +95,32 @@
                 </div>
             `).join('');
             
+            // Sự kiện gắn bằng DOM API, không phụ thuộc inline onclick.
+            container.querySelectorAll('[data-rf-card]').forEach(card => {
+                const slug = card.dataset.rfSlug || '';
+                const source = card.dataset.rfSource || '';
+                const title = card.dataset.rfMovieTitle || '';
+                card.addEventListener('click', event => {
+                    if (event.target.closest('a, button')) return;
+                    viewMovieDetail(slug, source, title);
+                });
+                card.querySelector('[data-rf-watch]')?.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    playMovie(slug, source, title);
+                });
+                card.querySelector('[data-rf-detail]')?.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    viewMovieDetail(slug, source, title);
+                });
+                card.querySelector('[data-rf-favorite]')?.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleFavorite(slug);
+                });
+            });
+
             document.getElementById('movie-count').textContent = mappedMovies.length;
             updatePagination();
         }

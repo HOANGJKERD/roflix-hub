@@ -31,17 +31,31 @@
             let aniMeta = null;
             const aniId = movieData.anilistId || movieData.animeId || movieData.aniMapperId;
             if (aniId != null && String(aniId).trim()) {
+                // Metadata chỉ bổ sung thông tin, không giữ màn hình chi tiết ở trạng thái tải.
+                let timeoutId;
                 try {
-                    if (window.RoflixAniMapper && typeof window.RoflixAniMapper.getMetadata === 'function') {
-                        aniMeta = await window.RoflixAniMapper.getMetadata(aniId);
-                    } else {
-                        const response = await fetch('/api/animapper?path=' + encodeURIComponent('/metadata?id=' + encodeURIComponent(String(aniId))), { headers: { Accept: 'application/json' } });
-                        if (response.ok) {
-                            const payload = await response.json();
-                            aniMeta = payload && (payload.result || payload.data || payload);
+                    const metadataTask = (async () => {
+                        if (window.RoflixAniMapper && typeof window.RoflixAniMapper.getMetadata === 'function') {
+                            return await window.RoflixAniMapper.getMetadata(aniId);
                         }
-                    }
-                } catch (error) { console.warn('[RoFlix] Không tải được AniMapper metadata:', error); }
+                        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                        const response = await fetch('/api/animapper?path=' + encodeURIComponent('/metadata?id=' + encodeURIComponent(String(aniId))), {
+                            headers: { Accept: 'application/json' },
+                            signal: controller ? controller.signal : undefined
+                        });
+                        if (!response.ok) return null;
+                        const payload = await response.json();
+                        return payload && (payload.result || payload.data || payload);
+                    })();
+                    aniMeta = await Promise.race([
+                        metadataTask,
+                        new Promise(resolve => { timeoutId = setTimeout(() => resolve(null), 1600); })
+                    ]);
+                } catch (error) {
+                    console.warn('[RoFlix] Bỏ qua AniMapper metadata chậm/lỗi:', error);
+                } finally {
+                    if (timeoutId) clearTimeout(timeoutId);
+                }
             }
             const accentCandidate = aniMeta && aniMeta.images && aniMeta.images.coverColor;
             const accent = typeof accentCandidate === 'string' && /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i.test(accentCandidate.trim()) ? accentCandidate.trim() : '#f59e0b';

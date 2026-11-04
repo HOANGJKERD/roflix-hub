@@ -395,7 +395,8 @@ async function fetchMovieDetail(slug, preferredSrc, titleHint) {
     const order = preferredSrc === 'nguonc' ? ['nguonc', 'kkphim', 'vsmov']
         : (preferredSrc === 'kkphim' ? ['kkphim', 'nguonc', 'vsmov']
         : (preferredSrc === 'vsmov' ? ['vsmov', 'nguonc', 'kkphim'] : ['nguonc', 'kkphim', 'vsmov']));
-    let lastErr = null, bestMovie = null;
+    const hasEpisodes = movie => Array.isArray(movie && movie.episodes)
+        && movie.episodes.some(group => Array.isArray(group.server_data) && group.server_data.length);
     const accept = (payload, sid) => {
         const movie = unwrapDetailPayload(payload);
         if (!movie || (!movie.slug && !movie.name)) return null;
@@ -403,34 +404,37 @@ async function fetchMovieDetail(slug, preferredSrc, titleHint) {
         movie._src = sid;
         return movie;
     };
-    for (const sid of order) {
-        try {
-            const movie = accept(await fetchJson(srcDetailUrl(slug, sid)), sid);
-            if (!movie) continue;
-            if (Array.isArray(movie.episodes) && movie.episodes.some(group => Array.isArray(group.server_data) && group.server_data.length)) return movie;
-            if (!bestMovie) bestMovie = movie;
-        } catch (error) { lastErr = error; }
-    }
-    // Slug giữa các nhà cung cấp thường khác nhau. Dò theo tên phim trước khi kết luận thiếu nguồn.
+    const directResults = await Promise.allSettled(order.map(async sid =>
+        accept(await fetchJson(srcDetailUrl(slug, sid)), sid)
+    ));
+    const directMovies = directResults.filter(x => x.status === 'fulfilled' && x.value).map(x => x.value);
+    const playableDirect = directMovies.find(hasEpisodes);
+    if (playableDirect) return playableDirect;
+    let bestMovie = directMovies[0] || null;
     if (titleHint) {
-        const normalize = value => String(value || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        const normalize = value => String(value || '').normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '').toLowerCase()
+            .replace(/[^a-z0-9]+/g, ' ').trim();
         const wanted = normalize(titleHint);
-        for (const sid of order) {
-            try {
-                const searchData = await fetchJson(srcListUrl('/tim-kiem?keyword=' + encodeURIComponent(titleHint) + '&page=1&limit=20', sid));
-                const candidates = unwrapList(searchData).items;
-                const exact = candidates.find(item => normalize(item.name || item.title) === wanted || normalize(item.origin_name || item.original_name) === wanted);
-                if (!exact?.slug) continue;
-                const movie = accept(await fetchJson(srcDetailUrl(exact.slug, sid)), sid);
-                if (!movie) continue;
-                if (Array.isArray(movie.episodes) && movie.episodes.some(group => Array.isArray(group.server_data) && group.server_data.length)) return movie;
-                if (!bestMovie) bestMovie = movie;
-            } catch (error) { lastErr = error; }
-        }
+        const searchResults = await Promise.allSettled(order.map(async sid => {
+            const data = await fetchJson(srcListUrl('/tim-kiem?keyword=' + encodeURIComponent(titleHint) + '&page=1&limit=20', sid));
+            const candidates = unwrapList(data).items;
+            const exact = candidates.find(item =>
+                normalize(item.name || item.title) === wanted
+                || normalize(item.origin_name || item.original_name) === wanted);
+            if (!exact || !exact.slug) return null;
+            return accept(await fetchJson(srcDetailUrl(exact.slug, sid)), sid);
+        }));
+        const searchedMovies = searchResults.filter(x => x.status === 'fulfilled' && x.value).map(x => x.value);
+        const playableSearch = searchedMovies.find(hasEpisodes);
+        if (playableSearch) return playableSearch;
+        if (!bestMovie) bestMovie = searchedMovies[0] || null;
     }
     if (bestMovie) return bestMovie;
-    console.error('Lỗi tải chi tiết phim:', lastErr);
-    showToast('error', 'Lỗi', 'Không thể tải thông tin phim từ kho RoFlix hợp nhất.');
+    const errors = directResults.filter(x => x.status === 'rejected')
+        .map(x => x.reason && x.reason.message).filter(Boolean);
+    console.error('[RoFlix] Không tải được chi tiết phim:', errors);
+    showToast('error', 'Lỗi', 'Không thể tải thông tin phim từ các nhà cung cấp. Vui lòng thử lại.');
     return null;
 }
 
