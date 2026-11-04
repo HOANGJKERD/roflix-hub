@@ -59,10 +59,10 @@
             searchKeyword = '';
             currentGenreSlug = '';
             currentCountrySlug = '';
-            homePriorityMode = true;
+            homePriorityMode = false;
             currentListEndpoint = 'phim-moi-cap-nhat';
             showSecondarySections();
-            document.getElementById('list-title').textContent = 'Phim Âu Mỹ & Hàn nổi bật';
+            document.getElementById('list-title').textContent = 'Phim mới cập nhật';
             document.getElementById('search-input').value = '';
             document.getElementById('search-input-mobile').value = '';
             renderMoviesFromAPI(1);
