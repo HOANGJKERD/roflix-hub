@@ -356,7 +356,7 @@
             <!-- ===== BỘ LỌC THEO QUỐC GIA ===== -->
             <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mt-4">
                 <div class="flex flex-wrap gap-2 my-3" id="roflix-upgrade-toolbar">
-                    <button class="source-pill" onclick="openRoflixTools('collections')">📚 Bộ sưu tập</button>
+
                     <button class="source-pill" onclick="openRoflixTools('sync')">🔄 Đồng bộ thiết bị</button>
                     <a class="source-pill" href="admin.html" style="text-decoration:none">🛠️ Quản trị</a>
                 </div>
@@ -810,7 +810,6 @@
                     <button class="tab-btn active" data-tab="overview"><i class="fa-solid fa-house"></i> <span>Tổng quan</span></button>
                     <button class="tab-btn" data-tab="favorites"><i class="fa-solid fa-heart"></i> <span>Yêu thích</span></button>
                     <button class="tab-btn" data-tab="history"><i class="fa-solid fa-clock-rotate-left"></i> <span>Lịch sử</span></button>
-                    <button class="tab-btn" data-tab="collection"><i class="fa-solid fa-layer-group"></i> <span>Bộ sưu tập</span></button>
                     <button class="tab-btn" data-tab="achievements"><i class="fa-solid fa-trophy"></i> <span>Thành tựu</span></button>
                     <button class="tab-btn" data-tab="leaderboard"><i class="fa-solid fa-ranking-star"></i> <span>BXH</span></button>
                     <button class="tab-btn" data-tab="settings"><i class="fa-solid fa-gear"></i> <span>Cài đặt</span></button>
@@ -871,28 +870,6 @@
 
                 <div class="tab-content" id="tab-history">
                     <div id="history-list" class="space-y-4"></div>
-                </div>
-
-                <div class="tab-content" id="tab-collection">
-                    <div class="gacha-container">
-                        <div class="rf-gacha-actions">
-                            <button class="gacha-btn" id="gacha-btn" onclick="performGacha()">🎰 QUAY 1 LẦN · 50 💎</button>
-                            <button class="gacha-btn rf-gacha-10" onclick="performGacha10()">🎰 QUAY 10 LẦN · 500 💎</button>
-                        </div>
-                        <div class="gacha-cost">💎 Bạn có <span id="gacha-gem-count">0</span> RoGem · <span id="rf-gacha-pity-label">Pity: 0/20</span></div>
-                        <div style="margin-top:12px; display:flex; justify-content:center; gap:12px; flex-wrap:wrap; font-size:0.75rem;">
-                            <span style="color:#6b7280;">⚪ Common</span>
-                            <span style="color:#22c55e;">🟢 Rare</span>
-                            <span style="color:#3b82f6;">🔵 Super Rare</span>
-                            <span style="color:#8b5cf6;">🟣 Epic</span>
-                            <span style="color:#f59e0b;">🟠 Legendary</span>
-                            <span style="color:#ec4899;">🌈 Secret</span>
-                        </div>
-                    </div>
-                    <div id="collection-stats" style="text-align:center; margin:16px 0;">
-                        <span style="color:var(--ro-text-secondary);">Đã sưu tập: <strong id="collection-count">0</strong> / <strong id="collection-total">0</strong> (<span id="collection-percent">0%</span>)</span>
-                    </div>
-                    <div id="card-grid" class="card-grid"></div>
                 </div>
 
                 <div class="tab-content" id="tab-achievements">
@@ -1049,16 +1026,6 @@
             </div>
         </div>
 
-        <!-- ===== GACHA PULL OVERLAY ===== -->
-        <div class="gacha-pull-overlay" id="gacha-pull-overlay">
-            <div class="pull-card" id="gacha-pull-card">
-                <div class="pull-rarity" id="pull-rarity">✨ Common</div>
-                <img class="pull-art" id="pull-art" src="" alt="Card">
-                <div class="pull-name" id="pull-name">Nhân vật</div>
-                <div class="pull-movie" id="pull-movie">Từ phim</div>
-                <button class="pull-close-btn" onclick="closeGachaPull()">Tuyệt vời! ✨</button>
-            </div>
-        </div>
     </div>
 
     
@@ -1125,10 +1092,10 @@
     <script src="js/app/17-level-system.js" defer></script>
     <script src="js/app/18-achievements-system.js" defer></script>
     <script src="js/app/19-daily-quest.js" defer></script>
-    <script src="js/app/20-gacha-system.js" defer></script>
+
     <script src="js/app/21-gem-fly-effect.js" defer></script>
     <script src="js/app/22-profile-ui-render.js" defer></script>
-    <script src="js/app/23-collection-render.js" defer></script>
+
     <script src="js/app/24-achievements-render.js" defer></script>
     <script src="js/app/25-favorites-tab.js" defer></script>
     <script src="js/app/26-history-tab.js" defer></script>

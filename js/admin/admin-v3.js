@@ -6,13 +6,16 @@
   const fmt=n=>Number(n||0).toLocaleString('vi-VN');
   const date=v=>v?new Date(v).toLocaleString('vi-VN',{dateStyle:'short',timeStyle:'short'}):'';
   async function game(){
-    const stats=await sb.rpc('roflix_admin_game_stats');
-    if(stats.error){$('game-stats-cards').innerHTML='<div class="card danger-text">'+esc(stats.error.message)+'<br><small>Chạy supabase/mega_upgrade.sql.</small></div>';return;}
-    const s=stats.data||{};
-    $('game-stats-cards').innerHTML=[['👥','Người chơi',s.players],['🎰','Lượt Gacha',s.total_gacha_pulls],['📺','Tập đã xem',s.total_episodes],['💎','RoGem đang giữ',s.total_gems],['📚','Watchlist',s.watchlist_items]].map(x=>`<div class="card"><div class="stat-label">${x[0]} ${x[1]}</div><div class="stat-value accent-amber">${fmt(x[2])}</div></div>`).join('');
-    const lb=await sb.rpc('roflix_leaderboard',{p_limit:50});
-    $('game-leaderboard-body').innerHTML=lb.data?.length?lb.data.map(x=>`<tr><td><b>${x.rank}</b></td><td><b>${esc(x.display_name||'Người dùng')}</b></td><td>Lv.${x.level||1}</td><td>${fmt(x.exp)}</td><td>💎 ${fmt(x.gems)}</td><td>${fmt(x.episodes_watched)}</td><td>${fmt(x.gacha_pulls)}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">Chưa có dữ liệu.</td></tr>';
-    const feed=s.recent_gacha||[];$('game-gacha-feed').innerHTML=feed.length?feed.map(x=>`<div class="event"><div class="event-top"><b>🎴 ${esc(x.name)}</b><span class="pill pill-active">${esc(x.rarity)}</span></div><small>${esc(x.display_name||'Người dùng')} · ${esc(x.movie||'')} · ${date(x.obtained_at)}</small></div>`).join(''):'<div class="empty">Chưa có lượt Gacha.</div>';
+    const [stats, watchlist, lb] = await Promise.all([
+      sb.from('roflix_game_stats').select('user_id,episodes_watched,gems',{count:'exact'}),
+      sb.from('roflix_watchlist').select('user_id',{count:'exact',head:true}),
+      sb.rpc('roflix_leaderboard',{p_limit:50})
+    ]);
+    if(stats.error){$('game-stats-cards').innerHTML='<div class="card danger-text">'+esc(stats.error.message)+'</div>';return;}
+    const rows=stats.data||[]; const sum=key=>rows.reduce((total,row)=>total+Number(row[key]||0),0);
+    $('game-stats-cards').innerHTML=[['👥','Người chơi',stats.count??rows.length],['📺','Tập đã xem',sum('episodes_watched')],['💎','RoGem đang giữ',sum('gems')],['📚','Watchlist',watchlist.count??0]].map(x=>`<div class="card"><div class="stat-label">${x[0]} ${x[1]}</div><div class="stat-value accent-amber">${fmt(x[2])}</div></div>`).join('');
+    if(lb.error){$('game-leaderboard-body').innerHTML='<tr><td colspan="6" class="danger-text">'+esc(lb.error.message)+'</td></tr>';return;}
+    $('game-leaderboard-body').innerHTML=lb.data?.length?lb.data.map(x=>`<tr><td><b>${x.rank}</b></td><td><b>${esc(x.display_name||'Người dùng')}</b></td><td>Lv.${x.level||1}</td><td>${fmt(x.exp)}</td><td>💎 ${fmt(x.gems)}</td><td>${fmt(x.episodes_watched)}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Chưa có dữ liệu.</td></tr>';
   }
   let gemSelectedUser=null;
   async function loadGemUsers(){
@@ -88,6 +91,6 @@
   document.addEventListener('DOMContentLoaded',()=>{
     $('gem-user-search-btn')?.addEventListener('click',loadGemUsers);
     $('gem-user-search')?.addEventListener('keydown',e=>{if(e.key==='Enter')loadGemUsers();});
-    channel=sb.channel('roflix-admin-v3-live').on('postgres_changes',{event:'*',schema:'public',table:'roflix_movie_comments'},()=>{if(document.getElementById('live-comments')?.classList.contains('active'))comments();}).on('postgres_changes',{event:'*',schema:'public',table:'roflix_game_stats'},()=>{if(document.getElementById('game-center')?.classList.contains('active'))game();}).on('postgres_changes',{event:'*',schema:'public',table:'roflix_gacha_inventory'},()=>{if(document.getElementById('game-center')?.classList.contains('active'))game();}).subscribe();
+    channel=sb.channel('roflix-admin-v3-live').on('postgres_changes',{event:'*',schema:'public',table:'roflix_movie_comments'},()=>{if(document.getElementById('live-comments')?.classList.contains('active'))comments();}).on('postgres_changes',{event:'*',schema:'public',table:'roflix_game_stats'},()=>{if(document.getElementById('game-center')?.classList.contains('active'))game();}).subscribe();
   });
 })();
