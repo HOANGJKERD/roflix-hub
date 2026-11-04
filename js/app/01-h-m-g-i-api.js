@@ -51,10 +51,11 @@ function normalizeNguoncMovie(movie, episodes) {
     const groups = Array.isArray(movie.category)
         ? movie.category
         : (movie.category && typeof movie.category === 'object' ? Object.values(movie.category) : []);
-    movie.nguonc_category_groups = groups;
+    const hasGroupedCategories = groups.some(group => group && Array.isArray(group.list));
+    movie.nguonc_category_groups = hasGroupedCategories ? groups : [];
     const flatCategories = [];
     movie.country = Array.isArray(movie.country) ? movie.country : [];
-    groups.forEach(group => {
+    if (hasGroupedCategories) groups.forEach(group => {
         const groupName = String(group?.group?.name || '').trim().toLowerCase();
         const values = Array.isArray(group?.list) ? group.list : [];
         values.forEach(value => {
@@ -70,7 +71,6 @@ function normalizeNguoncMovie(movie, episodes) {
                 if (!movie.country.some(x => String(x.name || x).toLowerCase() === entry.name.toLowerCase())) movie.country.push(entry);
                 return;
             }
-            // Định dạng là loại phim, tuyệt đối không trộn vào thể loại.
             if (groupName.includes('định dạng') || groupName.includes('format') || groupName.includes('loại phim')) {
                 if (normalized.includes('phim bộ') || normalized.includes('series')) movie.type = 'series';
                 else if (normalized.includes('phim lẻ') || normalized.includes('movie')) movie.type = 'single';
@@ -78,9 +78,7 @@ function normalizeNguoncMovie(movie, episodes) {
                 else if (normalized.includes('hoạt hình')) movie.type = 'hoathinh';
                 return;
             }
-            if (groupName.includes('thể loại') || groupName.includes('genre') || !groupName) {
-                flatCategories.push(entry);
-            }
+            if (groupName.includes('thể loại') || groupName.includes('genre') || !groupName) flatCategories.push(entry);
             if (normalized.includes('phim bộ')) movie.type = 'series';
             else if (normalized.includes('phim lẻ')) movie.type = 'single';
             else if (normalized.includes('tv show')) movie.type = 'tvshows';
@@ -88,7 +86,11 @@ function normalizeNguoncMovie(movie, episodes) {
             if (normalized.includes('đang chiếu')) movie.status = 'ongoing';
         });
     });
-    if (groups.length) movie.category = flatCategories;
+    if (hasGroupedCategories) movie.category = flatCategories;
+    else if (groups.length) movie.category = groups.map(value => ({
+        name: String(value?.name || value || '').trim(),
+        slug: String(value?.slug || '')
+    })).filter(value => value.name);
     if (!movie.type && movie.tmdb && movie.tmdb.type) {
         const tmdbType = String(movie.tmdb.type).toLowerCase();
         if (tmdbType === 'tv') movie.type = 'series';
@@ -327,13 +329,13 @@ async function fetchMovies(page = 1) {
             maxPages = Math.max(maxPages, Number(entry.value.pagination.totalPages) || 1);
             sumItems += Number(entry.value.pagination.totalItems) || entry.value.movies.length;
         });
-        if (!groups.length) throw new Error('Both NguonC and VSMOV failed');
+        if (!groups.length) throw new Error('All movie providers failed (NguonC, KKPhim, VSMOV)');
         const merged = mergeMovieListsByIdentity(groups);
         applyListPagination({currentPage:page,totalPages:maxPages,totalItems:sumItems || merged.length},page,merged.length);
         return merged;
     } catch (error) {
         console.error('Lỗi tải phim:', error);
-        showToast('error', 'Lỗi kết nối', 'Không thể tải danh sách phim từ NguonC và VSMOV. Vui lòng thử lại!');
+        showToast('error', 'Lỗi kết nối', 'Không thể tải danh sách phim từ NguonC, KKPhim hoặc VSMOV. Vui lòng thử lại!');
         return [];
     }
 }
@@ -387,8 +389,10 @@ async function fetchHomePriorityMovies(page = 1) {
 }
 
 async function fetchMovieDetail(slug, preferredSrc) {
-    const order = preferredSrc === 'vsmov' ? ['vsmov', 'nguonc'] : ['nguonc', 'vsmov'];
-    let lastErr = null;
+    const order = preferredSrc === 'kkphim'
+        ? ['kkphim', 'nguonc', 'vsmov']
+        : (preferredSrc === 'vsmov' ? ['vsmov', 'kkphim', 'nguonc'] : ['nguonc', 'kkphim', 'vsmov']);
+    let lastErr = null, bestMovie = null;
     for (const sid of order) {
         const urls = (typeof srcDetailUrls === 'function') ? srcDetailUrls(slug, sid) : [srcDetailUrl(slug, sid)];
         for (const url of urls) {
@@ -396,13 +400,17 @@ async function fetchMovieDetail(slug, preferredSrc) {
                 const data = await fetchJson(url);
                 const movie = unwrapDetailPayload(data);
                 if (!movie || (!movie.slug && !movie.name)) continue;
-                if (sid === 'nguonc') normalizeNguoncMovie(movie);
+                normalizeNguoncMovie(movie);
                 movie._src = sid;
-                return movie;
+                // Ưu tiên nguồn có tập phát được; nếu nguồn đầu chỉ có metadata,
+                // tiếp tục thử nguồn khác trước khi trả về bản chi tiết đầu tiên.
+                if (Array.isArray(movie.episodes) && movie.episodes.some(group => Array.isArray(group.server_data) && group.server_data.length)) return movie;
+                if (!bestMovie) bestMovie = movie;
             } catch (e) { lastErr = e; }
         }
     }
+    if (bestMovie) return bestMovie;
     console.error('Lỗi tải chi tiết phim:', lastErr);
-    showToast('error', 'Lỗi', 'Không thể tải thông tin phim từ NguonC hoặc VSMOV!');
+    showToast('error', 'Lỗi', 'Không thể tải thông tin phim từ NguonC, KKPhim hoặc VSMOV!');
     return null;
 }

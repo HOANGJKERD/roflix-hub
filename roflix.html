@@ -29,6 +29,7 @@
     <link rel="preconnect" href="https://image.tmdb.org" crossorigin>
     <link rel="preconnect" href="https://img.vsmov.com" crossorigin>
     <link rel="preconnect" href="https://vsmov.com" crossorigin>
+    <link rel="preconnect" href="https://phimapi.com" crossorigin>
     <link rel="dns-prefetch" href="https://vsmov.com">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
@@ -100,7 +101,7 @@
             </div>
             <div class="text-center text-xs text-gray-500 font-medium">
                 <p>© 2026 <strong class="text-amber-500">RoFlix Enterprise</strong>. Phim Online Chất Lượng Cao.</p>
-                <p class="mt-1">Nguồn dữ liệu: NguonC (nguồn dữ liệu duy nhất). Nội dung thuộc các nguồn và chủ thể nắm quyền tương ứng.</p>
+                <p class="mt-1">Nguồn dữ liệu: NguonC, KKPhim và VSMOV. Nội dung thuộc các nguồn và chủ thể nắm quyền tương ứng.</p>
             </div>
         </section>
 
@@ -361,8 +362,8 @@
                 </div>
                 <div class="source-switch" id="source-switch">
                     <span class="src-label">Nguồn phim</span>
-                    <span class="source-pill active" data-source="nguonc">NguonC · nguồn duy nhất</span>
-                    <span class="source-note" id="source-note">Chỉ sử dụng API NguonC</span>
+                    <span class="source-pill active" data-source="auto">NguonC + KKPhim + VSMOV</span>
+                    <span class="source-note" id="source-note">Gộp dữ liệu từ ba nguồn phim</span>
                 </div>
                 <div class="country-filter" id="country-filter">
                     <button class="country-pill active" data-country="" onclick="filterByCountry('', 'Tất cả')">
@@ -1103,13 +1104,13 @@
     <script src="js/features/watch-party-realtime.js?v=20261101-host" defer></script>
   
     <script src="js/core/rohub-depth.js?v=20261101-smooth" defer></script><script src="js/core/boot.js" defer></script>
-    <script src="js/app/00-api-config.js?v=20261103-nguoncfix2" defer></script>
-    <script src="js/app/01-h-m-g-i-api.js?v=20261103-nguonc3" defer></script>
+    <script src="js/app/00-api-config.js?v=20261104-kkphim" defer></script>
+    <script src="js/app/01-h-m-g-i-api.js?v=20261104-kkphim" defer></script>
     <script src="js/app/02-h-m-x-l-d-li-u-phim.js" defer></script>
     <script src="js/app/03-render-danh-s-ch-phim.js" defer></script>
     <script src="js/app/04-ph-n-trang.js" defer></script>
     <script src="js/app/05-chi-ti-t-phim.js" defer></script>
-    <script src="js/app/06-ph-t-phim.js?v=20261103-source" defer></script>
+    <script src="js/app/06-ph-t-phim.js?v=20261104-kkphim" defer></script>
     <script src="js/app/07-b-nh-lu-n.js" defer></script>
     <script src="js/app/08-favorites.js" defer></script>
     <script src="js/app/09-search-filter.js?v=20261007-2" defer></script>

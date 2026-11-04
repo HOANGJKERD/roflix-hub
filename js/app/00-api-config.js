@@ -1,11 +1,16 @@
 // ============================================================
-// CẤU HÌNH API: NGUONC CHÍNH + VSMOV PHỤ, GỘP TỰ ĐỘNG
+// CẤU HÌNH API: NGUONC + KKPHIM + VSMOV, GỘP TỰ ĐỘNG
 // ============================================================
 const SOURCES = {
     nguonc: {
         id: 'nguonc', name: 'NguonC',
         listBase: 'https://phim.nguonc.com/api',
         detailBase: 'https://phim.nguonc.com/api', cdn: ''
+    },
+    kkphim: {
+        id: 'kkphim', name: 'KKPhim',
+        listBase: 'https://phimapi.com',
+        detailBase: 'https://phimapi.com', cdn: ''
     },
     vsmov: {
         id: 'vsmov', name: 'VSMOV',
@@ -21,7 +26,7 @@ try {
     localStorage.setItem('roflix-source-v2', 'nguonc');
 } catch (_) {}
 
-function activeSourceIds() { return ['nguonc', 'vsmov']; }
+function activeSourceIds() { return ['nguonc', 'kkphim', 'vsmov']; }
 function getSource(id) { return SOURCES[id] || SOURCES.nguonc; }
 
 function srcListUrl(path, sid) {
@@ -36,6 +41,9 @@ function srcListUrl(path, sid) {
         if (path.startsWith('/quoc-gia/')) return base + path.replace('/quoc-gia/', '/films/quoc-gia/');
         if (path.startsWith('/phim-moi-cap-nhat')) return base + '/films/phim-moi-cap-nhat' + path.slice('/phim-moi-cap-nhat'.length);
     }
+    if (source.id === 'kkphim' && path.startsWith('/tim-kiem')) {
+        return source.listBase + '/v1/api/tim-kiem' + path.slice('/tim-kiem'.length);
+    }
     return source.listBase + path;
 }
 function srcDetailUrl(slug, sid) {
@@ -47,9 +55,9 @@ function srcDetailUrls(slug, sid) { return [srcDetailUrl(slug, sid)]; }
 const API_BASE = srcListUrl('');
 function updateSourceUi() {
     const box = document.getElementById('source-switch');
-    if (box) box.innerHTML = '<span class="src-label">Nguồn phim</span><span class="source-pill active" data-source="auto">NguonC + VSMOV</span>';
+    if (box) box.innerHTML = '<span class="src-label">Nguồn phim</span><span class="source-pill active" data-source="auto">NguonC + KKPhim + VSMOV</span>';
     const note = document.getElementById('source-note');
-    if (note) note.textContent = 'Đang gộp NguonC (chính) + VSMOV (phụ)';
+    if (note) note.textContent = 'Đang gộp NguonC + KKPhim + VSMOV';
 }
 function switchSource(id) {
     if (id === 'vidsrc') {

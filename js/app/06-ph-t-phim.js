@@ -36,15 +36,20 @@ async function playMovie(slug, preferredSrc) {
             tries++;
         }
         if (currentEpisodeList.length === 0) {
+            const title = currentMovieTitle || currentMovieData?.title || currentMovieData?.name || '';
+            const kkRecovered = await useKkphimPlayback(slug, title);
+            if (kkRecovered) showToast('warning', 'Nguồn dự phòng', 'Đã tìm thấy tập phát từ KKPhim.');
+        }
+        if (currentEpisodeList.length === 0) {
             const recovered = await useVsmovPlayback(slug, currentMovieTitle || currentMovieData?.title || '');
-            if (recovered) showToast('warning', 'Nguồn dự phòng', 'NguonC chưa có tập phát. Đã tìm thấy bản thay thế trên VSMOV.');
+            if (recovered) showToast('warning', 'Nguồn dự phòng', 'Đã tìm thấy tập phát từ VSMOV.');
         }
         if (currentEpisodeList.length > 0) {
             playMovieByIndex(0);
         } else if (typeof showToastPro === 'function') {
-            showToastPro('error', 'Chưa có tập', 'Cả NguonC và VSMOV đều chưa có link phát cho phim này.');
+            showToastPro('error', 'Chưa có tập', 'NguonC, KKPhim và VSMOV đều chưa có link phát cho phim này.');
         } else {
-            showToast('error', 'Chưa có tập', 'Cả NguonC và VSMOV đều chưa có link phát cho phim này.');
+            showToast('error', 'Chưa có tập', 'NguonC, KKPhim và VSMOV đều chưa có link phát cho phim này.');
         }
     } catch (e) {
         console.error(e);
@@ -290,6 +295,42 @@ async function kkphimStreamAlive(link) {
         const data = await response.json();
         return !!data.ok;
     } catch (_) { return true; }
+}
+
+async function useKkphimPlayback(slug, title) {
+    const base = 'https://phimapi.com';
+    const take = payload => {
+        const movie = typeof unwrapDetailPayload === 'function' ? unwrapDetailPayload(payload) : payload;
+        const episodes = episodesFromPayload(movie);
+        if (!movie || !episodes.length) return false;
+        currentEpisodeList = episodes;
+        currentMovieTitle = movie.name || movie.title || title || currentMovieTitle;
+        currentMovieData = Object.assign({}, movie, { _src: 'kkphim' });
+        return true;
+    };
+    try {
+        const response = await fetch(base + '/phim/' + encodeURIComponent(slug), { headers: { Accept: 'application/json' } });
+        if (response.ok && take(await response.json())) return true;
+    } catch (error) { console.warn('[RoFlix KKPhim] detail by slug failed:', error); }
+    if (!title) return false;
+    try {
+        const url = base + '/v1/api/tim-kiem?keyword=' + encodeURIComponent(title) + '&page=1&limit=10';
+        const response = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!response.ok) return false;
+        const payload = await response.json();
+        const rows = payload.items || payload.data?.items || payload.data?.data?.items || payload.results || [];
+        const wanted = String(title).toLowerCase().replace(/\\s+/g, ' ').trim();
+        const exact = rows.find(item => [item.name, item.title, item.origin_name].some(value =>
+            String(value || '').toLowerCase().replace(/\\s+/g, ' ').trim() === wanted));
+        const candidate = exact || (rows.length === 1 ? rows[0] : null);
+        if (!candidate?.slug) return false;
+        const detail = await fetch(base + '/phim/' + encodeURIComponent(candidate.slug), { headers: { Accept: 'application/json' } });
+        if (!detail.ok) return false;
+        return take(await detail.json());
+    } catch (error) {
+        console.warn('[RoFlix KKPhim] fallback failed:', error);
+        return false;
+    }
 }
 
 async function useVsmovPlayback(slug, title) {
