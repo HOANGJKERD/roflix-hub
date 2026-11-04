@@ -51,7 +51,8 @@
       </div>`;
     host.insertBefore(box,host.firstChild);
     const gs=box.querySelector('#rf-filter-genre');
-    GENRES.forEach(g=>{const o=document.createElement('option');o.value=g.toLowerCase();o.textContent=g;gs.appendChild(o)});
+    GENRES.forEach(g=>{const o=document.createElement('option');o.value=genreSlug(g);o.textContent=g;gs.appendChild(o)});
+    if(typeof currentGenreSlug!=='undefined' && [...gs.options].some(o=>o.value===currentGenreSlug)) gs.value=currentGenreSlug;
     box.querySelector('#rf-advanced-toggle').addEventListener('click',()=>{const f=box.querySelector('#rf-advanced-fields');f.hidden=!f.hidden;box.querySelector('#rf-advanced-toggle').setAttribute('aria-expanded',String(!f.hidden));box.querySelector('#rf-advanced-toggle').textContent=f.hidden?'⚙️ Bộ lọc':'✕ Đóng bộ lọc';});
     const context=box.querySelector('#rf-filter-context');
     if(context){const current=typeof currentGenreSlug!=='undefined'?currentGenreSlug:'';context.textContent=current?'Thể loại đang chọn: '+current+' · Các tiêu chí bổ sung sẽ lọc sâu danh sách này.':'Mở bộ lọc khi muốn thu hẹp danh sách phim.';}
@@ -86,7 +87,9 @@
     } else applyFilters();
   }
   function genreSlug(value){
-    const aliases={'hành động':'hanh-dong','phiêu lưu':'phieu-luu','hoạt hình':'hoat-hinh','hài':'hai-huoc','hình sự':'hinh-su','tài liệu':'tai-lieu','chính kịch':'chinh-kich','gia đình':'gia-dinh','giả tưởng':'vien-tuong','lịch sử':'lich-su','kinh dị':'kinh-di','âm nhạc':'am-nhac','bí ẩn':'bi-an','lãng mạn':'lang-man','khoa học viễn tưởng':'khoa-hoc-vien-tuong','thể thao':'the-thao','chiến tranh':'chien-tranh','tâm lý':'tam-ly','tình cảm':'tinh-cam','cổ trang':'co-trang','võ thuật':'vo-thuat','học đường':'hoc-duong'};
+    const raw=String(value||'').toLowerCase();
+    if(['hanh-dong','phieu-luu','hoat-hinh','phim-hai','hinh-su','tai-lieu','chinh-kich','gia-dinh','gia-tuong','lich-su','kinh-di','phim-nhac','bi-an','lang-man','khoa-hoc-vien-tuong','chien-tranh','tam-ly','tinh-cam','co-trang','mien-tay','phim-18'].includes(raw))return raw;
+    const aliases={'hành động':'hanh-dong','phiêu lưu':'phieu-luu','hoạt hình':'hoat-hinh','hài':'phim-hai','hình sự':'hinh-su','tài liệu':'tai-lieu','chính kịch':'chinh-kich','gia đình':'gia-dinh','giả tưởng':'vien-tuong','lịch sử':'lich-su','kinh dị':'kinh-di','âm nhạc':'am-nhac','bí ẩn':'bi-an','lãng mạn':'lang-man','khoa học viễn tưởng':'khoa-hoc-vien-tuong','thể thao':'the-thao','chiến tranh':'chien-tranh','tâm lý':'tam-ly','tình cảm':'tinh-cam','cổ trang':'co-trang','võ thuật':'vo-thuat','học đường':'hoc-duong'};
     return aliases[String(value||'').toLowerCase()]||'';
   }
   function applyFilters(){
@@ -117,7 +120,7 @@
     const filtered=all.filter(c=>{
       const year=Number(c.dataset.rfYear)||0;
       const score=Number(c.dataset.rfRating)||0;
-      const genres=(c.dataset.rfGenre||'').toLowerCase();
+      const genres=(c.dataset.rfGenre||'').split('|').map(genreSlug);
       const type=(c.dataset.rfType||'').toLowerCase();
       return year>=from&&year<=to&&score>=rating&&(!genre||genres.includes(genre))&&(!kind||type===kind);
     });
