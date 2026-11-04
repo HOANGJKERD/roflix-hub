@@ -64,5 +64,5 @@ loadOptionalSource('js/app/00b-vidsrc.js', 'RoflixVidSrc');
 const ITEMS_PER_PAGE = 24;
 let currentPage = 1, totalPages = 1, searchKeyword = '', currentSlug = '';
 let currentListEndpoint = 'phim-moi-cap-nhat', currentGenreSlug = '', currentCountrySlug = '';
-let homePriorityMode = true, totalItems = 0, searchTimeout = null;
+let homePriorityMode = false, totalItems = 0, searchTimeout = null;
 let currentEpisodeList = [], currentMovieTitle = '', currentMovieData = null;
