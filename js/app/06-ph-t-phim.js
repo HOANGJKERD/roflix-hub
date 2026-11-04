@@ -274,6 +274,62 @@ function episodesFromPayload(movie) {
     return epList;
 }
 
+async function kkphimStreamAlive(link) {
+    let file = '';
+    try {
+        const parsed = new URL(link);
+        if (!/(^|\\.)phimapi\\.com$/i.test(parsed.hostname)) return true;
+        file = parsed.searchParams.get('url') || '';
+    } catch (_) { return true; }
+    if (!/^https:\\/\\//i.test(file)) return false;
+    try {
+        const response = await fetch('/api/source-status?u=' + encodeURIComponent(file));
+        if (!response.ok) return true;
+        const data = await response.json();
+        return !!data.ok;
+    } catch (_) { return true; }
+}
+
+async function useVsmovPlayback(slug, title) {
+    const base = 'https://vsmov.com/api';
+    const take = movie => {
+        const episodes = episodesFromPayload(movie);
+        if (!episodes.length) return false;
+        currentEpisodeList = episodes;
+        currentMovieTitle = (movie && (movie.name || movie.title)) || title || currentMovieTitle;
+        currentMovieData = Object.assign({}, movie, { _src: 'vsmov' });
+        return true;
+    };
+    // Thử slug trực tiếp trước, sau đó tìm đúng tên phim để xử lý slug khác nhau giữa hai API.
+    try {
+        const response = await fetch(base + '/phim/' + encodeURIComponent(slug), { headers: { Accept: 'application/json' } });
+        if (response.ok) {
+            const payload = await response.json();
+            const movie = typeof unwrapDetailPayload === 'function' ? unwrapDetailPayload(payload) : payload;
+            if (take(movie)) return true;
+        }
+    } catch (error) { console.warn('[RoFlix VSMOV] detail by slug failed:', error); }
+    if (!title) return false;
+    try {
+        const response = await fetch(base + '/tim-kiem?keyword=' + encodeURIComponent(title) + '&page=1&limit=8', { headers: { Accept: 'application/json' } });
+        if (!response.ok) return false;
+        const payload = await response.json();
+        const rows = payload.items || payload.data?.items || payload.results || [];
+        const wanted = String(title).toLowerCase().replace(/\\s+/g, ' ').trim();
+        const exact = rows.find(item => String(item.name || item.title || '').toLowerCase().replace(/\\s+/g, ' ').trim() === wanted);
+        const candidate = exact || (rows.length === 1 ? rows[0] : null);
+        if (!candidate?.slug) return false;
+        const detailResponse = await fetch(base + '/phim/' + encodeURIComponent(candidate.slug), { headers: { Accept: 'application/json' } });
+        if (!detailResponse.ok) return false;
+        const detailPayload = await detailResponse.json();
+        const movie = typeof unwrapDetailPayload === 'function' ? unwrapDetailPayload(detailPayload) : detailPayload;
+        return take(movie);
+    } catch (error) {
+        console.warn('[RoFlix VSMOV] fallback failed:', error);
+        return false;
+    }
+}
+
 async function playMovieByIndex(index, options = {}) {
     if ((!options || !options.fromParty) && window.rfWatchPartyBlocksControl && window.rfWatchPartyBlocksControl()) {
         showToast('warning', 'Phòng xem chung', 'Chỉ host được đổi tập. Bạn đang xem theo host.');
@@ -297,8 +353,29 @@ async function playMovieByIndex(index, options = {}) {
             console.warn('[RoFlix Anime] episode source failed', error);
         }
     }
-    if (!ep.link) { showToast('error', 'Lỗi', 'Không có link phát cho tập này!'); return; }
-        clearPlayerError();
+    if (!ep.link) {
+        const recovered = await useVsmovPlayback(currentSlug, currentMovieTitle);
+        if (recovered) {
+            showToast('warning', 'Nguồn dự phòng', 'NguonC chưa có link phát. Đã chuyển sang VSMOV.');
+            return playMovieByIndex(0, Object.assign({}, options, { skipSourceCheck: true }));
+        }
+        showToast('error', 'Lỗi', 'Không có link phát từ NguonC hoặc VSMOV!');
+        return;
+    }
+    if (!options.skipSourceCheck && /player\\.phimapi\\.com/i.test(ep.link)) {
+        const alive = await kkphimStreamAlive(ep.link);
+        if (!alive) {
+            const moved = await useVsmovPlayback(currentSlug, currentMovieTitle);
+            if (moved) {
+                showToast('warning', 'Nguồn dự phòng', 'Link NguonC không còn hoạt động. Đã chuyển sang VSMOV.');
+                return playMovieByIndex(0, Object.assign({}, options, { skipSourceCheck: true }));
+            }
+            navigateTo('play-page');
+            showPlayerError('Link phát chính không còn hoạt động và VSMOV không có bản thay thế.');
+            return;
+        }
+    }
+    clearPlayerError();
 
     const title = currentMovieTitle || 'Đang phát';
     try {
