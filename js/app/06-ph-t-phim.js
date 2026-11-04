@@ -35,14 +35,16 @@ async function playMovie(slug, preferredSrc) {
             await new Promise(r => setTimeout(r, 120));
             tries++;
         }
+        if (currentEpisodeList.length === 0) {
+            const recovered = await useVsmovPlayback(slug, currentMovieTitle || currentMovieData?.title || '');
+            if (recovered) showToast('warning', 'Nguồn dự phòng', 'NguonC chưa có tập phát. Đã tìm thấy bản thay thế trên VSMOV.');
+        }
         if (currentEpisodeList.length > 0) {
             playMovieByIndex(0);
+        } else if (typeof showToastPro === 'function') {
+            showToastPro('error', 'Chưa có tập', 'Cả NguonC và VSMOV đều chưa có link phát cho phim này.');
         } else {
-            if (typeof showToastPro === 'function') {
-                showToastPro('error', 'Chưa có tập', 'Phim này chưa có link phát trên API.');
-            } else {
-                showToast('error', 'Chưa có tập', 'Phim này chưa có link phát trên API.');
-            }
+            showToast('error', 'Chưa có tập', 'Cả NguonC và VSMOV đều chưa có link phát cho phim này.');
         }
     } catch (e) {
         console.error(e);
