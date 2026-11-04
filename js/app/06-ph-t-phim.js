@@ -397,12 +397,17 @@ async function playMovieByIndex(index, options = {}) {
         }
     }
     if (!ep.link) {
-        const recovered = await useVsmovPlayback(currentSlug, currentMovieTitle);
-        if (recovered) {
-            showToast('warning', 'Nguồn dự phòng', 'NguonC chưa có link phát. Đã chuyển sang VSMOV.');
+        const kkRecovered = await useKkphimPlayback(currentSlug, currentMovieTitle);
+        if (kkRecovered) {
+            showToast('warning', 'Nguồn dự phòng', 'Đã chuyển sang link phát từ KKPhim.');
             return playMovieByIndex(0, Object.assign({}, options, { skipSourceCheck: true }));
         }
-        showToast('error', 'Lỗi', 'Không có link phát từ NguonC hoặc VSMOV!');
+        const recovered = await useVsmovPlayback(currentSlug, currentMovieTitle);
+        if (recovered) {
+            showToast('warning', 'Nguồn dự phòng', 'Đã chuyển sang link phát từ VSMOV.');
+            return playMovieByIndex(0, Object.assign({}, options, { skipSourceCheck: true }));
+        }
+        showToast('error', 'Lỗi', 'Không có link phát từ NguonC, KKPhim hoặc VSMOV!');
         return;
     }
     if (!options.skipSourceCheck && /player\\.phimapi\\.com/i.test(ep.link)) {
