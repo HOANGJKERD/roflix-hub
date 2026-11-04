@@ -106,21 +106,21 @@
     });
     // Gộp xen kẽ để VSMOV xuất hiện ngay trong gợi ý, ưu tiên NguonC khi trùng tên/năm.
     const seen = new Set();
-    const found = [];
+    let found = [];
     const max = Math.max(0, ...groups.map(group => group.length));
     for (let i=0; i<max; i++) {
       for (const group of groups) {
         const movie = group[i];
         if (!movie) continue;
-        const identity = movie.title.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim() + '|' + movie.year;
+        const identity = movie.title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim() + '|' + movie.year;
         if (seen.has(identity)) continue;
         seen.add(identity);
         found.push(movie);
       }
     }
     if (controllers.get(input) !== controller) return;
-    const seen = new Set();
-    found = found.filter(m => { const k=m.slug.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; }).slice(0,MAX_RESULTS);
+    const seenSlugs = new Set();
+    found = found.filter(m => { const k=m.sid + ':' + m.slug.toLowerCase(); if(seenSlugs.has(k)) return false; seenSlugs.add(k); return true; }).slice(0,MAX_RESULTS);
     cache.set(key,{items:found,time:Date.now()});
     if (cache.size > 40) cache.delete(cache.keys().next().value);
     render(box,found,q);
