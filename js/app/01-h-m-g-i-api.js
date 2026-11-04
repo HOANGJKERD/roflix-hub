@@ -392,56 +392,46 @@ async function fetchHomePriorityMovies(page = 1) {
 }
 
 async function fetchMovieDetail(slug, preferredSrc, titleHint) {
-    const order = preferredSrc === 'nguonc' ? ['nguonc', 'kkphim', 'vsmov']
-        : (preferredSrc === 'kkphim' ? ['kkphim', 'nguonc', 'vsmov']
-        : (preferredSrc === 'vsmov' ? ['vsmov', 'nguonc', 'kkphim'] : ['nguonc', 'kkphim', 'vsmov']));
-    const hasEpisodes = movie => Array.isArray(movie && movie.episodes)
-        && movie.episodes.some(group => Array.isArray(group.server_data) && group.server_data.length);
+    const order = preferredSrc === 'nguonc' ? ['nguonc', 'kkphim', 'vsmov'] : (preferredSrc === 'kkphim' ? ['kkphim', 'nguonc', 'vsmov'] : (preferredSrc === 'vsmov' ? ['vsmov', 'nguonc', 'kkphim'] : ['nguonc', 'kkphim', 'vsmov']));
+    let lastErr = null, bestMovie = null;
     const accept = (payload, sid) => {
         const movie = unwrapDetailPayload(payload);
         if (!movie || (!movie.slug && !movie.name)) return null;
-        normalizeNguoncMovie(movie);
-        movie._src = sid;
-        return movie;
+        normalizeNguoncMovie(movie); movie._src = sid; return movie;
     };
-    const directResults = await Promise.allSettled(order.map(async sid =>
-        accept(await fetchJson(srcDetailUrl(slug, sid)), sid)
-    ));
-    const directMovies = directResults.filter(x => x.status === 'fulfilled' && x.value).map(x => x.value);
-    const playableDirect = directMovies.find(hasEpisodes);
-    if (playableDirect) return playableDirect;
-    let bestMovie = directMovies[0] || null;
+    for (const sid of order) {
+        try {
+            const movie = accept(await fetchJson(srcDetailUrl(slug, sid)), sid);
+            if (!movie) continue;
+            if (Array.isArray(movie.episodes) && movie.episodes.some(group => Array.isArray(group.server_data) && group.server_data.length)) return movie;
+            if (!bestMovie) bestMovie = movie;
+        } catch (error) { lastErr = error; }
+    }
     if (titleHint) {
-        const normalize = value => String(value || '').normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '').toLowerCase()
-            .replace(/[^a-z0-9]+/g, ' ').trim();
+        const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
         const wanted = normalize(titleHint);
-        const searchResults = await Promise.allSettled(order.map(async sid => {
-            const data = await fetchJson(srcListUrl('/tim-kiem?keyword=' + encodeURIComponent(titleHint) + '&page=1&limit=20', sid));
-            const candidates = unwrapList(data).items;
-            const exact = candidates.find(item =>
-                normalize(item.name || item.title) === wanted
-                || normalize(item.origin_name || item.original_name) === wanted);
-            if (!exact || !exact.slug) return null;
-            return accept(await fetchJson(srcDetailUrl(exact.slug, sid)), sid);
-        }));
-        const searchedMovies = searchResults.filter(x => x.status === 'fulfilled' && x.value).map(x => x.value);
-        const playableSearch = searchedMovies.find(hasEpisodes);
-        if (playableSearch) return playableSearch;
-        if (!bestMovie) bestMovie = searchedMovies[0] || null;
+        for (const sid of order) {
+            try {
+                const data = await fetchJson(srcListUrl('/tim-kiem?keyword=' + encodeURIComponent(titleHint) + '&page=1&limit=20', sid));
+                const rows = unwrapList(data).items;
+                const exact = rows.find(item => normalize(item.name || item.title) === wanted || normalize(item.origin_name || item.original_name) === wanted);
+                if (!exact || !exact.slug) continue;
+                const movie = accept(await fetchJson(srcDetailUrl(exact.slug, sid)), sid);
+                if (!movie) continue;
+                if (Array.isArray(movie.episodes) && movie.episodes.some(group => Array.isArray(group.server_data) && group.server_data.length)) return movie;
+                if (!bestMovie) bestMovie = movie;
+            } catch (error) { lastErr = error; }
+        }
     }
     if (bestMovie) return bestMovie;
-    const errors = directResults.filter(x => x.status === 'rejected')
-        .map(x => x.reason && x.reason.message).filter(Boolean);
-    console.error('[RoFlix] Không tải được chi tiết phim:', errors);
+    console.error('[RoFlix] Không tải được chi tiết phim:', lastErr);
     showToast('error', 'Lỗi', 'Không thể tải thông tin phim từ các nhà cung cấp. Vui lòng thử lại.');
     return null;
 }
-
 async function loadUnifiedGenreTaxonomy(){
- const ids=activeSourceIds(),norm=v=>String(v||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const ids=activeSourceIds(),norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
  const menu=document.getElementById('roflix-unified-genre-menu'),staticMap=new Map();
- if(menu)menu.querySelectorAll('a[onclick*="filterByGenre"]').forEach(a=>{const m=a.getAttribute('onclick')?.match(/filterByGenre\\('([^']+)'/);if(m)staticMap.set(norm(a.textContent),m[1])});
+ if(menu)menu.querySelectorAll('a[onclick*="filterByGenre"]').forEach(a=>{const value=a.getAttribute('onclick')||'',marker="filterByGenre('",at=value.indexOf(marker),finish=at>=0?value.indexOf("'",at+marker.length):-1;if(at>=0&&finish>at)staticMap.set(norm(a.textContent),value.slice(at+marker.length,finish))});
  const results=await Promise.allSettled(ids.map(async sid=>({sid,items:unwrapList(await fetchJson(srcListUrl('/the-loai',sid))).items})));
  const genres=new Map(),providerSlugs={};
  results.filter(x=>x.status==='fulfilled').forEach(x=>x.value.items.forEach(item=>{const name=String(item.name||item.title||'').trim(),slug=String(item.slug||'').trim();if(!name||!slug)return;const key=norm(name),canonical=staticMap.get(key)||slug;if(!genres.has(key))genres.set(key,{name,slug:canonical});(providerSlugs[canonical]??={})[x.value.sid]=slug}));

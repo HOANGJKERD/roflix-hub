@@ -7,22 +7,22 @@
                 return;
             }
             
-            const detailContainer = document.getElementById('detail-content-container');
-            if (!detailContainer) {
+            const detailHost = document.getElementById('detail-content-container');
+            if (!detailHost) {
                 showToast('error', 'Lỗi giao diện', 'Không tìm thấy vùng hiển thị chi tiết phim.');
                 return;
             }
             navigateTo('detail-page');
-            detailContainer.innerHTML = '<div class="glass-premium rounded-3xl p-8 text-center"><div class="text-3xl mb-3">🎬</div><h2 class="text-xl font-black text-white">Đang tải thông tin phim...</h2><p class="text-sm text-gray-400 mt-2">RoFlix đang tìm dữ liệu và tập phát từ ba nhà cung cấp.</p><div class="mt-5 mx-auto h-1.5 max-w-xs rounded-full bg-gray-800 overflow-hidden"><div class="h-full w-1/2 bg-amber-500 animate-pulse rounded-full"></div></div></div>';
+            detailHost.innerHTML = '<div class="glass-premium rounded-3xl p-8 text-center"><div class="text-3xl mb-3">🎬</div><h2 class="text-xl font-black text-white">Đang tải thông tin phim...</h2><p class="text-sm text-gray-400 mt-2">RoFlix đang tìm dữ liệu và tập phát từ ba nhà cung cấp.</p><div class="mt-5 mx-auto h-1.5 max-w-xs rounded-full bg-gray-800 overflow-hidden"><div class="h-full w-1/2 bg-amber-500 animate-pulse rounded-full"></div></div></div>';
             let movieData = null;
             try { movieData = await fetchMovieDetail(slug, preferredSrc, titleHint); }
             catch (error) {
                 console.error('[RoFlix] Không tải được chi tiết phim:', error);
-                detailContainer.innerHTML = '<div class="glass-premium rounded-3xl p-8 text-center"><h2 class="text-xl font-black text-white">Không tải được phim</h2><p class="text-sm text-gray-400 mt-2">Các nguồn dữ liệu hiện không phản hồi. Vui lòng thử lại sau.</p></div>';
+                detailHost.innerHTML = '<div class="glass-premium rounded-3xl p-8 text-center"><h2 class="text-xl font-black text-white">Không tải được phim</h2><p class="text-sm text-gray-400 mt-2">Các nguồn dữ liệu hiện không phản hồi. Vui lòng thử lại sau.</p></div>';
                 return;
             }
             if (!movieData) {
-                detailContainer.innerHTML = '<div class="glass-premium rounded-3xl p-8 text-center"><h2 class="text-xl font-black text-white">Chưa tìm thấy thông tin phim</h2><p class="text-sm text-gray-400 mt-2">Không tìm được phim tương ứng trong NguonC, KKPhim hoặc VSMOV.</p></div>';
+                detailHost.innerHTML = '<div class="glass-premium rounded-3xl p-8 text-center"><h2 class="text-xl font-black text-white">Chưa tìm thấy thông tin phim</h2><p class="text-sm text-gray-400 mt-2">Không tìm được phim tương ứng trong NguonC, KKPhim hoặc VSMOV.</p></div>';
                 return;
             }
             // Detail payload phải được chuẩn hóa như catalog để tách đúng thumb_url/poster_url.

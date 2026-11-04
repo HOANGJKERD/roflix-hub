@@ -287,10 +287,10 @@ async function kkphimStreamAlive(link) {
     let file = '';
     try {
         const parsed = new URL(link);
-        if (!/(^|\\.)phimapi\\.com$/i.test(parsed.hostname)) return true;
+        if (!(parsed.hostname === 'phimapi.com' || parsed.hostname.endsWith('.phimapi.com'))) return true;
         file = parsed.searchParams.get('url') || '';
     } catch (_) { return true; }
-    if (!/^https:\\/\\//i.test(file)) return false;
+    if (!String(file).startsWith('https://')) return false;
     try {
         const response = await fetch('/api/source-status?u=' + encodeURIComponent(file));
         if (!response.ok) return true;
@@ -321,9 +321,9 @@ async function useKkphimPlayback(slug, title) {
         if (!response.ok) return false;
         const payload = await response.json();
         const rows = payload.items || payload.data?.items || payload.data?.data?.items || payload.results || [];
-        const wanted = String(title).toLowerCase().replace(/\\s+/g, ' ').trim();
+        const wanted = String(title).toLowerCase().replace(/\s+/g, ' ').trim();
         const exact = rows.find(item => [item.name, item.title, item.origin_name].some(value =>
-            String(value || '').toLowerCase().replace(/\\s+/g, ' ').trim() === wanted));
+            String(value || '').toLowerCase().replace(/\s+/g, ' ').trim() === wanted));
         const candidate = exact || (rows.length === 1 ? rows[0] : null);
         if (!candidate?.slug) return false;
         const detail = await fetch(base + '/phim/' + encodeURIComponent(candidate.slug), { headers: { Accept: 'application/json' } });
@@ -360,8 +360,8 @@ async function useVsmovPlayback(slug, title) {
         if (!response.ok) return false;
         const payload = await response.json();
         const rows = payload.items || payload.data?.items || payload.results || [];
-        const wanted = String(title).toLowerCase().replace(/\\s+/g, ' ').trim();
-        const exact = rows.find(item => String(item.name || item.title || '').toLowerCase().replace(/\\s+/g, ' ').trim() === wanted);
+        const wanted = String(title).toLowerCase().replace(/\s+/g, ' ').trim();
+        const exact = rows.find(item => String(item.name || item.title || '').toLowerCase().replace(/\s+/g, ' ').trim() === wanted);
         const candidate = exact || (rows.length === 1 ? rows[0] : null);
         if (!candidate?.slug) return false;
         const detailResponse = await fetch(base + '/phim/' + encodeURIComponent(candidate.slug), { headers: { Accept: 'application/json' } });
@@ -412,7 +412,7 @@ async function playMovieByIndex(index, options = {}) {
         showToast('error', 'Lỗi', 'Không có link phát từ NguonC, KKPhim hoặc VSMOV!');
         return;
     }
-    if (!options.skipSourceCheck && /player\\.phimapi\\.com/i.test(ep.link)) {
+    if (!options.skipSourceCheck && ep.link.includes('player.phimapi.com')) {
         const alive = await kkphimStreamAlive(ep.link);
         if (!alive) {
             const moved = await useVsmovPlayback(currentSlug, currentMovieTitle);
