@@ -14,12 +14,12 @@
   #rf-discovery .rf-chip{border:1px solid transparent;background:transparent;color:#d4d5dc;border-radius:7px;padding:7px 10px;font-size:12px;font-weight:550;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,border-color .15s}
   #rf-discovery .rf-chip:hover{background:#282a35;color:#fff}
   #rf-discovery .rf-chip.active{background:#252631;border-color:#4b4d5b;color:#ffd36b}
-  #rf-discovery .rf-actions{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  #rf-discovery #rf-presets{display:none}#rf-discovery .rf-actions{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
   #rf-discovery #rf-advanced-fields{border-top:1px solid #30313d}
   #rf-discovery .rf-row{display:grid;grid-template-columns:125px minmax(0,1fr);gap:12px;padding:10px 14px;border-bottom:1px dashed #30313d;align-items:start}
   #rf-discovery .rf-row-title{font-size:12px;font-weight:800;color:#e5e6eb;text-align:right;padding:8px 0}
   #rf-discovery .rf-row-options{display:flex;flex-wrap:wrap;gap:3px 5px;min-width:0}
-  #rf-discovery .rf-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:12px 16px;border-bottom:1px dashed #30313d}
+  #rf-discovery .rf-fields{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:12px 16px;border-bottom:1px dashed #30313d}
   #rf-discovery label{display:flex;flex-direction:column;gap:6px;color:#c1c3ce;font-size:12px;font-weight:700}
   #rf-discovery select,#rf-discovery input{width:100%;min-width:0;border:1px solid #3a3c49;background:#20222d;color:#f8fafc;border-radius:8px;padding:9px 10px;font-size:13px}
   #rf-discovery .rf-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 14px}
@@ -42,7 +42,7 @@
           <button type="button" class="rf-chip active" data-preset="all">Tất cả</button><button type="button" class="rf-chip" data-preset="top">Điểm cao</button><button type="button" class="rf-chip" data-preset="year">Phim mới</button><button type="button" class="rf-chip" data-preset="classic">Kinh điển</button><button type="button" class="rf-chip" data-preset="action">Hành động</button><button type="button" class="rf-chip" data-preset="animation">Hoạt hình</button>
         </div></div>
         <div class="rf-row"><div class="rf-row-title">Loại phim:</div><div class="rf-row-options" id="rf-kind-options"><button type="button" class="rf-chip active" data-kind="">Tất cả</button><button type="button" class="rf-chip" data-kind="single">Phim lẻ</button><button type="button" class="rf-chip" data-kind="series">Phim bộ</button></div></div>
-        <div class="rf-row"><div class="rf-row-title">Xếp hạng:</div><div class="rf-row-options" id="rf-rating-options"><button type="button" class="rf-chip active" data-rating="0">Tất cả</button><button type="button" class="rf-chip" data-rating="5">P (Mọi lứa tuổi)</button><button type="button" class="rf-chip" data-rating="6">K (Dưới 13 tuổi)</button><button type="button" class="rf-chip" data-rating="7">T13 (13 tuổi trở lên)</button><button type="button" class="rf-chip" data-rating="8">T16 (16 tuổi trở lên)</button><button type="button" class="rf-chip" data-rating="9">T18 (18 tuổi trở lên)</button></div></div>
+        <div class="rf-row"><div class="rf-row-title">Điểm IMDb:</div><div class="rf-row-options" id="rf-rating-options"><button type="button" class="rf-chip active" data-rating="0">Tất cả</button><button type="button" class="rf-chip" data-rating="5">5.0+</button><button type="button" class="rf-chip" data-rating="6">6.0+</button><button type="button" class="rf-chip" data-rating="7">7.0+</button><button type="button" class="rf-chip" data-rating="8">8.0+</button><button type="button" class="rf-chip" data-rating="9">9.0+</button></div></div>
         <div class="rf-row"><div class="rf-row-title">Thể loại:</div><div class="rf-row-options" id="rf-genre-options"><button type="button" class="rf-chip active" data-genre="">Tất cả</button></div></div>
         <div class="rf-row"><div class="rf-row-title">Năm sản xuất:</div><div class="rf-row-options" id="rf-year-options"><button type="button" class="rf-chip active" data-year="">Tất cả</button></div></div>
         <div class="rf-row"><div class="rf-row-title">Sắp xếp:</div><div class="rf-row-options" id="rf-sort-options"><button type="button" class="rf-chip active" data-sort="default">Mới nhất</button><button type="button" class="rf-chip" data-sort="rating">Điểm IMDb</button><button type="button" class="rf-chip" data-sort="views">Lượt xem</button></div></div>
