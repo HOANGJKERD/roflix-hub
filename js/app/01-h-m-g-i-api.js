@@ -299,35 +299,49 @@ function mapListResultItems(result, limit) {
 
 async function fetchMovies(page = 1) {
     try {
-        if (homePriorityMode && !searchKeyword && !currentGenreSlug && !currentCountrySlug
-            && currentListEndpoint === 'phim-moi-cap-nhat') {
-            return await fetchHomePriorityMovies(page);
-        }
         const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['nguonc'];
-        let lastErr = null;
-        let lastEmpty = null;
-        for (const sid of ids) {
-            try {
-                const result = await fetchMoviesFromSource(sid, page);
-                if (result.movies.length || sid === ids[ids.length - 1]) {
-                    applyListPagination(result.pagination, page, result.movies.length);
-                    return result.movies;
-                }
-                lastEmpty = result;
-            } catch (e) { lastErr = e; }
-        }
-        if (lastEmpty) {
-            applyListPagination(lastEmpty.pagination, page, lastEmpty.movies.length);
-            return lastEmpty.movies;
-        }
-        if (lastErr) throw lastErr;
-        applyListPagination({ currentPage: page, totalPages: 1, totalItems: 0 }, page, 0);
-        return [];
+        const settled = await Promise.allSettled(ids.map(sid => fetchMoviesFromSource(sid, page)));
+        const groups = [];
+        let maxPages = 1, sumItems = 0;
+        settled.forEach((entry, index) => {
+            if (entry.status !== 'fulfilled') {
+                console.warn('[RoFlix] source failed:', ids[index], entry.reason);
+                return;
+            }
+            groups.push(entry.value.movies);
+            maxPages = Math.max(maxPages, Number(entry.value.pagination.totalPages) || 1);
+            sumItems += Number(entry.value.pagination.totalItems) || entry.value.movies.length;
+        });
+        if (!groups.length) throw new Error('Both NguonC and VSMOV failed');
+        const merged = mergeMovieListsByIdentity(groups);
+        applyListPagination({currentPage:page,totalPages:maxPages,totalItems:sumItems || merged.length},page,merged.length);
+        return merged;
     } catch (error) {
         console.error('Lỗi tải phim:', error);
-        showToast('error', 'Lỗi kết nối', 'Không thể tải danh sách phim. Vui lòng thử lại!');
+        showToast('error', 'Lỗi kết nối', 'Không thể tải danh sách phim từ NguonC và VSMOV. Vui lòng thử lại!');
         return [];
     }
+}
+
+// Gộp hai nguồn, ưu tiên NguonC và loại trùng theo tên + năm.
+// Giữ _src của từng phim để trang chi tiết gọi đúng API nguồn.
+function mergeMovieListsByIdentity(groups) {
+    const seen = new Set();
+    const out = [];
+    const max = Math.max(0, ...groups.map(group => group.length));
+    for (let i = 0; i < max; i++) {
+        for (const group of groups) {
+            const movie = group[i];
+            if (!movie) continue;
+            const name = String(movie.name || movie.title || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+            const year = String(movie.year || '');
+            const identity = name ? name + '|' + year : String(movie._src || '') + '|' + String(movie.slug || '');
+            if (seen.has(identity)) continue;
+            seen.add(identity);
+            out.push(movie);
+        }
+    }
+    return out;
 }
 
 async function fetchHomePriorityMovies(page = 1) {
