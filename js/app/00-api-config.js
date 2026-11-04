@@ -66,6 +66,12 @@ function switchSource(id) {
     if (typeof refreshRecommendations === 'function') refreshRecommendations(true);
     if (typeof loadWeeklyPicks === 'function') loadWeeklyPicks();
 }
+function loadOptionalSource(src, flag) {
+    if (window[flag] || document.querySelector('script[src*="' + src.split('/').pop() + '"]')) return;
+    const script = document.createElement('script'); script.src = src; script.async = true;
+    script.onload = updateSourceUi;
+    (document.head || document.documentElement).appendChild(script);
+}
 loadOptionalSource('js/app/00b-vidsrc.js', 'RoflixVidSrc');
 const ITEMS_PER_PAGE = 24;
 let currentPage = 1, totalPages = 1, searchKeyword = '', currentSlug = '';
