@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#080610">
   <title>RoHub | Bước vào thế giới của bạn</title>
-  <meta name="description" content="Một cổng vào thế giới phim ảnh và truyện trong hệ sinh thái RoHub.">
+  <meta name="description" content="Một cổng vào thế giới phim ảnh, truyện và bóng đá trong hệ sinh thái RoHub.">
   <style>
     :root{color-scheme:dark;--bg:#080610;--panel:#120e1d;--text:#f8f5ff;--muted:#aaa2bb;--orange:#ff762e;--purple:#a855f7;--line:#ffffff1c;--mx:0;--my:0}
     *{box-sizing:border-box}
@@ -81,7 +81,11 @@
     @media(max-width:390px){.status{font-size:0;gap:0;width:30px;height:30px;justify-content:center;padding:0;flex:0 0 30px}.status i{width:7px;height:7px}}
     @media(hover:none),(pointer:coarse){.portal:hover{box-shadow:none}.portal:after{display:none}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal{opacity:1;transform:none}.portal.reveal{transform:none}}
-  </style>
+      .portal.sport{--accent:#b6f36b;--accent-rgb:182,243,107;border-color:#b6f36b45;background:linear-gradient(140deg,#b6f36b18,transparent 62%),linear-gradient(160deg,#17251a,#0b100d 80%)}
+    @media(min-width:981px){.portals{grid-template-columns:repeat(3,minmax(0,1fr))}.portal{min-height:318px;padding:22px}.portal h3{font-size:29px}}
+    @media(max-width:980px){.portals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:760px){.portals{grid-template-columns:1fr}}
+</style>
   <link rel="stylesheet" href="css/rohub-mobile-2026.css?v=20261101-1">
     <link rel="stylesheet" href="css/rohub-mobile-repair.css?v=20261101-2">
 </head>
@@ -90,7 +94,7 @@
   <main class="shell">
     <header class="topbar">
       <a class="brand" href="index.html" aria-label="RoHub trang chủ"><span class="mark">R</span><span class="brand-name">Ro<span>Hub</span><small>ONE HUB. MANY WORLDS.</small></span></a>
-      <nav class="hub-nav" aria-label="Các thế giới"><a href="roflix.html">RoFlix</a><a href="rotruyen.html">RoTruyện</a></nav>
+      <nav class="hub-nav" aria-label="Các thế giới"><a href="roflix.html">RoFlix</a><a href="rotruyen.html">RoTruyện</a><a href="robong.html">RoBong</a></nav>
       <div class="status"><i></i> ĐANG MỞ</div>
     </header>
     <section class="hero">
@@ -108,6 +112,12 @@
           <h3>RoFlix<span style="color:var(--orange)">.</span></h3>
           <p>Đèn tắt, màn hình sáng. Khám phá thế giới phim ảnh, tìm câu chuyện hợp gu và tiếp tục hành trình giải trí của bạn.</p>
           <div class="portal-bottom"><strong>BƯỚC VÀO ROFLIX ↗</strong><span class="arrow" aria-hidden="true">↗</span></div><span class="portal-ghost" aria-hidden="true">R</span>
+        </a>
+        <a class="portal sport reveal" href="robong.html" aria-label="Mở RoBong">
+          <div class="portal-top"><span class="portal-icon" aria-hidden="true">⚽</span><span class="chip">FOOTBALL UNIVERSE</span></div>
+          <h3>RoBong<span style="color:var(--rb-accent,#b6f36b)">.</span></h3>
+          <p>Theo dõi lịch thi đấu, tỷ số, giải đấu và tin tức bóng đá. Khám phá các nguồn xem trận đấu bên ngoài.</p>
+          <div class="portal-bottom"><strong>BƯỚC VÀO ROBONG ↗</strong><span class="arrow" aria-hidden="true">↗</span></div><span class="portal-ghost" aria-hidden="true">⚽</span>
         </a>
         <a class="portal story reveal" href="rotruyen.html" aria-label="Mở RoTruyện">
           <div class="portal-top"><span class="portal-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 6h13M8 8.5h8M8 12h8M8 15.5h5"/></svg></span><span class="chip">STORY UNIVERSE</span></div>
@@ -183,7 +193,7 @@
       const warmRoute = (href) => {
         if (!href || warmed.has(href) || /^(mailto:|tel:|#)/i.test(href)) return;
         const url = new URL(href, location.href);
-        if (url.origin !== location.origin || !/\/(roflix|rotruyen|)\.html$/.test(url.pathname)) return;
+        if (url.origin !== location.origin || !/\/(roflix|rotruyen|robong|)\.html$/.test(url.pathname)) return;
         warmed.add(href);
         const link = document.createElement('link');
         link.rel = 'prefetch';
