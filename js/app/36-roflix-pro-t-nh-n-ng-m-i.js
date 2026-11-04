@@ -15,7 +15,7 @@
             searchKeyword = '';
             currentGenreSlug = '';
             currentCountrySlug = slug || '';
-            homePriorityMode = !slug;
+            homePriorityMode = false;
             currentListEndpoint = 'phim-moi-cap-nhat';
             
             const flags = {
@@ -31,7 +31,7 @@
             if (titleEl) {
                 titleEl.textContent = slug
                     ? `${flags[slug] || '🌍'} ${title || slug}`
-                    : 'Phim Âu Mỹ & Hàn nổi bật';
+                    : 'Phim mới cập nhật';
             }
             const si = document.getElementById('search-input');
             const sm = document.getElementById('search-input-mobile');
