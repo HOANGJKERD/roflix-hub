@@ -14,6 +14,8 @@ function absImage(url, sid) {
         const source = getSource(sid || currentSourceId);
         // Resolve relative paths against the configured source origin only.
         // Never fabricate a separate CDN hostname for a source without one.
+        // KKPhim dùng host ảnh riêng cho các đường dẫn poster tương đối.
+        if (source.id === 'kkphim') return new URL(url.replace(/^\//, ''), 'https://phimimg.com/').href;
         const base = source.cdn || new URL(source.listBase).origin;
         return new URL(url, base.replace(/\/$/, '') + '/').href;
     } catch (_) { return ''; }
