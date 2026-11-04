@@ -106,6 +106,8 @@
   }
   function genreSlug(value){
     const raw=String(value||'').toLowerCase();
+    if(window.RoFlixUnifiedGenreMap?.[raw])return window.RoFlixUnifiedGenreMap[raw];
+    if(window.RoFlixGenreProviderSlugs?.[raw])return raw;
     if(['hanh-dong','phieu-luu','hoat-hinh','phim-hai','hinh-su','tai-lieu','chinh-kich','gia-dinh','gia-tuong','lich-su','kinh-di','phim-nhac','bi-an','lang-man','khoa-hoc-vien-tuong','chien-tranh','tam-ly','tinh-cam','co-trang','mien-tay','phim-18'].includes(raw))return raw;
     const aliases={'hành động':'hanh-dong','phiêu lưu':'phieu-luu','hoạt hình':'hoat-hinh','hài':'phim-hai','hình sự':'hinh-su','tài liệu':'tai-lieu','chính kịch':'chinh-kich','gia đình':'gia-dinh','giả tưởng':'vien-tuong','lịch sử':'lich-su','kinh dị':'kinh-di','âm nhạc':'am-nhac','bí ẩn':'bi-an','lãng mạn':'lang-man','khoa học viễn tưởng':'khoa-hoc-vien-tuong','thể thao':'the-thao','chiến tranh':'chien-tranh','tâm lý':'tam-ly','tình cảm':'tinh-cam','cổ trang':'co-trang','võ thuật':'vo-thuat','học đường':'hoc-duong','phim 18+':'phim-18'};
     return aliases[String(value||'').toLowerCase()]||'';

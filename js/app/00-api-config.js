@@ -32,11 +32,15 @@ function getSource(id) { return SOURCES[id] || SOURCES.nguonc; }
 function srcListUrl(path, sid) {
     if (!path.startsWith('/')) path = '/' + path;
     const source = getSource(sid || currentSourceId);
+    const genreMatch = path.match(/^\/the-loai\/([^/?]+)(.*)$/);
+    if (genreMatch && window.RoFlixGenreProviderSlugs?.[genreMatch[1]]?.[source.id]) path = '/the-loai/' + window.RoFlixGenreProviderSlugs[genreMatch[1]][source.id] + genreMatch[2];
     if (source.id === 'nguonc') {
         const base = source.listBase;
         if (path.startsWith('/tim-kiem')) return base + path.replace('/tim-kiem', '/films/search');
         if (path.startsWith('/danh-sach/phim-moi-cap-nhat')) return base + '/films/phim-moi-cap-nhat' + path.slice('/danh-sach/phim-moi-cap-nhat'.length);
         if (path.startsWith('/danh-sach/')) return base + path.replace('/danh-sach/', '/films/danh-sach/');
+        if (path === '/the-loai') return base + '/films/the-loai';
+        if (path === '/quoc-gia') return base + '/films/quoc-gia';
         if (path.startsWith('/the-loai/')) return base + path.replace('/the-loai/', '/films/the-loai/');
         if (path.startsWith('/quoc-gia/')) return base + path.replace('/quoc-gia/', '/films/quoc-gia/');
         if (path.startsWith('/phim-moi-cap-nhat')) return base + '/films/phim-moi-cap-nhat' + path.slice('/phim-moi-cap-nhat'.length);

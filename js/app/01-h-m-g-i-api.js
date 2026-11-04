@@ -433,3 +433,21 @@ async function fetchMovieDetail(slug, preferredSrc, titleHint) {
     showToast('error', 'Lỗi', 'Không thể tải thông tin phim từ kho RoFlix hợp nhất.');
     return null;
 }
+
+async function loadUnifiedGenreTaxonomy(){
+ const ids=activeSourceIds(),norm=v=>String(v||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const menu=document.getElementById('roflix-unified-genre-menu'),staticMap=new Map();
+ if(menu)menu.querySelectorAll('a[onclick*="filterByGenre"]').forEach(a=>{const m=a.getAttribute('onclick')?.match(/filterByGenre\\('([^']+)'/);if(m)staticMap.set(norm(a.textContent),m[1])});
+ const results=await Promise.allSettled(ids.map(async sid=>({sid,items:unwrapList(await fetchJson(srcListUrl('/the-loai',sid))).items})));
+ const genres=new Map(),providerSlugs={};
+ results.filter(x=>x.status==='fulfilled').forEach(x=>x.value.items.forEach(item=>{const name=String(item.name||item.title||'').trim(),slug=String(item.slug||'').trim();if(!name||!slug)return;const key=norm(name),canonical=staticMap.get(key)||slug;if(!genres.has(key))genres.set(key,{name,slug:canonical});(providerSlugs[canonical]??={})[x.value.sid]=slug}));
+ window.RoFlixGenreProviderSlugs=providerSlugs;window.RoFlixUnifiedGenreMap=Object.fromEntries([...genres].map(([k,v])=>[k,v.slug]));
+ const filter=document.querySelector('#rf-discovery #rf-filter-genre'),chips=document.querySelector('#rf-discovery #rf-genre-options');
+ genres.forEach(({name,slug})=>{
+  if(menu&&![...menu.querySelectorAll('a')].some(a=>norm(a.textContent)===norm(name))){const a=document.createElement('a');a.href='#';a.className='text-xs font-medium py-2 px-3 rounded-lg hover:bg-amber-500/10 hover:text-amber-500 transition';a.textContent=name;a.addEventListener('click',e=>{e.preventDefault();if(typeof filterByGenre==='function')filterByGenre(slug,name)});menu.appendChild(a)}
+  if(filter&&![...filter.options].some(o=>o.value===slug)){const o=document.createElement('option');o.value=slug;o.textContent=name;filter.appendChild(o)}
+  if(chips&&![...chips.querySelectorAll('[data-genre]')].some(b=>b.dataset.genre===slug)){const b=document.createElement('button');b.type='button';b.className='rf-chip';b.dataset.genre=slug;b.textContent=name;chips.appendChild(b)}
+ });
+ const ctx=document.getElementById('rf-filter-context');if(ctx&&genres.size)ctx.textContent='Thể loại đã hợp nhất từ '+results.filter(x=>x.status==='fulfilled').length+'/3 nhà cung cấp.';
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(loadUnifiedGenreTaxonomy,0));else setTimeout(loadUnifiedGenreTaxonomy,0);
