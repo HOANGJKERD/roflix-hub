@@ -73,7 +73,7 @@
                                 <button onclick="event.stopPropagation(); toggleFavorite('${m.slug}')" title="Yêu thích">
                                     <i class="fa-${isFavorite(m.slug) ? 'solid' : 'regular'} fa-heart"></i>
                                 </button>
-                                <button onclick="event.stopPropagation(); viewMovieDetail('${m.slug}')" title="Chi tiết">
+                                <button onclick="event.stopPropagation(); viewMovieDetail('${m.slug}', '${m._src || ''}', '${escapeHtml(m.title)}')" title="Chi tiết">
                                     <i class="fa-solid fa-circle-info"></i>
                                 </button>
                             </div>

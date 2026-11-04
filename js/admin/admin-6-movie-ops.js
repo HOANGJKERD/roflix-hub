@@ -5,6 +5,7 @@
  'use strict';
  const sb=window.rfSupabase;if(!sb||window.__ROFLIX_ADMIN61_MOVIE_OPS__)return;window.__ROFLIX_ADMIN61_MOVIE_OPS__=true;
  const SOURCES=[
+  {id:'nguonc',name:'NguonC',url:'https://phim.nguonc.com/api/films/search?keyword=avatar&page=1'},
   {id:'kkphim',name:'KKPhim',url:'https://phimapi.com/v1/api/tim-kiem?keyword=avatar&page=1'},
   {id:'vsmov',name:'VSMOV',url:'https://vsmov.com/api/tim-kiem?keyword=avatar&page=1'}
  ];

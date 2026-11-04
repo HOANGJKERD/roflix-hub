@@ -8,51 +8,26 @@
   function toast(msg){ if(typeof window.showToastPro==='function') window.showToastPro('info','Lịch phim',msg); else alert(msg); }
   async function isAdmin(){ const {data,error}=await sb.auth.getUser(); if(error||!data?.user)return false; const {data:p,error:pe}=await sb.from('profiles').select('role').eq('id',data.user.id).maybeSingle(); return !pe&&p?.role==='admin'; }
   async function sync(){ try{await sb.rpc('roflix_sync_release_schedule');}catch(_){} }
-  const SOURCES={nguonc:{list:'https://phim.nguonc.com/api',detail:'https://phim.nguonc.com/api',name:'NguonC'}};
-  function pickPoster(m,sid){
-    const raw=m.poster_url||m.thumb_url||m.poster||m.thumb||'';
-    if(!raw)return '';
-    if(/^https?:\/\//i.test(raw))return raw;
-    return raw;
-  }
-  function unwrap(data){return data?.items||(data?.data?.items)||data?.data||data?.movies||[];}
+  const SOURCES={nguonc:{name:'NguonC'},kkphim:{name:'KKPhim'},vsmov:{name:'VSMOV'}};
+  function pickPoster(m,sid){return window.RoFlixUnifiedCatalog.poster(m,sid)||m.poster_url||m.thumb_url||m.poster||m.thumb||'';}
+  function unwrap(data){return window.RoFlixUnifiedCatalog.unwrapList(data).items||[];}
   async function searchScheduleMovies(){
-    const q=($('sch-pick-search')?.value||'').trim();
-    const sid=$('sch-pick-source')?.value||'nguonc';
-    const box=$('sch-pick-results');
+    const q=($('sch-pick-search')?.value||'').trim(),provider=$('sch-pick-source')?.value||'all',box=$('sch-pick-results');
     if(!q){box.innerHTML='<div class="muted">Nhập tên phim trước đã.</div>';return;}
-    box.innerHTML='<div class="muted">🔎 Đang tìm phim...</div>';
-    try{
-      const url=SOURCES[sid].list+(sid==='nguonc'?'/films/search':'/tim-kiem')+'?keyword='+encodeURIComponent(q)+'&page=1';
-      const r=await fetch(url,{cache:'no-store'});
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      const d=await r.json();
-      const items=unwrap(d).slice(0,12);
-      if(!items.length){box.innerHTML='<div class="muted">Không tìm thấy phim. Thử từ khóa khác.</div>';return;}
-      box.innerHTML=items.map((m,i)=>{
-        const slug=m.slug||m.movie_slug||'';
-        const title=m.name||m.title||m.origin_name||'Không tên';
-        const origin=m.origin_name||m.original_name||'';
-        const poster=pickPoster(m,sid);
-        return `<button type="button" class="schedule-pick-item" data-pick-index="${i}">
-          <img src="${esc(poster||'https://placehold.co/64x88/10131d/f59e0b?text=RF')}" alt="">
-          <span><b>${esc(title)}</b><small>${esc(origin)}${m.year?' · '+esc(m.year):''}</small><small>${esc(slug)}</small></span><em>Chọn</em>
-        </button>`;
-      }).join('');
-      window._rfScheduleSearchResults=items.map(m=>({...m,_src:sid}));
+    box.innerHTML='<div class="muted">🔎 Đang tìm trên kho RoFlix hợp nhất...</div>';
+    try{const items=await window.RoFlixUnifiedCatalog.search(q,provider,8);if(!items.length){box.innerHTML='<div class="muted">Không tìm thấy phim. Thử từ khóa khác.</div>';return;}window._rfScheduleSearchResults=items;
+      box.innerHTML=items.map((m,i)=>{const sid=m._src,slug=m.slug||m.movie_slug||'',title=m.name||m.title||m.origin_name||'Không tên',origin=m.origin_name||m.original_name||'',image=pickPoster(m,sid);return `<button type="button" class="schedule-pick-item" data-pick-index="${i}"><img src="${esc(image||'https://placehold.co/64x88/10131d/f59e0b?text=RF')}" alt=""><span><b>${esc(title)}</b><small>${esc(origin)}${m.year?' · '+esc(m.year):''}</small><small>${esc(slug)} · ${esc(SOURCES[sid]?.name||sid)}</small></span><em>Chọn</em></button>`;}).join('');
       box.querySelectorAll('[data-pick-index]').forEach(btn=>btn.addEventListener('click',()=>selectScheduleMovie(Number(btn.dataset.pickIndex))));
     }catch(e){box.innerHTML='<div class="danger-text">Không tìm được kho phim: '+esc(e.message)+'</div>';}
   }
+
   async function selectScheduleMovie(i){
     const m=window._rfScheduleSearchResults?.[i]; if(!m)return;
     const sid=m._src||'kkphim'; const slug=m.slug||m.movie_slug||'';
     $('sch-slug').value=slug; $('sch-title').value=m.name||m.title||m.origin_name||''; $('sch-origin').value=m.origin_name||m.original_name||''; $('sch-source').value=sid;
     const poster=pickPoster(m,sid); if(poster)$('sch-poster').value=poster;
     if($('sch-pick-results'))$('sch-pick-results').innerHTML='<div class="selected-movie">✅ Đã chọn: <b>'+esc($('sch-title').value)+'</b> <span>'+esc(slug)+'</span></div>';
-    try{
-      const r=await fetch(SOURCES[sid].detail+(sid==='kkphim'?'/film/':'/film/')+encodeURIComponent(slug),{cache:'no-store'});
-      if(r.ok){const d=await r.json(); const movie=d.movie||d.data?.movie||d.data?.item||d.data||d; const p=pickPoster(movie,sid); if(p)$('sch-poster').value=p; if(movie.origin_name)$('sch-origin').value=movie.origin_name; if(movie.content&&!$('sch-summary').value)$('sch-summary').value=String(movie.content).replace(/<[^>]*>/g,'').trim();}
-    }catch(_){}
+    try{const movie=await window.RoFlixUnifiedCatalog.detail(sid,slug);if(movie){const p=pickPoster(movie,sid);if(p)$('sch-poster').value=p;if(movie.origin_name)$('sch-origin').value=movie.origin_name;if(movie.content&&!$('sch-summary').value)$('sch-summary').value=String(movie.content).replace(/<[^>]*>/g,'').trim();}}catch(_){}
   }
 
   async function load(){
