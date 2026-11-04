@@ -33,7 +33,7 @@
   function setChecks(cls,vals){const set=new Set(vals||[]);document.querySelectorAll('.'+cls).forEach(x=>x.checked=set.has(x.value))}
   function getChecks(cls){return Array.from(document.querySelectorAll('.'+cls+':checked')).map(x=>x.value)}
   function poster(url,sid){if(!url)return '';if(/^https?:/i.test(url))return url;return sid==='kkphim'?'https://phimimg.com/'+String(url).replace(/^\//,''):url}
-  async async function search(){
+  async function search(){
     const q=val('rf-cat-search');if(!q){toast('Nhập tên phim hoặc slug.','warning');return}
     const provider=$('rf-cat-source').value||'all';state.source=provider;$('rf-cat-results').innerHTML='<div class="muted">🔎 Đang tìm trên kho RoFlix hợp nhất...</div>';
     try{state.results=await window.RoFlixUnifiedCatalog.search(q,provider,12);$('rf-cat-results').innerHTML=state.results.length?state.results.slice(0,36).map((m,i)=>'<button type="button" class="rf-curation-result" data-cat-i="'+i+'"><img src="'+esc(window.RoFlixUnifiedCatalog.poster(m,m._src)||'https://placehold.co/70x100/111827/f59e0b?text=RF')+'"><span><b>'+esc(m.name||m.title||m.origin_name||m.slug)+'</b><small>'+esc(m.origin_name||'')+' · '+esc(m.year||'')+'</small><small>'+esc(m.slug||'')+' · '+esc(SOURCES[m._src]?.name||m._src)+'</small></span><em>Chọn</em></button>').join(''):'<div class="muted">Không tìm thấy phim từ các nguồn.</div>';document.querySelectorAll('[data-cat-i]').forEach(b=>b.onclick=()=>selectMovie(Number(b.dataset.catI)))}catch(e){$('rf-cat-results').innerHTML='<div class="danger-text">'+esc(e.message)+'</div>'}
