@@ -1,4 +1,4 @@
-/* RoFlix movie-only autocomplete: NguonC first, VSMOV fallback */
+/* RoFlix movie-only autocomplete: merge NguonC + VSMOV */
 (function () {
   'use strict';
   const IDS = ['search-input', 'search-input-mobile'];
@@ -10,8 +10,8 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pick = (...v) => v.find(x => x !== undefined && x !== null && String(x).trim()) || '';
   function sourceUrl(sid, q) {
-    const base = 'https://phim.nguonc.com/api/films/search';
-    return base + '?keyword=' + encodeURIComponent(q) + '&page=1';
+    const base = sid === 'vsmov' ? 'https://vsmov.com/api/tim-kiem' : 'https://phim.nguonc.com/api/films/search';
+    return base + '?keyword=' + encodeURIComponent(q) + '&page=1' + (sid === 'vsmov' ? '&limit=10' : '');
   }
   function itemsOf(d) {
     const x = d?.items || d?.data?.items || d?.result?.items || (Array.isArray(d?.data) ? d.data : null) || d?.movies || d?.results || [];
@@ -21,7 +21,7 @@
     const raw = pick(m.poster_url, m.thumb_url, m.poster, m.thumb);
     if (!raw) return '';
     if (/^https?:\/\//i.test(raw)) return raw;
-    return new URL(raw, 'https://phim.nguonc.com/').href;
+    return new URL(raw, sid === 'vsmov' ? 'https://vsmov.com/' : 'https://phim.nguonc.com/').href;
   }
   function mapItem(m, sid) {
     const lang = pick(m.lang, m.language, m.episode_current, '');
@@ -90,28 +90,32 @@
     controllers.set(input,controller);
     box.innerHTML = '<div class="rf-suggest-loading">Đang tìm phim…</div>';
     box.hidden = false;
-    let found = [];
-    for (const sid of ['nguonc']) {
-      try {
-        let res;
-        for (let attempt=0; attempt<2; attempt++) {
-          res = await fetch(sourceUrl(sid,q), {signal:controller.signal, headers:{'Accept':'application/json'}});
-          if (res.status===429 && attempt===0) {
-            const retry=Number(res.headers.get('Retry-After'));
-            await new Promise(resolve=>setTimeout(resolve,Math.min(3000,Math.max(500,retry>0?retry*1000:1000))));
-            continue;
-          }
-          break;
-        }
-        if (!res.ok) throw new Error('HTTP '+res.status);
-        const type=res.headers.get('content-type')||'';
-        if(type && !/json/i.test(type)) throw new Error('API không trả JSON: '+type);
-        const data = await res.json();
-        const rows = itemsOf(data).map(m=>mapItem(m,sid)).filter(m=>m.slug);
-        found = found.concat(rows);
-        if (found.length >= MAX_RESULTS) break;
-      } catch (e) {
-        if (e.name === 'AbortError') return;
+    const providers = await Promise.allSettled(['nguonc', 'vsmov'].map(async sid => {
+      const res = await fetch(sourceUrl(sid,q), {signal:controller.signal, headers:{'Accept':'application/json'}});
+      if (!res.ok) throw new Error(sid + ' HTTP ' + res.status);
+      const type = res.headers.get('content-type') || '';
+      if (type && !/json/i.test(type)) throw new Error(sid + ' returned non-JSON');
+      const data = await res.json();
+      return itemsOf(data).map(m => mapItem(m,sid)).filter(m => m.slug && m.poster);
+    }));
+    if (controller.signal.aborted) return;
+    const groups = providers.map((result,index) => {
+      if (result.status === 'fulfilled') return result.value;
+      console.warn('[RoFlix autocomplete] source failed:', index ? 'VSMOV' : 'NguonC', result.reason);
+      return [];
+    });
+    // Gộp xen kẽ để VSMOV xuất hiện ngay trong gợi ý, ưu tiên NguonC khi trùng tên/năm.
+    const seen = new Set();
+    const found = [];
+    const max = Math.max(0, ...groups.map(group => group.length));
+    for (let i=0; i<max; i++) {
+      for (const group of groups) {
+        const movie = group[i];
+        if (!movie) continue;
+        const identity = movie.title.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim() + '|' + movie.year;
+        if (seen.has(identity)) continue;
+        seen.add(identity);
+        found.push(movie);
       }
     }
     if (controllers.get(input) !== controller) return;
@@ -137,12 +141,14 @@
     input.addEventListener('keydown', e => {
       if(e.key==='Escape'){close(box);return;}
       if(e.key==='Enter'){
-        const first=box.querySelector('.rf-suggest-item');
-        if(!box.hidden && first){e.preventDefault();first.click();return;}
-        clearTimeout(window.searchTimeout);
-        window.searchKeyword=input.value.trim();
-        if(window.searchKeyword && typeof window.renderMoviesFromAPI==='function') window.renderMoviesFromAPI(1);
+        e.preventDefault();
+        const query = input.value.trim();
+        if (!query) return;
+        IDS.forEach(id => { const el=document.getElementById(id); if(el) el.value=query; });
         close(box);
+        clearTimeout(window.searchTimeout);
+        if (input.id === 'search-input-mobile' && typeof window.handleSearchMobile === 'function') window.handleSearchMobile();
+        else if (typeof window.handleSearch === 'function') window.handleSearch();
       }
     });
     input.addEventListener('focus',()=>{if(input.value.trim().length>=2) search(input.value.trim(),input,box);});
