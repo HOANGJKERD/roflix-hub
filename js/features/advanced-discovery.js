@@ -4,7 +4,7 @@
   const GENRES = [
     'Hành Động','Phiêu Lưu','Hoạt Hình','Hài','Hình Sự','Tài Liệu','Chính Kịch','Gia Đình',
     'Giả Tưởng','Lịch Sử','Kinh Dị','Âm Nhạc','Bí Ẩn','Lãng Mạn','Khoa Học Viễn Tưởng',
-    'Thể Thao','Chiến Tranh','Tâm Lý','Tình Cảm','Cổ Trang','Võ Thuật','Học Đường'
+    'Thể Thao','Chiến Tranh','Tâm Lý','Tình Cảm','Cổ Trang','Võ Thuật','Học Đường','Phim 18+'
   ];
   const css = `
   #rf-discovery{margin:0 0 18px;padding:16px;border:1px solid #303244;border-radius:18px;background:linear-gradient(135deg,rgba(30,27,45,.96),rgba(13,15,25,.96));color:#f8fafc}
@@ -53,7 +53,7 @@
     const gs=box.querySelector('#rf-filter-genre');
     GENRES.forEach(g=>{const o=document.createElement('option');o.value=genreSlug(g);o.textContent=g;gs.appendChild(o)});
     if(typeof currentGenreSlug!=='undefined' && [...gs.options].some(o=>o.value===currentGenreSlug)) gs.value=currentGenreSlug;
-    box.querySelector('#rf-advanced-toggle').addEventListener('click',()=>{const f=box.querySelector('#rf-advanced-fields');f.hidden=!f.hidden;box.querySelector('#rf-advanced-toggle').setAttribute('aria-expanded',String(!f.hidden));box.querySelector('#rf-advanced-toggle').textContent=f.hidden?'⚙️ Bộ lọc':'✕ Đóng bộ lọc';});
+    box.querySelector('#rf-advanced-toggle').addEventListener('click',()=>{const f=box.querySelector('#rf-advanced-fields');f.hidden=!f.hidden;box.querySelector('#rf-advanced-toggle').setAttribute('aria-expanded',String(!f.hidden));box.querySelector('#rf-advanced-toggle').textContent=f.hidden?'⚙️ Bộ lọc':'✕ Đóng bộ lọc';if(!f.hidden){const active=typeof currentGenreSlug!=='undefined'?currentGenreSlug:'';if(active && [...gs.options].some(o=>o.value===active))gs.value=active;const label=GENRES.find(g=>genreSlug(g)===active);const context=box.querySelector('#rf-filter-context');if(context)context.textContent=active?'Thể loại đang chọn: '+(label||active)+' · Chọn thêm tiêu chí để lọc sâu.':'Chọn các tiêu chí bên dưới để lọc danh sách phim.';}});
     const context=box.querySelector('#rf-filter-context');
     if(context){const current=typeof currentGenreSlug!=='undefined'?currentGenreSlug:'';context.textContent=current?'Thể loại đang chọn: '+current+' · Các tiêu chí bổ sung sẽ lọc sâu danh sách này.':'Mở bộ lọc khi muốn thu hẹp danh sách phim.';}
     box.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{box.querySelectorAll('[data-preset]').forEach(x=>x.classList.toggle('active',x===b));applyPreset(b.dataset.preset)}));
@@ -89,7 +89,7 @@
   function genreSlug(value){
     const raw=String(value||'').toLowerCase();
     if(['hanh-dong','phieu-luu','hoat-hinh','phim-hai','hinh-su','tai-lieu','chinh-kich','gia-dinh','gia-tuong','lich-su','kinh-di','phim-nhac','bi-an','lang-man','khoa-hoc-vien-tuong','chien-tranh','tam-ly','tinh-cam','co-trang','mien-tay','phim-18'].includes(raw))return raw;
-    const aliases={'hành động':'hanh-dong','phiêu lưu':'phieu-luu','hoạt hình':'hoat-hinh','hài':'phim-hai','hình sự':'hinh-su','tài liệu':'tai-lieu','chính kịch':'chinh-kich','gia đình':'gia-dinh','giả tưởng':'vien-tuong','lịch sử':'lich-su','kinh dị':'kinh-di','âm nhạc':'am-nhac','bí ẩn':'bi-an','lãng mạn':'lang-man','khoa học viễn tưởng':'khoa-hoc-vien-tuong','thể thao':'the-thao','chiến tranh':'chien-tranh','tâm lý':'tam-ly','tình cảm':'tinh-cam','cổ trang':'co-trang','võ thuật':'vo-thuat','học đường':'hoc-duong'};
+    const aliases={'hành động':'hanh-dong','phiêu lưu':'phieu-luu','hoạt hình':'hoat-hinh','hài':'phim-hai','hình sự':'hinh-su','tài liệu':'tai-lieu','chính kịch':'chinh-kich','gia đình':'gia-dinh','giả tưởng':'vien-tuong','lịch sử':'lich-su','kinh dị':'kinh-di','âm nhạc':'am-nhac','bí ẩn':'bi-an','lãng mạn':'lang-man','khoa học viễn tưởng':'khoa-hoc-vien-tuong','thể thao':'the-thao','chiến tranh':'chien-tranh','tâm lý':'tam-ly','tình cảm':'tinh-cam','cổ trang':'co-trang','võ thuật':'vo-thuat','học đường':'hoc-duong','phim 18+':'phim-18'};
     return aliases[String(value||'').toLowerCase()]||'';
   }
   function applyFilters(){
