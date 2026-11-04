@@ -273,19 +273,34 @@ function applyListPagination(pagination, requestedPage, movieCount) {
 // tự chuyển sang nguồn còn lại (VSMOV <-> KKPhim) để trang không bị "trắng" khi 1 nguồn sập.
 // path: đường dẫn KHÔNG kèm domain, ví dụ '/quoc-gia/au-my?page=1'
 async function fetchListWithFallback(path) {
+    // Các khu vực dùng danh sách phụ (hero, chủ đề/tuần này, gợi ý)
+    // cũng phải gộp cả hai nhà cung cấp, không chỉ fallback tuần tự.
     const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['nguonc'];
-    let lastErr = null;
-    for (const sid of ids) {
-        try {
-            const data = await fetchJson(srcListUrl(path, sid));
-            const items = unwrapList(data).items.map(m => { if (sid === 'nguonc') normalizeNguoncMovie(m); m._src = sid; return m; });
-            if (items.length || sid === ids[ids.length - 1]) {
-                return { data: { items, pagination: unwrapList(data).pag || {} }, sid };
-            }
-        } catch (e) { lastErr = e; }
+    const settled = await Promise.allSettled(ids.map(async sid => {
+        const data = await fetchJson(srcListUrl(path, sid));
+        const wrapped = unwrapList(data);
+        const items = wrapped.items.map(movie => {
+            if (sid === 'nguonc') normalizeNguoncMovie(movie);
+            movie._src = sid;
+            return movie;
+        }).filter(movie => movie && movie.slug && pickPoster(movie, sid));
+        return { sid, data, items, pagination: wrapped.pag || {} };
+    }));
+    const successful = settled.filter(result => result.status === 'fulfilled').map(result => result.value);
+    if (!successful.length) {
+        const firstError = settled.find(result => result.status === 'rejected');
+        throw (firstError && firstError.reason) || new Error('Both movie providers failed for ' + path);
     }
-    if (lastErr) throw lastErr;
-    throw new Error('all sources failed for ' + path);
+    const merged = mergeMovieListsByIdentity(successful.map(result => result.items));
+    const pagination = successful.reduce((acc, result) => {
+        acc.totalPages = Math.max(acc.totalPages, Number(result.pagination.totalPages) || 1);
+        acc.totalItems += Number(result.pagination.totalItems) || result.items.length;
+        return acc;
+    }, { currentPage: 1, totalPages: 1, totalItems: 0 });
+    return {
+        data: { items: merged, pagination },
+        sid: successful[0].sid
+    };
 }
 
 function mapListResultItems(result, limit) {
