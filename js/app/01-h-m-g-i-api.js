@@ -372,7 +372,7 @@ async function fetchHomePriorityMovies(page = 1) {
 }
 
 async function fetchMovieDetail(slug, preferredSrc) {
-    const order = ['nguonc'];
+    const order = preferredSrc === 'vsmov' ? ['vsmov', 'nguonc'] : ['nguonc', 'vsmov'];
     let lastErr = null;
     for (const sid of order) {
         const urls = (typeof srcDetailUrls === 'function') ? srcDetailUrls(slug, sid) : [srcDetailUrl(slug, sid)];
@@ -381,14 +381,13 @@ async function fetchMovieDetail(slug, preferredSrc) {
                 const data = await fetchJson(url);
                 const movie = unwrapDetailPayload(data);
                 if (!movie || (!movie.slug && !movie.name)) continue;
+                if (sid === 'nguonc') normalizeNguoncMovie(movie);
                 movie._src = sid;
                 return movie;
-            } catch (e) {
-                lastErr = e;
-            }
+            } catch (e) { lastErr = e; }
         }
     }
     console.error('Lỗi tải chi tiết phim:', lastErr);
-    showToast('error', 'Lỗi', 'Không thể tải thông tin phim!');
+    showToast('error', 'Lỗi', 'Không thể tải thông tin phim từ NguonC hoặc VSMOV!');
     return null;
 }
