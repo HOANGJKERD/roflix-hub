@@ -28,11 +28,11 @@
                 searchKeyword = val;
                 currentGenreSlug = '';
                 currentCountrySlug = '';
-                homePriorityMode = !val;
+                homePriorityMode = false;
                 currentListEndpoint = 'phim-moi-cap-nhat';
                 const titleEl = document.getElementById('list-title');
                 if (titleEl) {
-                    titleEl.textContent = val ? `Kết quả tìm kiếm: "${val}"` : 'Phim Âu Mỹ & Hàn nổi bật';
+                    titleEl.textContent = val ? `Kết quả tìm kiếm: "${val}"` : 'Phim mới cập nhật';
                 }
                 // Ẩn nhẹ khu phụ khi đang tìm để kết quả nổi lên trước
                 document.querySelectorAll('#weekly-section, #random-panel-wrap, #reco-section').forEach(el => {
@@ -55,7 +55,7 @@
                 currentListEndpoint = 'phim-moi-cap-nhat';
                 const titleEl = document.getElementById('list-title');
                 if (titleEl) {
-                    titleEl.textContent = val ? `Kết quả tìm kiếm: "${val}"` : 'Phim Âu Mỹ & Hàn nổi bật';
+                    titleEl.textContent = val ? `Kết quả tìm kiếm: "${val}"` : 'Phim mới cập nhật';
                 }
                 document.querySelectorAll('#weekly-section, #random-panel-wrap, #reco-section').forEach(el => {
                     if (el) el.style.display = val ? 'none' : '';
@@ -70,12 +70,12 @@
             searchKeyword = '';
             currentGenreSlug = '';
             currentCountrySlug = '';
-            homePriorityMode = true;
+            homePriorityMode = false;
             currentListEndpoint = 'phim-moi-cap-nhat';
             document.getElementById('search-input').value = '';
             document.getElementById('search-input-mobile').value = '';
             const titleEl = document.getElementById('list-title');
-            if (titleEl) titleEl.textContent = 'Phim Âu Mỹ & Hàn nổi bật';
+            if (titleEl) titleEl.textContent = 'Phim mới cập nhật';
             renderMoviesFromAPI(1);
         }
 
