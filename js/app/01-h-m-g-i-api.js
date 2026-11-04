@@ -251,7 +251,7 @@ async function fetchMoviesFromSource(sid, page) {
     const data = await fetchJson(srcListUrl(buildListPath(page), sid));
     const { items, pag } = unwrapList(data);
     const movies = items
-        .map(m => { if (sid === 'nguonc') normalizeNguoncMovie(m); m._src = sid; return m; })
+        .map(m => { normalizeNguoncMovie(m); m._src = sid; m._sources = [sid]; return m; })
         .filter(m => !!pickPoster(m, sid));
 
     return {
@@ -282,8 +282,9 @@ async function fetchListWithFallback(path) {
         const data = await fetchJson(srcListUrl(path, sid));
         const wrapped = unwrapList(data);
         const items = wrapped.items.map(movie => {
-            if (sid === 'nguonc') normalizeNguoncMovie(movie);
+            normalizeNguoncMovie(movie);
             movie._src = sid;
+            movie._sources = [sid];
             return movie;
         }).filter(movie => movie && movie.slug && pickPoster(movie, sid));
         return { sid, data, items, pagination: wrapped.pag || {} };
@@ -343,18 +344,33 @@ async function fetchMovies(page = 1) {
 // Gộp hai nguồn, ưu tiên NguonC và loại trùng theo tên + năm.
 // Giữ _src của từng phim để trang chi tiết gọi đúng API nguồn.
 function mergeMovieListsByIdentity(groups) {
-    const seen = new Set();
+    const seen = new Map();
     const out = [];
     const max = Math.max(0, ...groups.map(group => group.length));
+    const normalize = value => String(value || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
     for (let i = 0; i < max; i++) {
         for (const group of groups) {
             const movie = group[i];
             if (!movie) continue;
-            const name = String(movie.name || movie.title || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-            const year = String(movie.year || '');
-            const identity = name ? name + '|' + year : String(movie._src || '') + '|' + String(movie.slug || '');
-            if (seen.has(identity)) continue;
-            seen.add(identity);
+            const name = normalize(movie.name || movie.title);
+            const origin = normalize(movie.origin_name || movie.original_name);
+            const year = String(movie.year || '').trim();
+            const identity = name ? name + '|' + year + '|' + (year ? '' : origin) : String(movie._src || '') + '|' + String(movie.slug || '');
+            const existing = seen.get(identity);
+            if (existing) {
+                existing._sources = [...new Set([...(existing._sources || [existing._src]), movie._src].filter(Boolean))];
+                existing._sourceRefs = [...(existing._sourceRefs || [{source: existing._src, slug: existing.slug}]), {source: movie._src, slug: movie.slug}]
+                    .filter((ref, index, all) => ref.source && ref.slug && all.findIndex(x => x.source === ref.source && x.slug === ref.slug) === index);
+                if (!existing.poster_url && movie.poster_url) existing.poster_url = movie.poster_url;
+                if (!existing.thumb_url && movie.thumb_url) existing.thumb_url = movie.thumb_url;
+                if (!existing.content && movie.content) existing.content = movie.content;
+                if (!existing.category?.length && movie.category?.length) existing.category = movie.category;
+                if (!existing.year && movie.year) existing.year = movie.year;
+                continue;
+            }
+            movie._sources = [...new Set([...(movie._sources || []), movie._src].filter(Boolean))];
+            movie._sourceRefs = [{source: movie._src, slug: movie.slug}];
+            seen.set(identity, movie);
             out.push(movie);
         }
     }
@@ -362,55 +378,56 @@ function mergeMovieListsByIdentity(groups) {
 }
 
 async function fetchHomePriorityMovies(page = 1) {
-    // Một request catalog duy nhất để có nội dung đầu tiên nhanh nhất.
-    // Banner/đề xuất được tải riêng ở nền sau khi grid đã có dữ liệu.
-    const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['nguonc'];
-    let lastErr = null;
-    for (const sid of ids) {
-        try {
-            const path = sid === 'vsmov'
-                ? `/danh-sach/phim-moi-cap-nhat?page=${page}`
-                : `/danh-sach/phim-moi-cap-nhat?page=${page}`;
-            const data = await fetchJson(srcListUrl(path, sid));
-            const wrapped = unwrapList(data);
-            const movies = wrapped.items.map(m => { if (sid === 'nguonc') normalizeNguoncMovie(m); m._src = sid; return m; }).filter(m => pickPoster(m, sid));
-            if (movies.length || sid === ids[ids.length - 1]) {
-                applyListPagination({
-                    currentPage: page,
-                    totalPages: wrapped.pag.totalPages || data.last_page || data.total_pages || 1,
-                    totalItems: wrapped.pag.totalItems || data.total || movies.length
-                }, page, movies.length);
-                return movies;
-            }
-        } catch (error) { lastErr = error; }
-    }
-    if (lastErr) throw lastErr;
-    throw new Error('home catalog fetch failed');
+    // Hero, đề xuất và các chủ đề dùng chung catalog hợp nhất với grid chính.
+    const ids = (typeof activeSourceIds === 'function') ? activeSourceIds() : ['nguonc', 'kkphim', 'vsmov'];
+    const settled = await Promise.allSettled(ids.map(sid => fetchMoviesFromSource(sid, page)));
+    const groups = settled.filter(x => x.status === 'fulfilled').map(x => x.value.movies);
+    if (!groups.length) throw new Error('All unified catalog providers failed');
+    const merged = mergeMovieListsByIdentity(groups);
+    const pages = settled.filter(x => x.status === 'fulfilled').map(x => Number(x.value.pagination.totalPages) || 1);
+    applyListPagination({currentPage: page, totalPages: Math.max(1, ...pages), totalItems: merged.length}, page, merged.length);
+    return merged;
 }
 
-async function fetchMovieDetail(slug, preferredSrc) {
-    const order = preferredSrc === 'kkphim'
-        ? ['kkphim', 'nguonc', 'vsmov']
-        : (preferredSrc === 'vsmov' ? ['vsmov', 'kkphim', 'nguonc'] : ['nguonc', 'kkphim', 'vsmov']);
+async function fetchMovieDetail(slug, preferredSrc, titleHint) {
+    const order = preferredSrc === 'nguonc' ? ['nguonc', 'kkphim', 'vsmov']
+        : (preferredSrc === 'kkphim' ? ['kkphim', 'nguonc', 'vsmov']
+        : (preferredSrc === 'vsmov' ? ['vsmov', 'nguonc', 'kkphim'] : ['nguonc', 'kkphim', 'vsmov']));
     let lastErr = null, bestMovie = null;
+    const accept = (payload, sid) => {
+        const movie = unwrapDetailPayload(payload);
+        if (!movie || (!movie.slug && !movie.name)) return null;
+        normalizeNguoncMovie(movie);
+        movie._src = sid;
+        return movie;
+    };
     for (const sid of order) {
-        const urls = (typeof srcDetailUrls === 'function') ? srcDetailUrls(slug, sid) : [srcDetailUrl(slug, sid)];
-        for (const url of urls) {
+        try {
+            const movie = accept(await fetchJson(srcDetailUrl(slug, sid)), sid);
+            if (!movie) continue;
+            if (Array.isArray(movie.episodes) && movie.episodes.some(group => Array.isArray(group.server_data) && group.server_data.length)) return movie;
+            if (!bestMovie) bestMovie = movie;
+        } catch (error) { lastErr = error; }
+    }
+    // Slug giữa các nhà cung cấp thường khác nhau. Dò theo tên phim trước khi kết luận thiếu nguồn.
+    if (titleHint) {
+        const normalize = value => String(value || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        const wanted = normalize(titleHint);
+        for (const sid of order) {
             try {
-                const data = await fetchJson(url);
-                const movie = unwrapDetailPayload(data);
-                if (!movie || (!movie.slug && !movie.name)) continue;
-                normalizeNguoncMovie(movie);
-                movie._src = sid;
-                // Ưu tiên nguồn có tập phát được; nếu nguồn đầu chỉ có metadata,
-                // tiếp tục thử nguồn khác trước khi trả về bản chi tiết đầu tiên.
+                const searchData = await fetchJson(srcListUrl('/tim-kiem?keyword=' + encodeURIComponent(titleHint) + '&page=1&limit=20', sid));
+                const candidates = unwrapList(searchData).items;
+                const exact = candidates.find(item => normalize(item.name || item.title) === wanted || normalize(item.origin_name || item.original_name) === wanted);
+                if (!exact?.slug) continue;
+                const movie = accept(await fetchJson(srcDetailUrl(exact.slug, sid)), sid);
+                if (!movie) continue;
                 if (Array.isArray(movie.episodes) && movie.episodes.some(group => Array.isArray(group.server_data) && group.server_data.length)) return movie;
                 if (!bestMovie) bestMovie = movie;
-            } catch (e) { lastErr = e; }
+            } catch (error) { lastErr = error; }
         }
     }
     if (bestMovie) return bestMovie;
     console.error('Lỗi tải chi tiết phim:', lastErr);
-    showToast('error', 'Lỗi', 'Không thể tải thông tin phim từ NguonC, KKPhim hoặc VSMOV!');
+    showToast('error', 'Lỗi', 'Không thể tải thông tin phim từ kho RoFlix hợp nhất.');
     return null;
 }

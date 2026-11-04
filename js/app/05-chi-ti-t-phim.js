@@ -1,13 +1,13 @@
 // ============================================================
         // CHI TIẾT PHIM
         // ============================================================
-        async function viewMovieDetail(slug, preferredSrc) {
+        async function viewMovieDetail(slug, preferredSrc, titleHint) {
             if (!slug) {
                 showToast('error', 'Lỗi', 'Không tìm thấy phim!');
                 return;
             }
             
-            const movieData = await fetchMovieDetail(slug, preferredSrc);
+            const movieData = await fetchMovieDetail(slug, preferredSrc, titleHint);
             if (!movieData) return;
             // Detail payload phải được chuẩn hóa như catalog để tách đúng thumb_url/poster_url.
             if (typeof normalizeNguoncMovie === 'function') normalizeNguoncMovie(movieData);

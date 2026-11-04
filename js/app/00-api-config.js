@@ -55,16 +55,16 @@ function srcDetailUrls(slug, sid) { return [srcDetailUrl(slug, sid)]; }
 const API_BASE = srcListUrl('');
 function updateSourceUi() {
     const box = document.getElementById('source-switch');
-    if (box) box.innerHTML = '<span class="src-label">Nguồn phim</span><span class="source-pill active" data-source="auto">NguonC + KKPhim + VSMOV</span>';
+    if (box) box.innerHTML = '<span class="src-label">Kho phim</span><span class="source-pill active" data-source="auto">RoFlix Unified Catalog</span>';
     const note = document.getElementById('source-note');
-    if (note) note.textContent = 'Đang gộp NguonC + KKPhim + VSMOV';
+    if (note) note.textContent = 'Một kho phim hợp nhất, tự động đồng bộ dữ liệu từ các nhà cung cấp';
 }
 function switchSource(id) {
     if (id === 'vidsrc') {
         if (window.RoflixVidSrc && typeof window.RoflixVidSrc.openTester === 'function') window.RoflixVidSrc.openTester();
         return;
     }
-    if (id !== 'auto' && id !== 'nguonc' && id !== 'vsmov') return;
+    if (id !== 'auto') return;
     sourceMode = 'auto';
     currentSourceId = 'nguonc';
     try { localStorage.setItem('roflix-source-mode', 'auto'); localStorage.setItem('roflix-source-v2', 'nguonc'); } catch (_) {}
