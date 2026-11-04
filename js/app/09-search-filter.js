@@ -40,6 +40,7 @@
                 });
                 navigateTo('main-site');
                 await renderMoviesFromAPI(1);
+                if (val) scrollToMovieList();
             }, 400);
         }
 
@@ -63,6 +64,7 @@
                 navigateTo('main-site');
                 closeMobileMenu();
                 await renderMoviesFromAPI(1);
+                if (val) scrollToMovieList();
             }, 400);
         }
 
