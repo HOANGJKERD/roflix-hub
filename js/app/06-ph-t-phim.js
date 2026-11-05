@@ -405,7 +405,7 @@ async function playMovieByIndex(index, options = {}) {
                 return playMovieByIndex(0, Object.assign({}, options, { skipSourceCheck: true }));
             }
             navigateTo('play-page');
-            showPlayerError('Link phát chính không còn hoạt động và VSMOV không có bản thay thế.');
+            clearPlayerError();
             return;
         }
     }
