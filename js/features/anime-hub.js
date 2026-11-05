@@ -446,7 +446,7 @@
       const item = unique[i];
       card.addEventListener('click', e => { if (!e.target.closest('button')) showDetail(item); });
       card.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) { e.preventDefault(); showDetail(item); }});
-      card.querySelector('[data-rf-watch]')?.addEventListener('click', e => { e.stopPropagation(); window.roflixAnimePlayer?.play(item); });
+      card.querySelector('[data-rf-watch]')?.addEventListener('click', e => { e.stopPropagation(); showToast?.('info', 'Anime', 'RoFlix hiện chỉ hiển thị thông tin anime, chưa tích hợp nguồn phát.'); });
       card.querySelector('[data-rf-info]')?.addEventListener('click', e => { e.stopPropagation(); showDetail(item); });
     });
     return unique.length;
