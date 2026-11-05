@@ -45,7 +45,6 @@
     if (!url) return false;
     var player = document.getElementById('movie-player');
     if (!player) return false;
-    try { if (w.roflixAnimePlayer && w.roflixAnimePlayer.stop) w.roflixAnimePlayer.stop(); } catch (_) {}
     // VidSrc từ chối chạy trong iframe sandbox. Không sandbox để giữ tương thích;
     // chỉ cảnh báo người xem và cung cấp hướng dẫn giảm popup ở trình duyệt.
     try {
