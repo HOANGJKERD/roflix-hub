@@ -18,11 +18,9 @@ async function playMovie(slug, preferredSrc, titleHint) {
         showToast('warning', 'Phòng xem chung', 'Chỉ host được đổi phim. Bạn đang xem theo host.');
         return;
     }
-    window.__ROFLIX_ANIME_MODE__ = false;
     try {
         // Nếu người xem vừa mở trang chi tiết phim này, tái sử dụng dữ liệu/tập đã tải.
-        // Trước đây playMovie luôn gọi viewMovieDetail lần nữa, tạo request chi tiết
-        // trùng lặp và có thể gọi AniMapper metadata lần thứ hai trước khi phát.
+        // Tái sử dụng dữ liệu chi tiết nếu người xem vừa mở đúng phim này.
         const alreadyLoaded = currentSlug === slug
             && currentMovieData
             && Array.isArray(currentEpisodeList)
@@ -384,20 +382,6 @@ async function playMovieByIndex(index, options = {}) {
     if (!ep) { showToast('error', 'Lỗi', 'Không có tập này!'); return; }
     window.__RF_LAST_EP_INDEX__ = index;
 
-    if (!ep.link && ep.__rfAniMapper && window.roflixAnimePlayer?.resolveEpisode) {
-        try {
-            const resolved = await window.roflixAnimePlayer.resolveEpisode(
-                ep.__rfAniMapper.mediaId,
-                ep.__rfAniMapper.provider,
-                ep.__rfAniMapper.episode,
-                ep.__rfAniMapper.index
-            );
-            ep.link = resolved.url;
-            ep.__rfAniSource = resolved;
-        } catch (error) {
-            console.warn('[RoFlix Anime] episode source failed', error);
-        }
-    }
     if (!ep.link) {
         const kkRecovered = await useKkphimPlayback(currentSlug, currentMovieTitle);
         if (kkRecovered) {
@@ -440,17 +424,8 @@ async function playMovieByIndex(index, options = {}) {
     renderPlayEpisodeGrid(index);
     navigateTo('play-page');
 
-    // Mặc định: embed dùng iframe; HLS/MP4 dùng video element tương thích.
-    if (ep.__rfAniMapper && window.roflixAnimePlayer?.mount) {
-        try {
-            cleanupCatalogVideo();
-            await window.roflixAnimePlayer.mount(ep.link, `${title} - ${ep.name}`, ep.__rfAniSource?.type);
-        } catch (error) {
-            console.warn('[RoFlix Anime] custom mount failed', error);
-            showToast('error', 'Lỗi phát Anime', error?.message || 'Nguồn phát không mở được.');
-            return;
-        }
-    } else if (player) {
+    // Embed dùng iframe; HLS/MP4 dùng video element tương thích.
+    if (player) {
         try {
             player.removeAttribute('sandbox');
             delete player.dataset.rfVidsrcSandboxed;
@@ -514,17 +489,12 @@ function playMovieByLink(link, title, epName) {
 
 function goBackFromPlay() {
     cleanupCatalogVideo();
-    window.roflixAnimePlayer?.stop?.();
     const player = document.getElementById('movie-player');
     if (player) player.src = '';
     navigateTo('detail-page');
 }
 
 function openFullscreen() {
-    if (window.roflixAnimePlayer?.fullscreen && window.__ROFLIX_ANIME_MODE__) {
-        window.roflixAnimePlayer.fullscreen();
-        return;
-    }
     const player = document.getElementById('movie-player');
     if (player.requestFullscreen) {
         player.requestFullscreen();

@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/nguonc/:path*",
-      "destination": "/api/animapper?path=nguonc/:path*"
+      "destination": "/api/nguonc?path=:path*"
     }
   ]
 }

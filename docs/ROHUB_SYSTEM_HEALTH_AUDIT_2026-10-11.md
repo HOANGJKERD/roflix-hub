@@ -5,7 +5,7 @@
 
 ## Phạm vi đã kiểm tra
 - Đọc cây repository đệ quy từ GitHub: 166 tệp.
-- Kiểm tra có mục tiêu các trang `index.html`, `admin.html`, `roflix.html`, `rotruyen.html`, `rohub-studio.html`; script xác thực/quản trị; cấu hình Supabase; published theme runtime; migration theme; API AniMapper và test proxy.
+- Kiểm tra có mục tiêu các trang `index.html`, `admin.html`, `roflix.html`, `rotruyen.html`, `rohub-studio.html`; script xác thực/quản trị; cấu hình Supabase; published theme runtime; migration theme; API catalog NguonC.
 - Cây repository có 99 tệp JavaScript, 24 CSS, 21 SQL và 7 HTML.
 - Có thư mục `tests/` với test Node tích hợp sẵn; không tìm thấy `package.json`, `playwright.config.js` hoặc workflow GitHub Actions trong cây hiện tại.
 

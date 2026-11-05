@@ -1,6 +1,6 @@
 /* RoFlix Anime Hub 4.0
  * Catalog master: AniList GraphQL.
- * Playback resolver: AniMapper multi-provider.
+ * Catalog độc lập từ AniList/Jikan; không tích hợp nguồn phát bên thứ ba.
  * KKPhim/VSMOV remain fallback playback/catalog bridges only.
  */
 (function () {
@@ -234,7 +234,7 @@
       if (e.target.closest('[data-rf-close]') || e.target === root.firstElementChild) closeDetail();
       if (e.target.closest('[data-rf-detail-watch]')) {
         closeDetail();
-        window.roflixAnimePlayer?.play(item);
+        showToast?.('info', 'Anime', 'RoFlix hiện chỉ hiển thị thông tin anime, chưa tích hợp nguồn phát.');
       }
     });
   }
@@ -263,7 +263,7 @@
       const item = items[i];
       card.addEventListener('click', e => { if (!e.target.closest('button')) showDetail(item); });
       card.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) { e.preventDefault(); showDetail(item); }});
-      card.querySelector('[data-rf-watch]')?.addEventListener('click', e => { e.stopPropagation(); window.roflixAnimePlayer?.play(item); });
+      card.querySelector('[data-rf-watch]')?.addEventListener('click', e => { e.stopPropagation(); showToast?.('info', 'Anime', 'RoFlix hiện chỉ hiển thị thông tin anime, chưa tích hợp nguồn phát.'); });
       card.querySelector('[data-rf-info]')?.addEventListener('click', e => { e.stopPropagation(); showDetail(item); });
       card.querySelector('[data-rf-fav]')?.addEventListener('click', e => { e.stopPropagation(); toggleFavorite(item.slug); });
     });
