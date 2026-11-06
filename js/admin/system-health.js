@@ -45,6 +45,11 @@ async function checkTable(db,table){
  try{const result=await db.from(table).select('*',{head:true,count:'exact'});if(result.error){add('Bảng Supabase: '+table,'fail',result.error.message,'Kiểm tra migration, tên bảng và quyền RLS');return;}add('Bảng Supabase: '+table,'ok','Truy vấn metadata thành công'+(Number.isFinite(result.count)?' · '+result.count+' bản ghi nhìn thấy':''),'Số bản ghi phản ánh quyền của phiên hiện tại');}
  catch(e){add('Bảng Supabase: '+table,'fail',e.message,'Lỗi truy vấn không mong đợi');}
 }
+async function checkRpc(db,name,args,validator){
+ const started=performance.now();
+ try{const result=await db.rpc(name,args||{});const elapsed=Math.round(performance.now()-started);if(result.error){add('RPC quản trị: '+name,'fail',result.error.message,'Kiểm tra migration, quyền EXECUTE và điều kiện admin ở backend');return;}if(validator&&!validator(result.data)){add('RPC quản trị: '+name,'warn','RPC phản hồi nhưng dữ liệu không đúng cấu trúc mong đợi.','Kiểm tra contract của hàm');return;}add('RPC quản trị: '+name,'ok','Phản hồi thành công · '+elapsed+' ms','Đã kiểm tra qua phiên admin hiện tại');}
+ catch(e){add('RPC quản trị: '+name,'fail',e.message,'Lỗi gọi RPC không mong đợi');}
+}
 async function run(){
  if(state.running)return;state.running=true;state.results=[];state.lastRun=new Date().toISOString();checks.startedAt=performance.now();const runButton=$('health-run-btn');if(runButton){runButton.disabled=true;runButton.textContent='Đang kiểm tra…';}render();
  const db=client();
@@ -69,8 +74,10 @@ async function run(){
   add('Kiểm tra bị giới hạn','warn','Đã dừng các truy vấn sâu vì không xác minh được phiên admin.','Không chạy truy vấn bảng hoặc kiểm tra API khi chưa xác thực admin.');
   state.running=false;state.lastRun=new Date().toISOString();if(runButton){runButton.disabled=false;runButton.textContent='▶ Chạy kiểm tra';}render();return;
  }
- await Promise.all(['profiles','rohub_theme_versions','rotruyen_series','rotruyen_chapters','roflix_active_sessions','roflix_admin_audit_logs'].map(t=>checkTable(db,t)));
- await Promise.all(['js/config/supabase.config.js','js/core/supabase.js','js/admin/admin.js','js/admin/rotruyen-admin.js','js/admin/admin-v3.js','css/admin/admin.css','css/admin/admin-v3.css','js/rotruyen/published-theme-runtime.js'].map(checkAsset));
+ await Promise.all(['profiles','rohub_templates','rohub_template_revisions','rohub_published_themes','rotruyen_series','rotruyen_chapters','rotruyen_audit_logs','roflix_active_sessions','roflix_admin_audit_logs','roflix_admin_control_events','roflix_admin_feature_flags','roflix_site_events'].map(t=>checkTable(db,t)));
+ await checkRpc(db,'roflix_admin_live_ops',{},p=>!!p&&typeof p==='object');
+ add('Telemetry lỗi runtime','warn','Schema roflix_site_events hiện chưa cho phép các event error, playback_error hoặc api_error.','Bộ đếm lỗi trong Live Ops chưa thể xác nhận hệ thống không có lỗi. Cần bổ sung luồng ghi nhận lỗi riêng trước khi dùng số 0 làm trạng thái xanh.');
+ await Promise.all(['js/config/supabase.config.js','js/core/supabase.js','js/admin/admin.js','js/admin/admin-6-control-plane.js','js/admin/system-health.js','js/admin/rotruyen-admin.js','js/admin/admin-v3.js','css/admin/admin.css','css/admin/admin-v3.css','css/admin/admin-6-control-plane.css','css/admin/system-health.css','js/rotruyen/published-theme-runtime.js'].map(checkAsset));
  await Promise.all([
   checkApi('Nguồn phim NguonC','https://phim.nguonc.com/api/films/phim-moi-cap-nhat?page=1',p=>p?.status==='success'&&Array.isArray(p.items)),
   checkApi('Nguồn phim VSMOV','https://vsmov.com/api/danh-sach/phim-moi-cap-nhat?page=1',p=>!!p&&(Array.isArray(p.data)||Array.isArray(p.items)||Array.isArray(p.results))),
