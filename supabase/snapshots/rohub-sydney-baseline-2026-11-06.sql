@@ -4152,4 +4152,19 @@ GRANT EXECUTE ON FUNCTION public.rotruyen_touch_updated_at() TO anon;
 GRANT EXECUTE ON FUNCTION public.rotruyen_touch_updated_at() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.rotruyen_touch_updated_at() TO service_role;
 
+
+-- 11. Storage bucket metadata (object bytes are migrated separately)
+INSERT INTO storage.buckets (id,name,public,file_size_limit,allowed_mime_types) VALUES
+('roflix-gacha','roflix-gacha',true,NULL,NULL),
+('roflix-media','roflix-media',false,2147483648,ARRAY['video/mp4','image/jpeg','image/png','image/webp']::text[]),
+('roflix-profile','roflix-profile',true,NULL,NULL),
+('rotruyen-pages','rotruyen-pages',true,15728640,ARRAY['image/jpeg','image/png','image/webp','image/gif']::text[])
+ON CONFLICT (id) DO UPDATE SET name=excluded.name,public=excluded.public,file_size_limit=excluded.file_size_limit,allowed_mime_types=excluded.allowed_mime_types;
+
+-- 12. Keep RLS enabled on future public tables.
+CREATE EVENT TRIGGER ensure_rls
+ON ddl_command_end
+WHEN TAG IN ('CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO')
+EXECUTE FUNCTION public.rls_auto_enable();
+
 commit;
