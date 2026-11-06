@@ -3,6 +3,27 @@
 // Nguồn phát catalog duy nhất: NguonC. VidSrc chỉ là trình phát ngoài do người dùng chủ động chọn.
 // ============================================================
 
+// Danh sách phim không có nguồn phát được ẩn trên trình duyệt hiện tại.
+function getRoFlixUnavailableSlugs() {
+    try {
+        const values = JSON.parse(localStorage.getItem('roflix-unavailable-movies') || '[]');
+        return new Set(Array.isArray(values) ? values.map(String) : []);
+    } catch (_) { return new Set(); }
+}
+
+function markRoFlixMovieUnavailable(slug) {
+    const key = String(slug || '').trim();
+    if (!key) return;
+    try {
+        const values = getRoFlixUnavailableSlugs();
+        values.add(key);
+        localStorage.setItem('roflix-unavailable-movies', JSON.stringify(Array.from(values)));
+    } catch (_) {}
+    document.querySelectorAll('[data-rf-card][data-rf-slug]').forEach(card => {
+        if (card.dataset.rfSlug === key) card.remove();
+    });
+}
+
 // Load helper VidSrc nếu chưa có (không cần sửa index.html)
 (function ensureVidSrcHelper() {
     if (window.RoflixVidSrc) return;
@@ -35,21 +56,12 @@ async function playMovie(slug, preferredSrc, titleHint) {
             await new Promise(r => setTimeout(r, 120));
             tries++;
         }
-        if (currentEpisodeList.length === 0) {
-            const title = titleHint || currentMovieTitle || currentMovieData?.title || currentMovieData?.name || '';
-            const kkRecovered = await useKkphimPlayback(slug, title);
-            if (kkRecovered) showToast('warning', 'Nguồn dự phòng', 'Đã tìm thấy tập phát từ KKPhim.');
-        }
-        if (currentEpisodeList.length === 0) {
-            const recovered = await useVsmovPlayback(slug, titleHint || currentMovieTitle || currentMovieData?.title || '');
-            if (recovered) showToast('warning', 'Nguồn dự phòng', 'Đã tìm thấy tập phát từ VSMOV.');
-        }
         if (currentEpisodeList.length > 0) {
             playMovieByIndex(0);
-        } else if (typeof showToastPro === 'function') {
-            showToastPro('error', 'Chưa có tập', 'NguonC, KKPhim và VSMOV đều chưa có link phát cho phim này.');
         } else {
-            showToast('error', 'Chưa có tập', 'NguonC, KKPhim và VSMOV đều chưa có link phát cho phim này.');
+            markRoFlixMovieUnavailable(slug);
+            navigateTo('home-page');
+            showToast('warning', 'Đã ẩn phim', 'Phim không có link phát hợp lệ từ nguồn chính nên đã được ẩn khỏi danh sách trên thiết bị này.');
         }
     } catch (e) {
         console.error(e);
@@ -383,29 +395,19 @@ async function playMovieByIndex(index, options = {}) {
     window.__RF_LAST_EP_INDEX__ = index;
 
     if (!ep.link) {
-        const kkRecovered = await useKkphimPlayback(currentSlug, currentMovieTitle);
-        if (kkRecovered) {
-            showToast('warning', 'Nguồn dự phòng', 'Đã chuyển sang link phát từ KKPhim.');
-            return playMovieByIndex(0, Object.assign({}, options, { skipSourceCheck: true }));
-        }
-        const recovered = await useVsmovPlayback(currentSlug, currentMovieTitle);
-        if (recovered) {
-            showToast('warning', 'Nguồn dự phòng', 'Đã chuyển sang link phát từ VSMOV.');
-            return playMovieByIndex(0, Object.assign({}, options, { skipSourceCheck: true }));
-        }
-        showToast('error', 'Lỗi', 'Không có link phát từ NguonC, KKPhim hoặc VSMOV!');
+        markRoFlixMovieUnavailable(currentSlug);
+        cleanupCatalogVideo();
+        navigateTo('home-page');
+        showToast('warning', 'Đã ẩn phim', 'Tập này không có link phát hợp lệ từ nguồn chính.');
         return;
     }
     if (!options.skipSourceCheck && ep.link.includes('player.phimapi.com')) {
         const alive = await kkphimStreamAlive(ep.link);
         if (!alive) {
-            const moved = await useVsmovPlayback(currentSlug, currentMovieTitle);
-            if (moved) {
-                showToast('warning', 'Nguồn dự phòng', 'Link NguonC không còn hoạt động. Đã chuyển sang VSMOV.');
-                return playMovieByIndex(0, Object.assign({}, options, { skipSourceCheck: true }));
-            }
-            navigateTo('play-page');
-            clearPlayerError();
+            markRoFlixMovieUnavailable(currentSlug);
+            cleanupCatalogVideo();
+            navigateTo('home-page');
+            showToast('warning', 'Đã ẩn phim', 'Nguồn phát chính đã xác nhận link không còn hoạt động. Phim đã được ẩn trên thiết bị này.');
             return;
         }
     }
