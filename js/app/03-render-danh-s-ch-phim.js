@@ -49,9 +49,13 @@
                 return;
             }
             
+            const unavailableSlugs = typeof getRoFlixUnavailableSlugs === 'function'
+                ? getRoFlixUnavailableSlugs()
+                : new Set();
             const mappedMovies = movies
                 .map(item => mapMovieData(item))
-                .filter(m => isValidPosterUrl(m.poster));
+                .filter(m => isValidPosterUrl(m.poster))
+                .filter(m => !unavailableSlugs.has(String(m.slug || '')));
             
             const countEl = document.getElementById('movie-count');
             if (countEl) {
