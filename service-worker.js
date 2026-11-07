@@ -1,5 +1,5 @@
-const CACHE_NAME = 'roflix-app-shell-v6';
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/roflix-icon.svg'];
+const CACHE_NAME = 'roflix-app-shell-v7';
+const APP_SHELL = ['/', '/index.html', '/roaudio.html', '/manifest.webmanifest', '/icons/roflix-icon.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(APP_SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('message',event=>{if(event.data?.type==='ROFLIX_SKIP_WAITING')self.skipWaiting()});
