@@ -76,7 +76,7 @@ The browser calls this endpoint only. The server chooses the configured public p
 - ScoreBat currently requires an API token even though it offers a free-feed tier.
 - QiuXiaoCe requires an `X-API-Key`.
 - TheSportsDB is marked as requiring an API key in the community API directory.
-- No dependable no-key source has been validated for broad esports results, tennis or volleyball player/league statistics.
+- No dependable no-key source has been validated for broad esports results, tennis or volleyball player/league statistics, or official starting lineups.
 
 ## Operational safeguards
 
