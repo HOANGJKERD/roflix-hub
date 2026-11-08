@@ -13,6 +13,7 @@
 const FOOTBALL = 'https://api-football-standings.azharimm.site';
 const OPENLIGA = 'https://api.openligadb.de';
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports';
+const ESPN_V2 = 'https://site.api.espn.com/apis/v2/sports';
 const NHL = 'https://api-web.nhle.com/v1';
 const OPENF1 = 'https://api.openf1.org/v1';
 const TOURNAMENTS = 'https://tourneyradar-api.vercel.app';
@@ -148,6 +149,7 @@ function normalizeItems(data, sport, resource, provider) {
   if (resource === 'standings') {
     const root = data && data.data || data;
     if (Array.isArray(root)) rows = root;
+    else if (Array.isArray(root && root.children)) rows = root.children.flatMap(group => group.standings && Array.isArray(group.standings.entries) ? group.standings.entries : []);
     else if (Array.isArray(root && root.standings)) rows = root.standings.flatMap(group => Array.isArray(group.entries) ? group.entries : [group]);
     else if (root && root.standings && Array.isArray(root.standings.entries)) rows = root.standings.entries;
     else if (Array.isArray(root && root.records)) rows = root.records;
@@ -184,7 +186,7 @@ async function footballRequest(resource, q) {
         const data = await getJson(FOOTBALL + '/leagues/' + encodeURIComponent(league) + '/standings?season=' + season + '&sort=asc');
         return ok(data, 'football-standings', 'football', resource, 900);
       } catch (_) {
-        const data = removeBettingFields(await getJson(ESPN + '/soccer/' + encodeURIComponent(league) + '/standings'));
+        const data = removeBettingFields(await getJson(ESPN_V2 + '/soccer/' + encodeURIComponent(league) + '/standings?season=' + season));
         return ok(data, 'espn-public', 'football', resource, 900);
       }
     }
@@ -246,7 +248,7 @@ async function espnRequest(sport, resource, q) {
     return ok(data, 'espn-public', sport, resource, 90);
   }
   if (resource === 'standings') {
-    const data = removeBettingFields(await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/standings'));
+    const data = removeBettingFields(await getJson(ESPN_V2 + '/' + category + '/' + encodeURIComponent(league) + '/standings'));
     return ok(data, 'espn-public', sport, resource, 900);
   }
   if (resource === 'teams') {
