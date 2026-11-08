@@ -21,8 +21,8 @@ const TIMEOUT_MS = 10000;
 const PROVIDERS = [
   { id: 'football-standings', sport: 'football', auth: false, resources: ['leagues', 'standings'], note: 'ESPN-derived football league catalog and standings; no fixtures or player profiles.' },
   { id: 'openligadb', sport: 'football', auth: false, resources: ['leagues', 'matches', 'standings', 'teams'], note: 'Community-maintained results, fixtures and team data; strongest in German leagues and selected competitions.' },
-  { id: 'espn-public', sport: 'football,basketball', auth: false, resources: ['matches', 'leagues', 'teams', 'standings'], note: 'Public ESPN site endpoints, undocumented and subject to change; not an official developer API.' },
-  { id: 'nhl-public', sport: 'hockey', auth: false, resources: ['matches', 'standings', 'teams', 'roster'], note: 'Public NHL web endpoints; coverage is ice hockey.' },
+  { id: 'espn-public', sport: 'football,basketball', auth: false, resources: ['matches', 'leagues', 'teams', 'players', 'standings'], note: 'Public ESPN site endpoints, undocumented and subject to change; not an official developer API.' },
+  { id: 'nhl-public', sport: 'hockey', auth: false, resources: ['matches', 'standings', 'teams', 'players'], note: 'Public NHL web endpoints; coverage is ice hockey.' },
   { id: 'openf1', sport: 'motorsport', auth: false, resources: ['sessions', 'meetings', 'drivers', 'laps', 'pit', 'position', 'race_control', 'stints', 'intervals', 'starting_grid', 'car_data', 'location'], note: 'Historical F1 data from 2023 onward is free; real-time data requires a paid subscription.' },
   { id: 'tourney-radar', sport: 'chess', auth: false, resources: ['tournaments'], note: 'Chess tournament directory, not esports match data.' },
   { id: 'touchline-wire', sport: 'football', auth: false, resources: ['standings', 'teams', 'lineups', 'matches'], note: 'Premier League-only community API; requires visible attribution and should be treated as an experimental source until runtime checks pass.' }
@@ -91,18 +91,57 @@ function removeBettingFields(value) {
   }
   return clean;
 }
-function ok(data, provider, sport, resource, cacheSeconds) {
-  return {
-    ok: true,
-    sport,
-    resource,
-    provider,
-    fetchedAt: new Date().toISOString(),
-    cacheSeconds,
-    data
-  };
+function normalizeItems(data, sport, resource, provider) {
+  let rows = [];
+  if (resource === 'matches') {
+    if (Array.isArray(data)) rows = data;
+    else if (Array.isArray(data && data.events)) rows = data.events;
+    else if (Array.isArray(data && data.games)) rows = data.games;
+    return rows.map(row => {
+      if (row.team1 && row.team2) {
+        const final = (row.matchResults || []).filter(x => x.resultTypeID === 2).slice(-1)[0] || (row.matchResults || []).slice(-1)[0];
+        return { id: String(row.matchID || ''), home: row.team1.teamName || '', away: row.team2.teamName || '', homeScore: final ? final.pointsTeam1 : null, awayScore: final ? final.pointsTeam2 : null, status: row.matchIsFinished ? 'finished' : 'scheduled', startAt: row.matchDateTimeUTC || row.matchDateTime || null, competition: row.leagueName || '', source: provider };
+      }
+      if (row.competitions && row.competitions[0]) {
+        const event = row.competitions[0], home = (event.competitors || []).find(x => x.homeAway === 'home'), away = (event.competitors || []).find(x => x.homeAway === 'away');
+        return { id: String(row.id || event.id || ''), home: home && home.team && home.team.displayName || '', away: away && away.team && away.team.displayName || '', homeScore: home && home.score != null ? home.score : null, awayScore: away && away.score != null ? away.score : null, status: event.status && event.status.type && event.status.type.state || 'scheduled', startAt: event.date || row.date || null, competition: row.league && row.league.name || '', source: provider };
+      }
+      if (row.homeTeam && row.awayTeam) return { id: String(row.id || row.gameId || ''), home: row.homeTeam.abbrev || row.homeTeam.name || '', away: row.awayTeam.abbrev || row.awayTeam.name || '', homeScore: row.homeTeam.score ?? null, awayScore: row.awayTeam.score ?? null, status: row.gameState || 'scheduled', startAt: row.startTimeUTC || row.gameDate || null, competition: 'NHL', source: provider };
+      return { id: String(row.session_key || row.meeting_key || ''), home: row.session_name || row.session_type || 'F1 session', away: row.circuit_short_name || row.country_name || '', homeScore: null, awayScore: null, status: 'session', startAt: row.date_start || null, competition: 'Formula 1', source: provider };
+    });
+  }
+  if (['teams', 'players', 'roster', 'sessions', 'drivers', 'tournaments'].includes(resource)) {
+    if (Array.isArray(data)) rows = data;
+    else if (Array.isArray(data && data.data)) rows = data.data;
+    else if (Array.isArray(data && data.athletes)) rows = data.athletes;
+    else if (Array.isArray(data && data.items)) rows = data.items;
+    return rows.map((row, index) => ({
+      id: String(row.id || row.athleteId || row.teamId || row.session_key || row.key || index),
+      name: row.fullName || row.displayName || row.name || row.teamName || row.session_name || row.competitor_name || row.athlete && row.athlete.displayName || 'Unknown',
+      abbreviation: row.abbreviation || row.triCode || row.abbrev || row.shortName || '',
+      position: row.position && (row.position.name || row.position.abbreviation) || '',
+      country: row.country || row.country_name || '',
+      startAt: row.date_start || row.startDate || row.start_time || null,
+      source: provider
+    }));
+  }
+  if (resource === 'standings') {
+    const root = data && data.data || data;
+    if (Array.isArray(root)) rows = root;
+    else if (Array.isArray(root && root.standings)) rows = root.standings.flatMap(group => group.entries || []);
+    else if (root && root.standings && Array.isArray(root.standings.entries)) rows = root.standings.entries;
+    else if (Array.isArray(root && root.records)) rows = root.records;
+    return rows.map((row, index) => {
+      const stats = Array.isArray(row.stats) ? row.stats.reduce((acc, stat) => { acc[stat.name || stat.abbreviation] = stat.value; return acc; }, {}) : {};
+      const team = row.team || row.teamInfo || {};
+      return { rank: row.rank || row.position || index + 1, team: team.displayName || team.teamName || row.name || row.teamName || '', played: row.played ?? stats.gamesPlayed ?? stats.P ?? null, wins: row.won ?? stats.wins ?? stats.W ?? null, draws: row.drawn ?? stats.ties ?? stats.D ?? null, losses: row.lost ?? stats.losses ?? stats.L ?? null, points: row.points ?? stats.points ?? stats.PTS ?? null, goalDifference: row.goalDifference ?? stats.pointDifferential ?? stats.GD ?? null, source: provider };
+    });
+  }
+  return [];
 }
-
+function ok(data, provider, sport, resource, cacheSeconds) {
+  return { ok: true, sport, resource, provider, fetchedAt: new Date().toISOString(), cacheSeconds, items: normalizeItems(data, sport, resource, provider), data };
+}
 async function footballRequest(resource, q) {
   const league = cleanLeague(q.league);
   const season = int(q.season, new Date().getUTCFullYear(), 1900, 2200);
