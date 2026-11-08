@@ -22,6 +22,11 @@ function renderSport(sport){
  grid.append(fragment);
  document.querySelectorAll('.sport-tab').forEach(button=>{const active=button.dataset.sport===sport;button.classList.toggle('active',active);button.setAttribute('aria-selected',String(active));});
  if(sportFilter)sportFilter.value=sport;
+ if(resourceFilter){
+  if(sport==='motorsport')resourceFilter.value='sessions';
+  else if(sport==='chess')resourceFilter.value='tournaments';
+  else if(resourceFilter.value==='sessions'||resourceFilter.value==='tournaments')resourceFilter.value='matches';
+ }
  if(leagueFilter){leagueFilter.replaceChildren(new Option('Tất cả giải đấu','all'));group.competitions.forEach(([id,name])=>leagueFilter.add(new Option(name,id)));}
 }
 function setPanel(heading,copy,state){
