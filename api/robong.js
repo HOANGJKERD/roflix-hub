@@ -331,14 +331,14 @@ module.exports = async function robongUnifiedApi(req, res) {
     else if (sport === 'hockey') result = await hockeyRequest(resource, q);
     else if (sport === 'motorsport') result = await f1Request(resource, q);
     else if (sport === 'chess') result = await chessRequest(resource, q);
-    else throw new Error('No verified no-key provider is currently configured for sport: ' + sport);
+    else { const unsupported = new Error('No verified no-key provider is currently configured for sport: ' + sport); unsupported.status = 501; throw unsupported; }
 
     const seconds = Math.max(30, Math.min(3600, Number(result.cacheSeconds) || 120));
     res.setHeader('Cache-Control', 'public, s-maxage=' + seconds + ', stale-while-revalidate=' + (seconds * 2));
     res.setHeader('Vary', 'Accept');
     return res.status(200).json(result);
   } catch (error) {
-    const status = error && error.status === 429 ? 503 : 502;
+    const status = error && error.status === 429 ? 503 : error && error.status === 501 ? 501 : error && error.status === 400 ? 400 : 502;
     res.setHeader('Cache-Control', 'no-store');
     return res.status(status).json({
       ok: false,
