@@ -62,7 +62,7 @@ function renderRows(data,sport,resource){
    addRow(row.home+' vs '+row.away,score,(row.status||'')+' · '+(row.competition||row.source||''));return;
   }
   if(resource==='standings'&&row.team){
-   addRow((row.rank?'#'+row.rank+' ':'')+row.team,(row.points!=null?'Điểm: '+row.points+' · ':'')+(row.played??'–')+' trận · '+(row.winRate!=null?'Tỷ lệ thắng '+(Number(row.winRate)*100).toFixed(1)+'%':''),(row.group?row.group+' · ':'')+'Thắng '+(row.wins??'–')+' · Hòa '+(row.draws??'–')+' · Thua '+(row.losses??'–')+(row.goalDifference!=null?' · HS '+row.goalDifference:''));return;
+   addRow((row.rank?'#'+row.rank+' ':'')+row.team,(row.points!=null?'Điểm: '+row.points+' · ':'')+(row.played??'–')+' trận · '+(row.winRate!=null?'Tỷ lệ thắng '+(Number(row.winRate)*100).toFixed(1)+'%':''),(row.group?row.group+' · ':'')+'Thắng '+(row.wins??'–')+' · Hòa '+(row.draws??'–')+' · Thua '+(row.losses??'–')+(row.goalDifference!=null?' · Chênh lệch '+row.goalDifference:''));return;
   }
   if(row.team1&&row.team2){
    const result=(row.matchResults||[]).filter(x=>x.resultTypeID===2).slice(-1)[0]||(row.matchResults||[]).slice(-1)[0];
