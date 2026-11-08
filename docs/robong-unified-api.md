@@ -47,7 +47,6 @@ The browser calls this endpoint only. The server chooses the configured public p
 | `?sport=football&resource=matches&league=bl1&season=2026` | OpenLigaDB match schedule/results |
 | `?sport=football&resource=teams&league=eng.1` | Football teams |
 | `?sport=football&resource=players&league=eng.1&team_id=359` | Team roster from ESPN |
-| `?sport=football&resource=lineups&team=arsenal` | Experimental Premier League predicted lineup |
 | `?sport=basketball&resource=matches&league=nba` | ESPN public NBA scoreboard |
 | `?sport=basketball&resource=standings&league=nba` | ESPN public NBA standings |
 | `?sport=basketball&resource=teams&league=nba` | NBA team catalog |
@@ -67,7 +66,6 @@ The browser calls this endpoint only. The server chooses the configured public p
 - **ESPN public site endpoints**: no API key for current observed endpoints; undocumented developer interface, may change without notice. Betting-related fields are removed before returning the data.
 - **NHL public endpoints**: no API key; ice hockey scoreboard, standings, teams and rosters.
 - **OpenF1**: no API key for historical data from 2023 onward. Real-time data requires a paid subscription, so this integration does not claim live telemetry.
-- **Touchline Wire**: experimental Premier League tactical source. It asks for visible attribution and should be treated as provisional until its endpoint reliability is monitored.
 - **TourneyRadar**: no API key for chess tournament listings. It is not an esports results provider.
 
 ## Not included in the no-key profile
