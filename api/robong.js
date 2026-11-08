@@ -192,7 +192,17 @@ async function footballRequest(resource, q) {
   }
   if (resource === 'matches') {
     if (league && !league.includes('.')) {
-      const data = await getJson(OPENLIGA + '/getmatchdata/' + encodeURIComponent(league) + '/' + season);
+      let data = await getJson(OPENLIGA + '/getmatchdata/' + encodeURIComponent(league) + '/' + season);
+      const range = str(q.date, '', 17).replace(/[^0-9-]/g, '');
+      if (Array.isArray(data) && /^\\d{8}(?:-\\d{8})?$/.test(range)) {
+        const parts = range.split('-'), from = parts[0], to = parts[1] || parts[0];
+        data = data.filter(match => {
+          const raw = match.matchDateTimeUTC || match.matchDateTime;
+          if (!raw) return false;
+          const day = new Date(raw).toISOString().slice(0, 10).replace(/-/g, '');
+          return day >= from && day <= to;
+        });
+      }
       return ok(data, 'openligadb', 'football', resource, 120);
     }
     const competition = league || 'eng.1';
