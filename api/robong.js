@@ -8,7 +8,9 @@
 // GET /api/robong?sport=hockey&resource=standings
 // GET /api/robong?sport=motorsport&resource=sessions&year=2025
 // GET /api/robong?sport=esports&resource=providers
+// GET /api/robong?resource=channels|groups|play  (live)
 'use strict';
+const { handleLive } = require('../lib/robong/live');
 
 const FOOTBALL = 'https://api-football-standings.azharimm.site';
 const OPENLIGA = 'https://api.openligadb.de';
@@ -204,7 +206,7 @@ async function footballRequest(resource, q) {
     if (league && !league.includes('.')) {
       let data = await getJson(OPENLIGA + '/getmatchdata/' + encodeURIComponent(league) + '/' + season);
       const range = str(q.date, '', 17).replace(/[^0-9-]/g, '');
-      if (Array.isArray(data) && /^\d{8}(?:-\d{8})?$/.test(range)) {
+      if (Array.isArray(data) && /^\\d{8}(?:-\\d{8})?$/.test(range)) {
         const parts = range.split('-'), from = parts[0], to = parts[1] || parts[0];
         data = data.filter(match => {
           const raw = match.matchDateTimeUTC || match.matchDateTime;
@@ -232,7 +234,7 @@ async function footballRequest(resource, q) {
   }
   if (resource === 'players') {
     const teamId = str(q.team_id, '', 16);
-    if (!/^\d+$/.test(teamId)) throw new Error('The players resource requires an ESPN team_id from the teams response.');
+    if (!/^\\d+$/.test(teamId)) throw new Error('The players resource requires an ESPN team_id from the teams response.');
     const data = removeBettingFields(await getJson(ESPN + '/soccer/' + encodeURIComponent(league || 'eng.1') + '/teams/' + teamId + '/roster'));
     return ok(data, 'espn-public', 'football', resource, 1800);
   }
@@ -258,7 +260,7 @@ async function espnRequest(sport, resource, q) {
   }
   if (resource === 'players') {
     const teamId = str(q.team_id, '', 16);
-    if (!/^\d+$/.test(teamId)) throw new Error('The players resource requires a team_id from the teams response.');
+    if (!/^\\d+$/.test(teamId)) throw new Error('The players resource requires a team_id from the teams response.');
     const data = removeBettingFields(await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/teams/' + teamId + '/roster'));
     return ok(data, 'espn-public', sport, resource, 1800);
   }
@@ -314,9 +316,17 @@ module.exports = async function robongUnifiedApi(req, res) {
   const q = req.query || {};
   const sport = str(q.sport, 'football', 24).toLowerCase();
   const resource = str(q.resource, 'providers', 32).toLowerCase();
+
+  if (resource === 'channels' || resource === 'groups' || resource === 'play' || resource === 'channel' || sport === 'live') {
+    const live = handleLive(q);
+    if (live.cache) res.setHeader('Cache-Control', 'public, s-maxage=' + live.cache + ', stale-while-revalidate=' + (live.cache * 2));
+    else res.setHeader('Cache-Control', 'no-store');
+    return res.status(live.status).json(live.body);
+  }
+
   if (resource === 'providers') {
     res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
-    return res.status(200).json({ ok: true, api: 'RoBong Unified API', version: '1.0.0', authRequired: false, providers: PROVIDERS, unsupported: [
+    return res.status(200).json({ ok: true, api: 'RoBong Unified API', version: '1.1.0', authRequired: false, providers: PROVIDERS, unsupported: [
       { sport: 'esports', reason: 'Chưa tìm được nguồn dữ liệu esports đủ tin cậy, không cần tài khoản/API key và có điều khoản sử dụng rõ ràng.' },
       { sport: 'tennis, volleyball', reason: 'Chưa có nhà cung cấp no-key đủ ổn định để cam kết lịch, tỷ số, bảng xếp hạng và hồ sơ vận động viên.' },
       { sport: 'basketball player statistics', reason: 'BALLDONTLIE hiện yêu cầu tài khoản và API key; không nằm trong cấu hình no-key.' },
