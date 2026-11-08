@@ -148,7 +148,7 @@ async function footballRequest(resource, q) {
   }
   if (resource === 'players') {
     const teamId = str(q.team_id, '', 16);
-    if (!/^\\d+$/.test(teamId)) throw new Error('The players resource requires an ESPN team_id from the teams response.');
+    if (!/^\d+$/.test(teamId)) throw new Error('The players resource requires an ESPN team_id from the teams response.');
     const data = removeBettingFields(await getJson(ESPN + '/soccer/' + encodeURIComponent(league || 'eng.1') + '/teams/' + teamId + '/roster'));
     return ok(data, 'espn-public', 'football', resource, 1800);
   }
@@ -180,7 +180,7 @@ async function espnRequest(sport, resource, q) {
   }
   if (resource === 'players') {
     const teamId = str(q.team_id, '', 16);
-    if (!/^\\d+$/.test(teamId)) throw new Error('The players resource requires a team_id from the teams response.');
+    if (!/^\d+$/.test(teamId)) throw new Error('The players resource requires a team_id from the teams response.');
     const data = removeBettingFields(await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/teams/' + teamId + '/roster'));
     return ok(data, 'espn-public', sport, resource, 1800);
   }
