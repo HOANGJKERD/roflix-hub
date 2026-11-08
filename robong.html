@@ -7,7 +7,7 @@
 <title>RoBong 2.0 | The Game Is On</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/robong/main.css?v=2.2.0">
+<link rel="stylesheet" href="css/robong/main.css?v=2.3.0">
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js" defer></script>
 </head>
 <body>
@@ -39,48 +39,52 @@
  </section>
  <section class="ticker" aria-label="Các môn thể thao"><div>FOOTBALL <b>✳</b> BASKETBALL <b>✳</b> TENNIS <b>✳</b> ESPORTS <b>✳</b> VOLLEYBALL <b>✳</b> MOTORSPORT <b>✳</b> FOOTBALL <b>✳</b> BASKETBALL <b>✳</b> TENNIS <b>✳</b> ESPORTS <b>✳</b></div></section>
 
- <!-- LIVE SECTION -->
- <section class="section" id="live">
+ <!-- LIVE — layout inspired by modern live-score hubs -->
+ <section class="section live-section" id="live">
   <div class="section-head">
    <div>
     <span class="kicker">00 / LIVE STREAM</span>
     <h2>XEM TRỰC TIẾP</h2>
-    <p>Kênh curated · bấm để phát. Nguồn bên thứ ba có thể gián đoạn bất kỳ lúc nào.</p>
+    <p>Chọn kênh · phát ngay. Nguồn bên thứ ba có thể gián đoạn.</p>
    </div>
-   <span class="section-code">ROBONG LIVE API</span>
+   <span class="section-code">ROBONG LIVE</span>
   </div>
 
-  <div class="live-layout">
-   <div class="live-player-wrap">
-    <div class="live-player" id="live-player">
-     <video id="live-video" controls playsinline poster="" style="width:100%;height:100%;background:#000;border-radius:14px;"></video>
-     <div class="live-player-overlay" id="live-overlay">
-      <span class="live-dot"></span>
-      <b id="live-now-title">Chọn kênh để xem</b>
-      <small id="live-now-meta">RoBong Live · curated channels</small>
-     </div>
+  <!-- Featured hero card -->
+  <div class="live-hero" id="live-hero">
+   <div class="live-hero-bg" id="live-hero-bg"></div>
+   <div class="live-hero-content">
+    <div class="live-hero-badges">
+     <span class="live-badge group" id="live-hero-group">LIVE</span>
+     <span class="live-badge onair"><i></i> TRỰC TIẾP</span>
     </div>
-    <div class="live-now-bar">
-     <span id="live-status">Sẵn sàng</span>
-     <button type="button" class="live-stop" id="live-stop" hidden>Dừng</button>
-    </div>
+    <h3 id="live-hero-title">Chọn kênh bên dưới</h3>
+    <p id="live-hero-sub">RoBong Live · curated channels</p>
+    <button type="button" class="live-cta" id="live-hero-cta" disabled>
+     <span>▶</span> XEM NGAY
+    </button>
+    <small class="live-hero-hint" id="live-status">Sẵn sàng</small>
    </div>
-
-   <div class="live-sidebar">
-    <div class="live-toolbar">
-     <label>Nhóm
-      <select id="live-group">
-       <option value="">Tất cả nhóm</option>
-      </select>
-     </label>
-     <button type="button" class="live-refresh" id="live-refresh" title="Tải lại danh sách">↻</button>
-    </div>
-    <div class="live-channels" id="live-channels" aria-live="polite">
-     <div class="live-empty">Đang tải danh sách kênh…</div>
-    </div>
+   <div class="live-hero-player" id="live-player-box" hidden>
+    <video id="live-video" controls playsinline></video>
+    <button type="button" class="live-stop" id="live-stop">✕ Dừng</button>
    </div>
   </div>
-  <div class="source-note">Luồng phát từ nguồn bên thứ ba. RoBong không lưu trữ hay phát lại nội dung có bản quyền. Nếu kênh lỗi, thử kênh khác hoặc tải lại.</div>
+
+  <!-- Filter pills -->
+  <div class="live-pills" id="live-pills" role="tablist">
+   <button type="button" class="live-pill active" data-group="">Tất cả</button>
+  </div>
+
+  <!-- Channel cards grid -->
+  <div class="live-grid" id="live-channels" aria-live="polite">
+   <div class="live-empty">Đang tải danh sách kênh…</div>
+  </div>
+
+  <div class="live-toolbar-bottom">
+   <button type="button" class="live-refresh" id="live-refresh">↻ Tải lại kênh</button>
+  </div>
+  <div class="source-note">Luồng phát từ nguồn bên thứ ba. RoBong không lưu trữ hay phát lại nội dung có bản quyền.</div>
  </section>
 
  <section class="section" id="scores">
@@ -111,7 +115,7 @@
  <section class="watch-section" id="watch"><div><span class="kicker">04 / WHERE TO WATCH</span><h2>XEM ĐÚNG TRẬN.<br><em>ĐÚNG NGUỒN.</em></h2><p>RoBong ưu tiên trang phát sóng chính thức, lịch truyền hình và đơn vị sở hữu bản quyền. Không tự lưu trữ hoặc phát lại nội dung có bản quyền.</p></div><div class="watch-links"><a href="https://www.fifa.com/" target="_blank" rel="noopener noreferrer">FIFA <span>↗</span></a><a href="https://www.uefa.com/" target="_blank" rel="noopener noreferrer">UEFA <span>↗</span></a><a href="https://olympics.com/" target="_blank" rel="noopener noreferrer">Olympics <span>↗</span></a><a href="https://lolesports.com/" target="_blank" rel="noopener noreferrer">LoL Esports <span>↗</span></a></div></section>
 </main>
 <footer><a class="footer-brand" href="rohub.html">RoBong<span>.</span></a><span>AN INDEPENDENT SPORTS & ESPORTS HUB</span><a href="rohub.html">← Trở về RoHub</a></footer>
-<script src="js/robong/sports.js?v=2.2.0" defer></script>
-<script src="js/robong/app.js?v=2.2.0" defer></script>
-<script src="js/robong/live.js?v=2.2.0" defer></script>
+<script src="js/robong/sports.js?v=2.3.0" defer></script>
+<script src="js/robong/app.js?v=2.3.0" defer></script>
+<script src="js/robong/live.js?v=2.3.0" defer></script>
 </body></html>
