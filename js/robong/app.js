@@ -75,7 +75,7 @@ async function loadData(){
  let league=leagueFilter?.value||'all';if(league==='all')league=sport==='basketball'?'NBA':sport==='hockey'?'NHL':sport==='football'?'EPL':'';
  const params=new URLSearchParams({sport,resource});
  if(league&&leagueMap[league])params.set('league',leagueMap[league]);
- if(sport==='football'&&resource==='teams')params.set('league','bl1');
+ 
  if(resource==='matches'&&(sport==='football'||sport==='basketball'))params.set('date',dateParam());
  if(resource==='lineups')params.set('team','arsenal');
  if(resource==='players'&&sport==='football')params.set('team_id','359');
@@ -87,7 +87,7 @@ async function loadData(){
  try{
   const response=await fetch('/api/robong?'+params.toString(),{headers:{Accept:'application/json'},signal:requestController.signal}),body=await response.json();
   if(!response.ok||!body.ok)throw new Error(body.error||'Nguồn dữ liệu hiện không khả dụng.');
-  renderRows(body.data,sport,resource);
+  renderRows(Array.isArray(body.items)&&body.items.length?body.items:body.data,sport,resource);
   if(status)status.textContent='SOURCE: '+String(body.provider||'unified').toUpperCase()+' · UPDATED '+new Date(body.fetchedAt).toLocaleTimeString('vi-VN');
  }catch(error){if(error.name==='AbortError')return;setPanel('Chưa có nguồn dữ liệu phù hợp',error.message+' RoBong không tự tạo tỷ số hoặc thông tin thay thế.','SOURCE UNAVAILABLE · NO MOCK DATA');}
 }
