@@ -21,11 +21,11 @@ const TIMEOUT_MS = 10000;
 const PROVIDERS = [
   { id: 'football-standings', sport: 'football', auth: false, resources: ['leagues', 'standings'], note: 'ESPN-derived football league catalog and standings; no fixtures or player profiles.' },
   { id: 'openligadb', sport: 'football', auth: false, resources: ['leagues', 'matches', 'standings', 'teams'], note: 'Community-maintained results, fixtures and team data; strongest in German leagues and selected competitions.' },
-  { id: 'espn-public', sport: 'football,basketball', auth: false, resources: ['matches', 'leagues', 'teams', 'players', 'standings'], note: 'Public ESPN site endpoints, undocumented and subject to change; not an official developer API.' },
+  { id: 'espn-public', sport: 'football,basketball', auth: false, resources: ['matches', 'teams', 'players', 'standings'], note: 'Public ESPN site endpoints, undocumented and subject to change; not an official developer API.' },
   { id: 'nhl-public', sport: 'hockey', auth: false, resources: ['matches', 'standings', 'teams', 'players'], note: 'Public NHL web endpoints; coverage is ice hockey.' },
   { id: 'openf1', sport: 'motorsport', auth: false, resources: ['sessions', 'meetings', 'drivers', 'laps', 'pit', 'position', 'race_control', 'stints', 'intervals', 'starting_grid', 'car_data', 'location'], note: 'Historical F1 data from 2023 onward is free; real-time data requires a paid subscription.' },
   { id: 'tourney-radar', sport: 'chess', auth: false, resources: ['tournaments'], note: 'Chess tournament directory, not esports match data.' },
-  { id: 'touchline-wire', sport: 'football', auth: false, resources: ['standings', 'teams', 'lineups', 'matches'], note: 'Premier League-only community API; requires visible attribution and should be treated as an experimental source until runtime checks pass.' }
+  { id: 'touchline-wire', sport: 'football', auth: false, resources: ['lineups'], note: 'Premier League-only community API; requires visible attribution and should be treated as an experimental source until runtime checks pass.' }
 ];
 
 const ALLOWED_OPENF1 = new Set(['sessions', 'meetings', 'drivers', 'laps', 'pit', 'position', 'race_control', 'stints', 'intervals', 'starting_grid', 'car_data', 'location']);
@@ -245,7 +245,7 @@ async function espnRequest(sport, resource, q) {
     const data = removeBettingFields(await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/scoreboard' + (date ? '?dates=' + date : '')));
     return ok(data, 'espn-public', sport, resource, 90);
   }
-  if (resource === 'leagues' || resource === 'standings') {
+  if (resource === 'standings') {
     const data = removeBettingFields(await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/standings'));
     return ok(data, 'espn-public', sport, resource, 900);
   }
