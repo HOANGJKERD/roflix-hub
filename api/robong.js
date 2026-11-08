@@ -138,9 +138,19 @@ async function footballRequest(resource, q) {
     return ok(data, 'espn-public', 'football', resource, 90);
   }
   if (resource === 'teams') {
-    if (!league) throw new Error('The teams resource requires an OpenLigaDB league shortcut, for example bl1.');
-    const data = await getJson(OPENLIGA + '/getavailableteams/' + encodeURIComponent(league));
+    if (!league) throw new Error('The teams resource requires a league id or OpenLigaDB shortcut.');
+    if (league.includes('.')) {
+      const data = removeBettingFields(await getJson(ESPN + '/soccer/' + encodeURIComponent(league) + '/teams'));
+      return ok(data, 'espn-public', 'football', resource, 3600);
+    }
+    const data = await getJson(OPENLIGA + '/getteams/' + encodeURIComponent(league) + '/' + season);
     return ok(data, 'openligadb', 'football', resource, 3600);
+  }
+  if (resource === 'players') {
+    const teamId = str(q.team_id, '', 16);
+    if (!/^\\d+$/.test(teamId)) throw new Error('The players resource requires an ESPN team_id from the teams response.');
+    const data = removeBettingFields(await getJson(ESPN + '/soccer/' + encodeURIComponent(league || 'eng.1') + '/teams/' + teamId + '/roster'));
+    return ok(data, 'espn-public', 'football', resource, 1800);
   }
   if (resource === 'lineups') {
     const team = cleanTeam(q.team);
@@ -168,6 +178,12 @@ async function espnRequest(sport, resource, q) {
     const data = removeBettingFields(await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/teams'));
     return ok(data, 'espn-public', sport, resource, 3600);
   }
+  if (resource === 'players') {
+    const teamId = str(q.team_id, '', 16);
+    if (!/^\\d+$/.test(teamId)) throw new Error('The players resource requires a team_id from the teams response.');
+    const data = removeBettingFields(await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/teams/' + teamId + '/roster'));
+    return ok(data, 'espn-public', sport, resource, 1800);
+  }
   throw new Error('Unsupported ESPN resource');
 }
 
@@ -187,7 +203,7 @@ async function f1Request(resource, q) {
   if (!ALLOWED_OPENF1.has(resource)) throw new Error('Unsupported OpenF1 resource');
   const params = queryParams(q, ALLOWED_QUERY_KEYS);
   if (q.year && !params.has('year')) params.set('year', String(int(q.year, new Date().getUTCFullYear(), 2023, 2200)));
-  if (!params.has('year') && !params.has('session_key') && !params.has('meeting_key')) params.set('year', String(new Date().getUTCFullYear() - 1));
+  if (!params.has('year') && !params.has('session_key') && !params.has('meeting_key')) params.set('year', String(new Date().getUTCFullYear()));
   const data = await getJson(OPENF1 + '/' + resource + (params.toString() ? '?' + params.toString() : ''));
   return ok(data, 'openf1', 'motorsport', resource, 1800);
 }
