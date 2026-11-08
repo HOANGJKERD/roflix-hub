@@ -7,13 +7,21 @@
 <title>RoBong 2.0 | The Game Is On</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/robong/main.css?v=2.1.0">
+<link rel="stylesheet" href="css/robong/main.css?v=2.2.0">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js" defer></script>
 </head>
 <body>
 <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
 <header class="topbar">
  <a class="brand" href="rohub.html"><span class="brand-mark">R<span>⚽</span></span><span><b>RoBong<span>.</span></b><small>THE GAME IS ON · 2.0</small></span></a>
- <nav class="nav" id="main-nav"><a class="active" href="#home">Tổng quan</a><a href="#scores">Tỷ số</a><a href="#sports">Thể thao</a><a href="#news">Tin tức</a><a href="#watch">Nơi xem</a></nav>
+ <nav class="nav" id="main-nav">
+  <a class="active" href="#home">Tổng quan</a>
+  <a href="#scores">Tỷ số</a>
+  <a href="#live">Live</a>
+  <a href="#sports">Thể thao</a>
+  <a href="#news">Tin tức</a>
+  <a href="#watch">Nơi xem</a>
+ </nav>
  <div class="top-actions"><span class="status"><i></i> SPORTS HUB</span><a class="back" href="rohub.html">↖ RoHub</a><button class="menu" id="menu-toggle" aria-label="Mở menu" aria-expanded="false">☰</button></div>
 </header>
 <main id="home">
@@ -21,12 +29,60 @@
   <div class="hero-copy"><span class="eyebrow"><i></i> ONE HUB · EVERY ARENA</span>
    <h1>THE GAME<br><em>IS ON.</em></h1>
    <p>Từ sân cỏ đến sàn đấu điện tử. Một điểm đến để theo dõi lịch thi đấu, tỷ số, giải đấu, tin tức và những câu chuyện đáng chú ý của thế giới thể thao.</p>
-   <div class="hero-actions"><a class="btn primary" href="#scores">Khám phá trận đấu <span>↗</span></a><a class="btn secondary" href="#sports">Chọn bộ môn</a></div>
-   <div class="hero-meta"><span>01 / SPORTS</span><span>02 / ESPORTS</span><span>∞ / PASSION</span></div>
+   <div class="hero-actions">
+    <a class="btn primary" href="#scores">Khám phá trận đấu <span>↗</span></a>
+    <a class="btn secondary" href="#live">Xem Live</a>
+   </div>
+   <div class="hero-meta"><span>01 / SPORTS</span><span>02 / LIVE</span><span>∞ / PASSION</span></div>
   </div>
   <div class="hero-visual" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="field"><span class="half"></span><span class="center-circle"></span><span class="box left"></span><span class="box right"></span></div><div class="hero-ball">⚽</div><div class="visual-tag">RO<span>BONG</span><small>SPORTS CULTURE / 2026</small></div><div class="visual-index">RB—002</div></div>
  </section>
  <section class="ticker" aria-label="Các môn thể thao"><div>FOOTBALL <b>✳</b> BASKETBALL <b>✳</b> TENNIS <b>✳</b> ESPORTS <b>✳</b> VOLLEYBALL <b>✳</b> MOTORSPORT <b>✳</b> FOOTBALL <b>✳</b> BASKETBALL <b>✳</b> TENNIS <b>✳</b> ESPORTS <b>✳</b></div></section>
+
+ <!-- LIVE SECTION -->
+ <section class="section" id="live">
+  <div class="section-head">
+   <div>
+    <span class="kicker">00 / LIVE STREAM</span>
+    <h2>XEM TRỰC TIẾP</h2>
+    <p>Kênh curated · bấm để phát. Nguồn bên thứ ba có thể gián đoạn bất kỳ lúc nào.</p>
+   </div>
+   <span class="section-code">ROBONG LIVE API</span>
+  </div>
+
+  <div class="live-layout">
+   <div class="live-player-wrap">
+    <div class="live-player" id="live-player">
+     <video id="live-video" controls playsinline poster="" style="width:100%;height:100%;background:#000;border-radius:14px;"></video>
+     <div class="live-player-overlay" id="live-overlay">
+      <span class="live-dot"></span>
+      <b id="live-now-title">Chọn kênh để xem</b>
+      <small id="live-now-meta">RoBong Live · curated channels</small>
+     </div>
+    </div>
+    <div class="live-now-bar">
+     <span id="live-status">Sẵn sàng</span>
+     <button type="button" class="live-stop" id="live-stop" hidden>Dừng</button>
+    </div>
+   </div>
+
+   <div class="live-sidebar">
+    <div class="live-toolbar">
+     <label>Nhóm
+      <select id="live-group">
+       <option value="">Tất cả nhóm</option>
+      </select>
+     </label>
+     <button type="button" class="live-refresh" id="live-refresh" title="Tải lại danh sách">↻</button>
+    </div>
+    <div class="live-channels" id="live-channels" aria-live="polite">
+     <div class="live-empty">Đang tải danh sách kênh…</div>
+    </div>
+   </div>
+  </div>
+  <div class="source-note">Luồng phát từ nguồn bên thứ ba. RoBong không lưu trữ hay phát lại nội dung có bản quyền. Nếu kênh lỗi, thử kênh khác hoặc tải lại.</div>
+ </section>
+
  <section class="section" id="scores">
   <div class="section-head"><div><span class="kicker">01 / MATCH CENTER</span><h2>TRẬN ĐẤU & TỶ SỐ</h2><p>Một bảng theo dõi cho mọi đấu trường.</p></div><span class="section-code">LIVE DATA / CONNECTOR</span></div>
   <div class="match-tools"><div class="day-tabs" role="group" aria-label="Khoảng thời gian"><button class="selected" data-period="today">Hôm nay</button><button data-period="tomorrow">Ngày mai</button><button data-period="week">7 ngày tới</button></div>
@@ -55,5 +111,7 @@
  <section class="watch-section" id="watch"><div><span class="kicker">04 / WHERE TO WATCH</span><h2>XEM ĐÚNG TRẬN.<br><em>ĐÚNG NGUỒN.</em></h2><p>RoBong ưu tiên trang phát sóng chính thức, lịch truyền hình và đơn vị sở hữu bản quyền. Không tự lưu trữ hoặc phát lại nội dung có bản quyền.</p></div><div class="watch-links"><a href="https://www.fifa.com/" target="_blank" rel="noopener noreferrer">FIFA <span>↗</span></a><a href="https://www.uefa.com/" target="_blank" rel="noopener noreferrer">UEFA <span>↗</span></a><a href="https://olympics.com/" target="_blank" rel="noopener noreferrer">Olympics <span>↗</span></a><a href="https://lolesports.com/" target="_blank" rel="noopener noreferrer">LoL Esports <span>↗</span></a></div></section>
 </main>
 <footer><a class="footer-brand" href="rohub.html">RoBong<span>.</span></a><span>AN INDEPENDENT SPORTS & ESPORTS HUB</span><a href="rohub.html">← Trở về RoHub</a></footer>
-<script src="js/robong/sports.js?v=2.1.0" defer></script><script src="js/robong/app.js?v=2.1.0" defer></script>
+<script src="js/robong/sports.js?v=2.2.0" defer></script>
+<script src="js/robong/app.js?v=2.2.0" defer></script>
+<script src="js/robong/live.js?v=2.2.0" defer></script>
 </body></html>
