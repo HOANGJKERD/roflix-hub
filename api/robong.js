@@ -139,10 +139,13 @@ function normalizeItems(data, sport, resource, provider) {
     else if (resource === 'players' || resource === 'roster') rows = ['forwards','defensemen','goalies'].flatMap(key => Array.isArray(data && data[key]) ? data[key] : []);
     return rows.map((row, index) => ({
       id: String(row.id || row.athleteId || row.teamId || row.session_key || row.key || index),
-      name: row.fullName || row.displayName || row.name || row.teamName || row.session_name || row.competitor_name || row.athlete && row.athlete.displayName || 'Unknown',
+      name: row.fullName || row.displayName || row.name || row.teamName || row.session_name || row.competitor_name || row.athlete && row.athlete.displayName || (row.firstName && (row.firstName.default || row.firstName) || '') + ' ' + (row.lastName && (row.lastName.default || row.lastName) || '') || 'Unknown',
       abbreviation: row.abbreviation || row.triCode || row.abbrev || row.shortName || '',
-      position: row.position && (row.position.name || row.position.abbreviation) || '',
-      country: row.country || row.country_name || '',
+      position: row.position && (row.position.name || row.position.abbreviation || row.position) || row.positionCode || '',
+      number: row.jersey || row.sweaterNumber || null,
+      image: row.headshot && (row.headshot.href || row.headshot) || '',
+      birthDate: row.birthDate || null,
+      country: row.country || row.country_name || row.birthCountry || '',
       startAt: row.date_start || row.startDate || row.start_time || null,
       source: provider
     }));
@@ -162,7 +165,7 @@ function normalizeItems(data, sport, resource, provider) {
       const losses = row.lost ?? row.losses ?? stats.losses ?? stats.L ?? null;
       const basketball = sport === 'basketball';
       const played = row.played ?? row.gamesPlayed ?? stats.gamesPlayed ?? stats.P ?? (basketball && wins != null && losses != null ? Number(wins) + Number(losses) : null);
-      return { rank: row.rank || row.position || stats.playoffSeed || row.leagueSequence || row.divisionSequence || index + 1, group: row._group || '', team: teamLabel, played, wins, draws: row.drawn ?? row.ties ?? stats.ties ?? stats.D ?? null, losses, points: row.points ?? (!basketball ? stats.points ?? stats.PTS ?? null : null), winRate: stats.winPercent ?? stats.leagueWinPercent ?? null, goalDifference: row.goalDifference ?? row.goalDifferential ?? stats.pointDifferential ?? stats.GD ?? stats.differential ?? null, source: provider };
+      return { rank: row.rank || row.position || stats.playoffSeed || row.leagueSequence || row.divisionSequence || index + 1, group: row._group || '', team: teamLabel, played, wins, draws: row.drawn ?? row.draw ?? row.ties ?? stats.ties ?? stats.D ?? null, losses, points: row.points ?? (!basketball ? stats.points ?? stats.PTS ?? null : null), winRate: stats.winPercent ?? stats.leagueWinPercent ?? null, goalDifference: row.goalDifference ?? row.goalDiff ?? row.goalDifferential ?? stats.pointDifferential ?? stats.GD ?? stats.differential ?? null, source: provider };
     });
   }
   return [];
@@ -233,12 +236,6 @@ async function footballRequest(resource, q) {
     if (!/^\d+$/.test(teamId)) throw new Error('The players resource requires an ESPN team_id from the teams response.');
     const data = removeBettingFields(await getJson(ESPN + '/soccer/' + encodeURIComponent(league || 'eng.1') + '/teams/' + teamId + '/roster'));
     return ok(data, 'espn-public', 'football', resource, 1800);
-  }
-  if (resource === 'lineups') {
-    const team = cleanTeam(q.team);
-    if (!team) throw new Error('The lineups resource requires a Premier League club slug, for example arsenal.');
-    const data = await getJson('https://touchlinewire.com/api/v1/lineups/' + encodeURIComponent(team));
-    return ok(data, 'touchline-wire', 'football', resource, 300);
   }
   throw new Error('Unsupported football resource');
 }
@@ -323,7 +320,8 @@ module.exports = async function robongUnifiedApi(req, res) {
     return res.status(200).json({ ok: true, api: 'RoBong Unified API', version: '1.0.0', authRequired: false, providers: PROVIDERS, unsupported: [
       { sport: 'esports', reason: 'Chưa tìm được nguồn dữ liệu esports đủ tin cậy, không cần tài khoản/API key và có điều khoản sử dụng rõ ràng.' },
       { sport: 'tennis, volleyball', reason: 'Chưa có nhà cung cấp no-key đủ ổn định để cam kết lịch, tỷ số, bảng xếp hạng và hồ sơ vận động viên.' },
-      { sport: 'basketball player statistics', reason: 'BALLDONTLIE hiện yêu cầu tài khoản và API key; không nằm trong cấu hình no-key.' }
+      { sport: 'basketball player statistics', reason: 'BALLDONTLIE hiện yêu cầu tài khoản và API key; không nằm trong cấu hình no-key.' },
+      { sport: 'official lineups', reason: 'Nguồn đội hình miễn phí tìm được chưa đủ độ tin cậy để hiển thị như đội hình đã xác nhận.' }
     ] });
   }
 
