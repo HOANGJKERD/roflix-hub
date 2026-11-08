@@ -81,6 +81,16 @@ async function getJson(url, options) {
     clearTimeout(timer);
   }
 }
+function removeBettingFields(value) {
+  if (Array.isArray(value)) return value.map(removeBettingFields);
+  if (!value || typeof value !== 'object') return value;
+  const blocked = new Set(['odds', 'provider', 'providers', 'tickets', 'betting', 'moneyline', 'pointSpread', 'overUnder']);
+  const clean = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (!blocked.has(key)) clean[key] = removeBettingFields(item);
+  }
+  return clean;
+}
 function ok(data, provider, sport, resource, cacheSeconds) {
   return {
     ok: true,
@@ -147,15 +157,15 @@ async function espnRequest(sport, resource, q) {
   const category = sport === 'basketball' ? 'basketball' : 'soccer';
   if (resource === 'matches') {
     const date = str(q.date, '', 8).replace(/[^0-9]/g, '');
-    const data = await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/scoreboard' + (date ? '?dates=' + date : ''));
+    const data = removeBettingFields(await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/scoreboard' + (date ? '?dates=' + date : '')));
     return ok(data, 'espn-public', sport, resource, 90);
   }
   if (resource === 'leagues' || resource === 'standings') {
-    const data = await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/standings');
+    const data = removeBettingFields(await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/standings'));
     return ok(data, 'espn-public', sport, resource, 900);
   }
   if (resource === 'teams') {
-    const data = await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/teams');
+    const data = removeBettingFields(await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/teams'));
     return ok(data, 'espn-public', sport, resource, 3600);
   }
   throw new Error('Unsupported ESPN resource');
@@ -165,7 +175,7 @@ async function hockeyRequest(resource, q) {
   if (resource === 'standings') return ok(await getJson(NHL + '/standings/now'), 'nhl-public', 'hockey', resource, 600);
   if (resource === 'matches') return ok(await getJson(NHL + '/score/now'), 'nhl-public', 'hockey', resource, 90);
   if (resource === 'teams') return ok(await getJson('https://api.nhle.com/stats/rest/en/team'), 'nhl-public', 'hockey', resource, 3600);
-  if (resource === 'roster') {
+  if (resource === 'roster' || resource === 'players') {
     const team = str(q.team, '', 3).toUpperCase();
     if (!/^[A-Z]{3}$/.test(team)) throw new Error('Roster requires a 3-letter NHL team code, for example TOR.');
     return ok(await getJson(NHL + '/roster/' + encodeURIComponent(team) + '/current'), 'nhl-public', 'hockey', resource, 1800);
