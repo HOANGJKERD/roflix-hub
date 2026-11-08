@@ -148,13 +148,14 @@ function normalizeItems(data, sport, resource, provider) {
   if (resource === 'standings') {
     const root = data && data.data || data;
     if (Array.isArray(root)) rows = root;
-    else if (Array.isArray(root && root.standings)) rows = root.standings.flatMap(group => group.entries || []);
+    else if (Array.isArray(root && root.standings)) rows = root.standings.flatMap(group => Array.isArray(group.entries) ? group.entries : [group]);
     else if (root && root.standings && Array.isArray(root.standings.entries)) rows = root.standings.entries;
     else if (Array.isArray(root && root.records)) rows = root.records;
     return rows.map((row, index) => {
       const stats = Array.isArray(row.stats) ? row.stats.reduce((acc, stat) => { acc[stat.name || stat.abbreviation] = stat.value; return acc; }, {}) : {};
-      const team = row.team || row.teamInfo || {};
-      return { rank: row.rank || row.position || index + 1, team: team.displayName || team.teamName || row.name || row.teamName || '', played: row.played ?? stats.gamesPlayed ?? stats.P ?? null, wins: row.won ?? stats.wins ?? stats.W ?? null, draws: row.drawn ?? stats.ties ?? stats.D ?? null, losses: row.lost ?? stats.losses ?? stats.L ?? null, points: row.points ?? stats.points ?? stats.PTS ?? null, goalDifference: row.goalDifference ?? stats.pointDifferential ?? stats.GD ?? null, source: provider };
+      const team = row.team || row.teamInfo || row.teamName || {};
+      const teamLabel = typeof team === 'string' ? team : team.displayName || team.teamName || team.default || row.name || row.placeName && row.placeName.default || '';
+      return { rank: row.rank || row.position || row.leagueSequence || row.divisionSequence || index + 1, team: teamLabel, played: row.played ?? row.gamesPlayed ?? stats.gamesPlayed ?? stats.P ?? null, wins: row.won ?? row.wins ?? stats.wins ?? stats.W ?? null, draws: row.drawn ?? row.ties ?? stats.ties ?? stats.D ?? null, losses: row.lost ?? row.losses ?? stats.losses ?? stats.L ?? null, points: row.points ?? stats.points ?? stats.PTS ?? null, goalDifference: row.goalDifference ?? row.goalDifferential ?? stats.pointDifferential ?? stats.GD ?? null, source: provider };
     });
   }
   return [];
