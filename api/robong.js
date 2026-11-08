@@ -163,7 +163,7 @@ function normalizeItems(data, sport, resource, provider) {
       const wins = row.won ?? row.wins ?? stats.wins ?? stats.W ?? null;
       const losses = row.lost ?? row.losses ?? stats.losses ?? stats.L ?? null;
       const basketball = sport === 'basketball';
-      const played = row.played ?? row.gamesPlayed ?? stats.gamesPlayed ?? stats.P ?? (basketball && wins != null && losses != null ? Number(wins) + Number(losses) : null);
+      const played = row.played ?? row.gamesPlayed ?? row.matches ?? stats.gamesPlayed ?? stats.P ?? (basketball && wins != null && losses != null ? Number(wins) + Number(losses) : null);
       return { rank: row.rank || row.position || stats.playoffSeed || row.leagueSequence || row.divisionSequence || index + 1, group: row._group || '', team: teamLabel, played, wins, draws: row.drawn ?? row.draw ?? row.ties ?? stats.ties ?? stats.D ?? null, losses, points: row.points ?? (!basketball ? stats.points ?? stats.PTS ?? null : null), winRate: stats.winPercent ?? stats.leagueWinPercent ?? null, goalDifference: row.goalDifference ?? row.goalDiff ?? row.goalDifferential ?? stats.pointDifferential ?? stats.GD ?? stats.differential ?? null, source: provider };
     });
   }
