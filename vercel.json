@@ -3,6 +3,14 @@
     {
       "source": "/api/nguonc/:path*",
       "destination": "/api/nguonc?path=:path*"
+    },
+    {
+      "source": "/api/robong-live",
+      "destination": "/api/robong"
+    },
+    {
+      "source": "/api/robong-live/:path*",
+      "destination": "/api/robong"
     }
   ]
 }
