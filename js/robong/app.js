@@ -1,116 +1,354 @@
 (() => {
 'use strict';
-const registry=window.RoBongSports||{},grid=document.getElementById('league-grid');
-const sportTitle=document.getElementById('sport-title'),sportKicker=document.getElementById('sport-kicker'),leagueCount=document.getElementById('league-count');
-const sportFilter=document.getElementById('sport-filter'),leagueFilter=document.getElementById('league-filter'),resourceFilter=document.getElementById('resource-filter');
-const panel=document.getElementById('data-panel'),title=document.getElementById('data-title'),description=document.getElementById('data-description'),status=document.getElementById('data-status'),results=document.getElementById('data-results');
-let currentSport='football',period='today',requestController=null;
-const leagueMap={EPL:'eng.1',UCL:'uefa.champions',VLeague:'vietnam.1',LaLiga:'esp.1',SerieA:'ita.1',Bundesliga:'bl1',Ligue1:'fra.1',WorldCup:'fifa.world',NBA:'nba',NHL:'nhl'};
-function renderSport(sport){
- const group=registry[sport];if(!group||!grid)return;currentSport=sport;
- sportTitle.textContent=group.label;sportKicker.textContent=group.kicker;leagueCount.textContent=String(group.competitions.length).padStart(2,'0')+' GIẢI ĐẤU';
- grid.replaceChildren();const fragment=document.createDocumentFragment();
- group.competitions.forEach(([id,name,meta,mark,tone])=>{
-  const card=document.createElement('a');card.className='league-card';card.href='#scores';card.dataset.league=id;
-  const symbol=document.createElement('span');symbol.className='league-symbol '+(tone||'green');symbol.textContent=mark;
-  const copy=document.createElement('span'),heading=document.createElement('strong'),sub=document.createElement('small');
-  heading.textContent=name;sub.textContent=meta;copy.append(heading,sub);
-  const arrow=document.createElement('b');arrow.textContent='↗';card.append(symbol,copy,arrow);
-  card.addEventListener('click',()=>{if(sportFilter)sportFilter.value=sport;if(leagueFilter)leagueFilter.value=id;loadData();});
-  fragment.append(card);
- });
- grid.append(fragment);
- document.querySelectorAll('.sport-tab').forEach(button=>{const active=button.dataset.sport===sport;button.classList.toggle('active',active);button.setAttribute('aria-selected',String(active));});
- if(sportFilter)sportFilter.value=sport;
- if(resourceFilter){
-  if(sport==='motorsport')resourceFilter.value='sessions';
-  else if(sport==='chess')resourceFilter.value='tournaments';
-  else if(resourceFilter.value==='sessions'||resourceFilter.value==='tournaments')resourceFilter.value='matches';
- }
- if(leagueFilter){leagueFilter.replaceChildren(new Option('Tất cả giải đấu','all'));group.competitions.forEach(([id,name])=>leagueFilter.add(new Option(name,id)));}
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+// ---------- state ----------
+let channels = [];
+let currentGroup = '';
+let selectedChannel = null;
+let hls = null;
+let resultsDay = 'today';
+
+// ---------- helpers ----------
+function dateStr(offset = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
 }
-function setPanel(heading,copy,state){
- if(title)title.textContent=heading;if(description)description.textContent=copy;if(status)status.textContent=state||'RO BONG UNIFIED API';if(results)results.replaceChildren();
+
+async function api(path) {
+  const res = await fetch(path, { headers: { Accept: 'application/json' } });
+  const body = await res.json();
+  if (!res.ok || body.ok === false) throw new Error(body.error || 'API error');
+  return body;
 }
-function addRow(primary,secondary,meta){
- const item=document.createElement('div');item.className='data-item';
- const main=document.createElement('b'),sub=document.createElement('span'),small=document.createElement('small');
- main.textContent=primary||'Chưa có tên';sub.textContent=secondary||'';small.textContent=meta||'';
- item.append(main,sub,small);results.append(item);
-}
-function dateParam(){
- const now=new Date(),plus=period==='tomorrow'?1:0,start=new Date(now.getFullYear(),now.getMonth(),now.getDate()+plus);
- const fmt=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
- if(period==='week'){const end=new Date(start);end.setDate(end.getDate()+6);return fmt(start)+'-'+fmt(end);}return fmt(start);
-}
-function rowsFrom(data,sport,resource){
- if(Array.isArray(data))return data;
- if((sport==='football'||sport==='basketball')&&Array.isArray(data.events))return data.events;
- if(sport==='hockey'&&Array.isArray(data.games))return data.games;
- if(resource==='standings'){const d=data.data||data;if(Array.isArray(d.standings))return d.standings.flatMap(s=>s.entries||[]);if(Array.isArray(d))return d;if(Array.isArray(d.standings?.entries))return d.standings.entries;}
- if(resource==='teams'){const d=data.data||data;if(Array.isArray(d))return d;if(Array.isArray(d.sports?.[0]?.leagues?.[0]?.teams))return d.sports[0].leagues[0].teams;}
- if(resource==='tournaments'&&Array.isArray(data.data))return data.data;
- return [];
-}
-function renderRows(data,sport,resource){
- const rows=rowsFrom(data,sport,resource);
- if(!rows.length){setPanel('Nguồn đã phản hồi nhưng chưa có dữ liệu phù hợp','Không có bản ghi cho bộ lọc hiện tại. Hãy thử giải đấu hoặc khoảng thời gian khác.','UPSTREAM OK · 0 RECORDS');return;}
- setPanel('Dữ liệu đã đồng bộ',rows.length+' bản ghi được trả về từ nguồn dữ liệu.','CONNECTED · '+rows.length+' RECORDS');
- rows.slice(0,40).forEach(row=>{
-  if(row.home&&row.away){
-   const score=row.homeScore!=null||row.awayScore!=null?String(row.homeScore??'–')+' : '+String(row.awayScore??'–'):'Chưa có tỷ số';
-   addRow(row.home+' vs '+row.away,score,(row.status||'')+' · '+(row.competition||row.source||''));return;
+
+// ---------- standings ----------
+async function loadStandings(league = 'eng.1') {
+  const el = $('#bxh-list');
+  if (!el) return;
+  el.innerHTML = '<div class="rb-loading">Đang tải…</div>';
+  try {
+    const data = await api('/api/robong?sport=football&resource=standings&league=' + encodeURIComponent(league));
+    const items = data.items || [];
+    if (!items.length) {
+      el.innerHTML = '<div class="rb-empty">Chưa có dữ liệu</div>';
+      return;
+    }
+    el.replaceChildren();
+    items.slice(0, 10).forEach((row, i) => {
+      const div = document.createElement('div');
+      div.className = 'rb-stand-row';
+      const rank = row.rank || i + 1;
+      div.innerHTML =
+        '<span class="rank">' + rank + '</span>' +
+        '<span class="club">' + (row.team || '—') + '</span>' +
+        '<span class="played">' + (row.played ?? '–') + '</span>' +
+        '<span class="pts">' + (row.points ?? '–') + '</span>';
+      el.append(div);
+    });
+  } catch (e) {
+    el.innerHTML = '<div class="rb-empty">' + (e.message || 'Lỗi') + '</div>';
   }
-  if(resource==='players'&&row.name){
-   addRow(row.name,row.position||'Vị trí chưa rõ',(row.number?'Số áo '+row.number+' · ':'')+(row.country||'')+(row.birthDate?' · '+row.birthDate:''));return;
-  }
-  if(resource==='standings'&&row.team){
-   addRow((row.rank?'#'+row.rank+' ':'')+row.team,(row.points!=null?'Điểm: '+row.points+' · ':'')+(row.played??'–')+' trận · '+(row.winRate!=null?'Tỷ lệ thắng '+(Number(row.winRate)*100).toFixed(1)+'%':''),(row.group?row.group+' · ':'')+'Thắng '+(row.wins??'–')+' · Hòa '+(row.draws??'–')+' · Thua '+(row.losses??'–')+(row.goalDifference!=null?' · Chênh lệch '+row.goalDifference:''));return;
-  }
-  if(row.team1&&row.team2){
-   const result=(row.matchResults||[]).filter(x=>x.resultTypeID===2).slice(-1)[0]||(row.matchResults||[]).slice(-1)[0];
-   addRow((row.team1.teamName||'')+' vs '+(row.team2.teamName||''),result?result.pointsTeam1+' : '+result.pointsTeam2:(row.matchIsFinished?'Đã kết thúc':'Chưa thi đấu'),row.leagueName||row.matchDateTime||'OpenLigaDB');return;
-  }
-  if(row.competitions){
-   const c=row.competitions[0],home=c?.competitors?.find(x=>x.homeAway==='home'),away=c?.competitors?.find(x=>x.homeAway==='away');
-   addRow((home?.team?.displayName||'Đội nhà')+' vs '+(away?.team?.displayName||'Đội khách'),home&&away?(home.score??'–')+' : '+(away.score??'–'):'Chưa có tỷ số',c?.status?.type?.detail||row.date||'ESPN');return;
-  }
-  if(row.homeTeam){
-   addRow((row.awayTeam?.abbrev||'')+' vs '+(row.homeTeam?.abbrev||''),(row.awayTeam?.score??'–')+' : '+(row.homeTeam?.score??'–'),row.gameState||row.gameDate||'NHL');return;
-  }
-  if(sport==='motorsport'){addRow(row.session_name||row.session_type||'F1 Session',row.circuit_short_name||row.country_name||'',row.date_start||row.date_end||'OpenF1');return;}
-  const name=row.name||row.teamName||row.displayName||row.fullName||row.team?.displayName||row.club||'Dữ liệu thể thao';
-  const extra=row.points!=null?'Điểm: '+row.points:row.city||row.abbreviation||row.tricode||row.seasonDisplay||'';
-  addRow(name,extra,row.country||row.rank?'Hạng '+(row.rank||''):'RoBong API');
- });
 }
-async function loadData(){
- if(!panel)return;if(requestController)requestController.abort();requestController=new AbortController();
- const sport=(sportFilter?.value&&sportFilter.value!=='all')?sportFilter.value:currentSport,resource=resourceFilter?.value||'matches';
- let league=leagueFilter?.value||'all';if(league==='all')league=sport==='basketball'?'NBA':sport==='hockey'?'NHL':sport==='football'?'EPL':'';
- const params=new URLSearchParams({sport,resource});
- if(league&&leagueMap[league])params.set('league',leagueMap[league]);
- 
- if(resource==='matches'&&(sport==='football'||sport==='basketball'))params.set('date',dateParam());
- if(resource==='players'&&sport==='football')params.set('team_id','359');
- if(resource==='players'&&sport==='basketball')params.set('team_id','13');
- if(resource==='players'&&sport==='hockey')params.set('team','TOR');
- if(resource==='sessions')params.set('year',String(new Date().getFullYear()-1));
- if(resource==='tournaments')params.set('limit','30');
- setPanel('Đang tải dữ liệu…','RoBong Unified API đang truy vấn '+sport+' / '+resource+'.','FETCHING / '+sport.toUpperCase());
- try{
-  const response=await fetch('/api/robong?'+params.toString(),{headers:{Accept:'application/json'},signal:requestController.signal}),body=await response.json();
-  if(!response.ok||!body.ok)throw new Error(body.error||'Nguồn dữ liệu hiện không khả dụng.');
-  renderRows(Array.isArray(body.items)&&body.items.length?body.items:body.data,sport,resource);
-  if(status)status.textContent='SOURCE: '+String(body.provider||'unified').toUpperCase()+' · UPDATED '+new Date(body.fetchedAt).toLocaleTimeString('vi-VN');
- }catch(error){if(error.name==='AbortError')return;setPanel('Chưa có nguồn dữ liệu phù hợp',error.message+' RoBong không tự tạo tỷ số hoặc thông tin thay thế.','SOURCE UNAVAILABLE · NO MOCK DATA');}
+
+// ---------- results / matches ----------
+async function loadResults() {
+  const el = $('#results-list');
+  const matchEl = $('#match-list');
+  if (!el) return;
+  el.innerHTML = '<div class="rb-loading">Đang tải…</div>';
+  if (matchEl) matchEl.innerHTML = '<div class="rb-loading">Đang tải…</div>';
+
+  const offset = resultsDay === 'yesterday' ? -1 : resultsDay === 'tomorrow' ? 1 : 0;
+  const date = dateStr(offset);
+
+  try {
+    const data = await api('/api/robong?sport=football&resource=matches&league=eng.1&date=' + date);
+    const items = data.items || [];
+    renderMatchCards(el, items.slice(0, 12), true);
+    if (matchEl) renderMatchCards(matchEl, items, false);
+
+    // schedule from same data or tomorrow
+    const sched = $('#schedule-list');
+    if (sched) {
+      const upcoming = items.filter(m => {
+        const s = String(m.status || '').toLowerCase();
+        return s === 'pre' || s === 'scheduled' || s === 'status_scheduled';
+      }).slice(0, 8);
+      if (!upcoming.length) {
+        sched.innerHTML = '<div class="rb-empty">Chưa có lịch gần</div>';
+      } else {
+        sched.replaceChildren();
+        upcoming.forEach(m => {
+          const row = document.createElement('div');
+          row.className = 'rb-sched-row';
+          const t = m.startAt ? new Date(m.startAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+          row.innerHTML =
+            '<span class="time">' + t + '</span>' +
+            '<span class="names">' + (m.home || '?') + ' <b>vs</b> ' + (m.away || '?') + '</span>' +
+            '<span class="comp">' + (m.competition || '') + '</span>';
+          sched.append(row);
+        });
+      }
+    }
+  } catch (e) {
+    el.innerHTML = '<div class="rb-empty">' + (e.message || 'Lỗi') + '</div>';
+    if (matchEl) matchEl.innerHTML = '<div class="rb-empty">' + (e.message || 'Lỗi') + '</div>';
+  }
 }
-document.querySelectorAll('.sport-tab').forEach(button=>button.addEventListener('click',()=>{renderSport(button.dataset.sport);loadData();}));
-if(sportFilter)sportFilter.addEventListener('change',()=>{const sport=sportFilter.value;if(sport!=='all'&&registry[sport])renderSport(sport);loadData();});
-if(leagueFilter)leagueFilter.addEventListener('change',loadData);if(resourceFilter)resourceFilter.addEventListener('change',loadData);
-document.querySelectorAll('.day-tabs button').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.day-tabs button').forEach(b=>b.classList.toggle('selected',b===button));period=button.dataset.period;loadData();}));
-const menu=document.getElementById('menu-toggle'),nav=document.getElementById('main-nav');
-if(menu&&nav){menu.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));menu.textContent=open?'✕':'☰';});nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');menu.setAttribute('aria-expanded','false');menu.textContent='☰';}));}
-document.querySelectorAll('.nav a[href^="#"]').forEach(link=>link.addEventListener('click',()=>{document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a===link));}));
-renderSport(currentSport);loadData();
+
+function renderMatchCards(container, items, compact) {
+  container.replaceChildren();
+  if (!items.length) {
+    container.innerHTML = '<div class="rb-empty">Không có trận</div>';
+    return;
+  }
+  items.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'rb-match-card';
+    const status = String(m.status || '').toLowerCase();
+    const live = status.includes('in') || status === 'live' || status === 'status_in_progress';
+    const score =
+      m.homeScore != null || m.awayScore != null
+        ? (m.homeScore ?? '–') + ' - ' + (m.awayScore ?? '–')
+        : '—';
+    card.innerHTML =
+      '<div class="mc-left">' +
+        (live ? '<span class="mc-live">LIVE</span>' : '<span class="mc-status">' + (m.status || '') + '</span>') +
+      '</div>' +
+      '<div class="mc-mid">' +
+        '<span class="mc-home">' + (m.home || '?') + '</span>' +
+        '<span class="mc-score">' + score + '</span>' +
+        '<span class="mc-away">' + (m.away || '?') + '</span>' +
+      '</div>' +
+      '<button type="button" class="mc-watch">Xem TT</button>';
+    const btn = card.querySelector('.mc-watch');
+    btn.addEventListener('click', () => {
+      // jump to live section / first channel
+      if (channels[0]) {
+        selectChannel(channels[0]);
+        document.getElementById('feature-box')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+    container.append(card);
+  });
+}
+
+// ---------- live channels ----------
+async function loadChannels() {
+  const list = $('#channel-list');
+  if (!list) return;
+  list.innerHTML = '<div class="rb-loading">Đang tải kênh…</div>';
+  try {
+    const data = await api('/api/robong-live?resource=channels');
+    channels = data.items || [];
+    renderPills();
+    renderChannels();
+    if (channels[0]) selectChannel(channels[0], false);
+  } catch (e) {
+    list.innerHTML = '<div class="rb-empty">' + (e.message || 'Lỗi kênh') + '</div>';
+  }
+}
+
+function renderPills() {
+  const el = $('#channel-pills');
+  if (!el) return;
+  const groups = [...new Set(channels.map(c => c.group).filter(Boolean))];
+  el.replaceChildren();
+  const all = document.createElement('button');
+  all.type = 'button';
+  all.className = 'rb-pill' + (!currentGroup ? ' active' : '');
+  all.textContent = 'Tất cả';
+  all.onclick = () => { currentGroup = ''; renderPills(); renderChannels(); };
+  el.append(all);
+  groups.forEach(g => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'rb-pill' + (currentGroup === g ? ' active' : '');
+    b.textContent = g;
+    b.onclick = () => { currentGroup = g; renderPills(); renderChannels(); };
+    el.append(b);
+  });
+}
+
+function renderChannels() {
+  const list = $('#channel-list');
+  if (!list) return;
+  const filtered = currentGroup
+    ? channels.filter(c => c.group === currentGroup)
+    : channels;
+  list.replaceChildren();
+  if (!filtered.length) {
+    list.innerHTML = '<div class="rb-empty">Không có kênh</div>';
+    return;
+  }
+  filtered.forEach(ch => {
+    const card = document.createElement('div');
+    card.className = 'rb-match-card' + (selectedChannel && selectedChannel.id === ch.id ? ' active' : '');
+    card.innerHTML =
+      '<div class="mc-left"><span class="mc-live">LIVE</span></div>' +
+      '<div class="mc-mid ch">' +
+        (ch.logo ? '<img class="ch-logo" src="' + ch.logo + '" alt="" loading="lazy">' : '') +
+        '<div><b>' + (ch.name || ch.id) + '</b><small>' + (ch.group || '') + '</small></div>' +
+      '</div>' +
+      '<button type="button" class="mc-watch">Xem TT</button>';
+    card.querySelector('.mc-watch').onclick = e => {
+      e.stopPropagation();
+      selectChannel(ch);
+      playChannel(ch.id);
+    };
+    card.onclick = () => selectChannel(ch);
+    list.append(card);
+  });
+}
+
+function selectChannel(ch, enableCta = true) {
+  selectedChannel = ch;
+  const home = $('#feature-home');
+  const away = $('#feature-away');
+  const league = $('#feature-league');
+  const score = $('#feature-score');
+  const cta = $('#feature-cta');
+  const hint = $('#feature-hint');
+  const bg = $('#feature-bg');
+
+  if (home) home.textContent = ch.name || 'Kênh';
+  if (away) away.textContent = ch.group || 'Live';
+  if (league) league.textContent = ch.group || 'ROBONG LIVE';
+  if (score) score.textContent = '▶';
+  if (hint) hint.textContent = (ch.type || 'stream').toUpperCase() + ' · ' + (ch.source || 'curated');
+  if (bg && ch.logo) bg.style.backgroundImage = 'url(' + ch.logo + ')';
+  if (cta) {
+    cta.disabled = !enableCta;
+    cta.onclick = () => playChannel(ch.id);
+  }
+  renderChannels();
+}
+
+async function playChannel(id) {
+  const box = $('#feature-player');
+  const body = $('#feature-body');
+  const video = $('#live-video');
+  const hint = $('#feature-hint');
+  if (!video || !box) return;
+
+  if (hint) hint.textContent = 'Đang lấy link…';
+  try {
+    const data = await api('/api/robong-live?resource=play&id=' + encodeURIComponent(id));
+    const item = data.item;
+    if (!item || !item.url) throw new Error('Không có link');
+
+    if (hls) { try { hls.destroy(); } catch (_) {} hls = null; }
+    video.removeAttribute('src');
+
+    box.hidden = false;
+    if (body) body.style.display = 'none';
+
+    const url = item.url;
+    const type = (item.type || '').toLowerCase();
+
+    if (type === 'hls' || url.includes('.m3u8')) {
+      if (window.Hls && Hls.isSupported()) {
+        hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+        video.play().catch(() => {});
+      }
+    } else {
+      video.src = url;
+      video.play().catch(() => {});
+    }
+    if (hint) hint.textContent = 'Đang phát';
+  } catch (e) {
+    if (hint) hint.textContent = e.message || 'Lỗi phát';
+  }
+}
+
+function stopPlayer() {
+  const box = $('#feature-player');
+  const body = $('#feature-body');
+  const video = $('#live-video');
+  if (hls) { try { hls.destroy(); } catch (_) {} hls = null; }
+  if (video) { video.removeAttribute('src'); video.load(); }
+  if (box) box.hidden = true;
+  if (body) body.style.display = '';
+}
+
+// ---------- UI bindings ----------
+function bindUI() {
+  const menu = $('#rb-menu');
+  const nav = $('#rb-nav');
+  if (menu && nav) {
+    menu.onclick = () => nav.classList.toggle('open');
+  }
+
+  $('#bxh-league')?.addEventListener('change', e => loadStandings(e.target.value));
+  $('#bxh-more')?.addEventListener('click', () => loadStandings($('#bxh-league')?.value || 'eng.1'));
+
+  $$('#hot-leagues button').forEach(btn => {
+    btn.onclick = () => {
+      const lg = btn.dataset.league;
+      const sel = $('#bxh-league');
+      if (sel) {
+        // add option if missing
+        if (![...sel.options].some(o => o.value === lg)) {
+          sel.add(new Option(btn.textContent, lg));
+        }
+        sel.value = lg;
+      }
+      loadStandings(lg);
+    };
+  });
+
+  $$('.rb-day-pills button').forEach(btn => {
+    btn.onclick = () => {
+      $$('.rb-day-pills button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      resultsDay = btn.dataset.day || 'today';
+      loadResults();
+    };
+  });
+
+  $$('.rb-tab').forEach(tab => {
+    tab.onclick = () => {
+      $$('.rb-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const panel = tab.dataset.panel;
+      const ch = $('#channel-list');
+      const mt = $('#match-list');
+      const pills = $('#channel-pills');
+      if (panel === 'matches') {
+        if (ch) ch.hidden = true;
+        if (pills) pills.hidden = true;
+        if (mt) mt.hidden = false;
+      } else {
+        if (ch) ch.hidden = false;
+        if (pills) pills.hidden = false;
+        if (mt) mt.hidden = true;
+        if (panel === 'all') {
+          currentGroup = '';
+          renderPills();
+          renderChannels();
+        }
+      }
+    };
+  });
+
+  $('#player-close')?.addEventListener('click', stopPlayer);
+  $('#feature-cta')?.addEventListener('click', () => {
+    if (selectedChannel) playChannel(selectedChannel.id);
+  });
+}
+
+// ---------- init ----------
+bindUI();
+loadStandings('eng.1');
+loadResults();
+loadChannels();
 })();

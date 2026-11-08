@@ -1,121 +1,161 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#08110d">
-<meta name="description" content="RoBong 2.0 - trung tâm thể thao, bóng đá và esports.">
-<title>RoBong 2.0 | The Game Is On</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/robong/main.css?v=2.3.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a0e0f">
+<meta name="description" content="RoBong - Xem bóng đá trực tiếp, tỷ số, bảng xếp hạng">
+<title>RoBong | Xem bóng đá trực tiếp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/robong/main.css?v=3.0.0">
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js" defer></script>
 </head>
-<body>
-<div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
-<header class="topbar">
- <a class="brand" href="rohub.html"><span class="brand-mark">R<span>⚽</span></span><span><b>RoBong<span>.</span></b><small>THE GAME IS ON · 2.0</small></span></a>
- <nav class="nav" id="main-nav">
-  <a class="active" href="#home">Tổng quan</a>
-  <a href="#scores">Tỷ số</a>
-  <a href="#live">Live</a>
-  <a href="#sports">Thể thao</a>
-  <a href="#news">Tin tức</a>
-  <a href="#watch">Nơi xem</a>
- </nav>
- <div class="top-actions"><span class="status"><i></i> SPORTS HUB</span><a class="back" href="rohub.html">↖ RoHub</a><button class="menu" id="menu-toggle" aria-label="Mở menu" aria-expanded="false">☰</button></div>
-</header>
-<main id="home">
- <section class="hero">
-  <div class="hero-copy"><span class="eyebrow"><i></i> ONE HUB · EVERY ARENA</span>
-   <h1>THE GAME<br><em>IS ON.</em></h1>
-   <p>Từ sân cỏ đến sàn đấu điện tử. Một điểm đến để theo dõi lịch thi đấu, tỷ số, giải đấu, tin tức và những câu chuyện đáng chú ý của thế giới thể thao.</p>
-   <div class="hero-actions">
-    <a class="btn primary" href="#scores">Khám phá trận đấu <span>↗</span></a>
-    <a class="btn secondary" href="#live">Xem Live</a>
-   </div>
-   <div class="hero-meta"><span>01 / SPORTS</span><span>02 / LIVE</span><span>∞ / PASSION</span></div>
-  </div>
-  <div class="hero-visual" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="field"><span class="half"></span><span class="center-circle"></span><span class="box left"></span><span class="box right"></span></div><div class="hero-ball">⚽</div><div class="visual-tag">RO<span>BONG</span><small>SPORTS CULTURE / 2026</small></div><div class="visual-index">RB—002</div></div>
- </section>
- <section class="ticker" aria-label="Các môn thể thao"><div>FOOTBALL <b>✳</b> BASKETBALL <b>✳</b> TENNIS <b>✳</b> ESPORTS <b>✳</b> VOLLEYBALL <b>✳</b> MOTORSPORT <b>✳</b> FOOTBALL <b>✳</b> BASKETBALL <b>✳</b> TENNIS <b>✳</b> ESPORTS <b>✳</b></div></section>
-
- <!-- LIVE — layout inspired by modern live-score hubs -->
- <section class="section live-section" id="live">
-  <div class="section-head">
-   <div>
-    <span class="kicker">00 / LIVE STREAM</span>
-    <h2>XEM TRỰC TIẾP</h2>
-    <p>Chọn kênh · phát ngay. Nguồn bên thứ ba có thể gián đoạn.</p>
-   </div>
-   <span class="section-code">ROBONG LIVE</span>
-  </div>
-
-  <!-- Featured hero card -->
-  <div class="live-hero" id="live-hero">
-   <div class="live-hero-bg" id="live-hero-bg"></div>
-   <div class="live-hero-content">
-    <div class="live-hero-badges">
-     <span class="live-badge group" id="live-hero-group">LIVE</span>
-     <span class="live-badge onair"><i></i> TRỰC TIẾP</span>
+<body class="rb-body">
+<header class="rb-top">
+  <div class="rb-top-inner">
+    <a class="rb-logo" href="robong.html">
+      <span class="rb-logo-icon">▶</span>
+      <span class="rb-logo-text">RO<span>BONG</span></span>
+      <small>ONLINE</small>
+    </a>
+    <nav class="rb-nav" id="rb-nav">
+      <a class="active" href="#home" data-tab="home">RoBong</a>
+      <a href="#live" data-tab="live">Live</a>
+      <a href="#scores" data-tab="scores">LiveScore</a>
+      <a href="#standings" data-tab="standings">Bảng Xếp Hạng</a>
+      <a href="rohub.html">RoHub</a>
+    </nav>
+    <div class="rb-top-right">
+      <a class="rb-btn-pink" href="#live">▶ Xem Live</a>
+      <button class="rb-menu" id="rb-menu" aria-label="Menu">☰</button>
     </div>
-    <h3 id="live-hero-title">Chọn kênh bên dưới</h3>
-    <p id="live-hero-sub">RoBong Live · curated channels</p>
-    <button type="button" class="live-cta" id="live-hero-cta" disabled>
-     <span>▶</span> XEM NGAY
-    </button>
-    <small class="live-hero-hint" id="live-status">Sẵn sàng</small>
-   </div>
-   <div class="live-hero-player" id="live-player-box" hidden>
-    <video id="live-video" controls playsinline></video>
-    <button type="button" class="live-stop" id="live-stop">✕ Dừng</button>
-   </div>
   </div>
+</header>
 
-  <!-- Filter pills -->
-  <div class="live-pills" id="live-pills" role="tablist">
-   <button type="button" class="live-pill active" data-group="">Tất cả</button>
-  </div>
+<main class="rb-main" id="home">
+  <div class="rb-grid">
+    <!-- LEFT: Standings -->
+    <aside class="rb-col rb-left">
+      <section class="rb-card">
+        <div class="rb-card-head">
+          <h2><span class="ico">📊</span> BXH</h2>
+          <select id="bxh-league" class="rb-select-sm">
+            <option value="eng.1">Ngoại hạng Anh</option>
+            <option value="esp.1">La Liga</option>
+            <option value="ita.1">Serie A</option>
+            <option value="ger.1">Bundesliga</option>
+            <option value="fra.1">Ligue 1</option>
+          </select>
+        </div>
+        <div class="rb-table-head"><span>#</span><span>Câu lạc bộ</span><span>Tr</span><span>Đ</span></div>
+        <div class="rb-standings" id="bxh-list">
+          <div class="rb-loading">Đang tải…</div>
+        </div>
+        <button type="button" class="rb-link-more" id="bxh-more">Xem đầy đủ bảng xếp hạng →</button>
+      </section>
 
-  <!-- Channel cards grid -->
-  <div class="live-grid" id="live-channels" aria-live="polite">
-   <div class="live-empty">Đang tải danh sách kênh…</div>
-  </div>
+      <section class="rb-card">
+        <div class="rb-card-head">
+          <h2><span class="ico">🔥</span> Giải đấu HOT</h2>
+        </div>
+        <div class="rb-hot-list" id="hot-leagues">
+          <button type="button" data-league="eng.1">English Premier League</button>
+          <button type="button" data-league="esp.1">Spanish La Liga</button>
+          <button type="button" data-league="ger.1">German Bundesliga</button>
+          <button type="button" data-league="ita.1">Italian Serie A</button>
+          <button type="button" data-league="fra.1">French Ligue 1</button>
+          <button type="button" data-league="uefa.champions">UEFA Champions League</button>
+        </div>
+      </section>
+    </aside>
 
-  <div class="live-toolbar-bottom">
-   <button type="button" class="live-refresh" id="live-refresh">↻ Tải lại kênh</button>
-  </div>
-  <div class="source-note">Luồng phát từ nguồn bên thứ ba. RoBong không lưu trữ hay phát lại nội dung có bản quyền.</div>
- </section>
+    <!-- CENTER: Featured + Matches + Live channels -->
+    <section class="rb-col rb-center">
+      <!-- Featured / Player -->
+      <div class="rb-feature" id="feature-box">
+        <div class="rb-feature-bg" id="feature-bg"></div>
+        <div class="rb-feature-body" id="feature-body">
+          <div class="rb-feature-tags">
+            <span class="tag-league" id="feature-league">ROBONG LIVE</span>
+            <span class="tag-live"><i></i> TRỰC TIẾP</span>
+          </div>
+          <div class="rb-feature-teams" id="feature-teams">
+            <div class="team">
+              <span class="team-name" id="feature-home">Chọn kênh</span>
+            </div>
+            <div class="score-box">
+              <span id="feature-score">—</span>
+            </div>
+            <div class="team">
+              <span class="team-name" id="feature-away">để xem</span>
+            </div>
+          </div>
+          <button type="button" class="rb-cta-green" id="feature-cta" disabled>
+            <span>▶</span> XEM NGAY
+          </button>
+          <p class="rb-feature-hint" id="feature-hint">Dữ liệu live từ RoBong API</p>
+        </div>
+        <div class="rb-feature-player" id="feature-player" hidden>
+          <video id="live-video" controls playsinline></video>
+          <button type="button" class="rb-player-close" id="player-close">✕</button>
+        </div>
+      </div>
 
- <section class="section" id="scores">
-  <div class="section-head"><div><span class="kicker">01 / MATCH CENTER</span><h2>TRẬN ĐẤU & TỶ SỐ</h2><p>Một bảng theo dõi cho mọi đấu trường.</p></div><span class="section-code">LIVE DATA / CONNECTOR</span></div>
-  <div class="match-tools"><div class="day-tabs" role="group" aria-label="Khoảng thời gian"><button class="selected" data-period="today">Hôm nay</button><button data-period="tomorrow">Ngày mai</button><button data-period="week">7 ngày tới</button></div>
-   <div class="filters"><label>Bộ môn<select id="sport-filter"><option value="all">Tất cả bộ môn</option><option value="football">Bóng đá</option><option value="basketball">Bóng rổ</option><option value="hockey">Khúc côn cầu</option><option value="tennis">Quần vợt</option><option value="volleyball">Bóng chuyền</option><option value="motorsport">Đua xe</option><option value="esports">Esports</option><option value="chess">Cờ vua</option></select></label><label>Dữ liệu<select id="resource-filter"><option value="matches">Trận đấu / tỷ số</option><option value="standings">Bảng xếp hạng</option><option value="teams">Đội bóng</option><option value="players">Cầu thủ / danh sách cầu thủ</option><option value="sessions">Chặng đua / phiên F1</option><option value="tournaments">Giải cờ vua</option></select></label><label>Giải đấu<select id="league-filter"><option value="all">Tất cả giải đấu</option></select></label></div>
+      <!-- Tabs: Live channels / Matches -->
+      <div class="rb-tabs">
+        <button type="button" class="rb-tab active" data-panel="channels">● Trực tiếp</button>
+        <button type="button" class="rb-tab" data-panel="matches">Trận đấu</button>
+        <button type="button" class="rb-tab" data-panel="all">Tất cả kênh</button>
+      </div>
+
+      <div class="rb-pills" id="channel-pills"></div>
+
+      <div class="rb-match-list" id="channel-list">
+        <div class="rb-loading">Đang tải kênh…</div>
+      </div>
+
+      <div class="rb-match-list" id="match-list" hidden>
+        <div class="rb-loading">Đang tải trận…</div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Results + Schedule -->
+    <aside class="rb-col rb-right">
+      <section class="rb-card">
+        <div class="rb-card-head">
+          <h2><span class="ico">⚽</span> Kết quả bóng đá</h2>
+        </div>
+        <div class="rb-day-pills">
+          <button type="button" data-day="yesterday">Hôm qua</button>
+          <button type="button" class="active" data-day="today">Hôm nay</button>
+          <button type="button" data-day="tomorrow">Ngày mai</button>
+        </div>
+        <div class="rb-results" id="results-list">
+          <div class="rb-loading">Đang tải…</div>
+        </div>
+        <button type="button" class="rb-link-more" id="results-more">Tất cả kết quả ›</button>
+      </section>
+
+      <section class="rb-card">
+        <div class="rb-card-head">
+          <h2><span class="ico">📅</span> Lịch thi đấu</h2>
+        </div>
+        <div class="rb-schedule" id="schedule-list">
+          <div class="rb-loading">Đang tải…</div>
+        </div>
+      </section>
+    </aside>
   </div>
-  <div class="data-panel" id="data-panel" aria-live="polite"><div class="data-icon" id="data-icon">◷</div><div class="data-content"><b id="data-title">Đang kết nối RoBong Unified API…</b><p id="data-description">Đang truy vấn nguồn dữ liệu công khai và chuẩn hóa kết quả.</p><small id="data-status"><i></i> API GATEWAY / NO-KEY SOURCES</small><div class="data-results" id="data-results"></div></div></div>
-  <div class="source-note">Dữ liệu có thể trễ hoặc thiếu tùy nhà cung cấp. Nguồn dữ liệu được ghi rõ, không tự tạo tỷ số hoặc đội hình.</div>
- </section>
- <section class="section" id="sports">
-  <div class="section-head"><div><span class="kicker">02 / SPORTS UNIVERSE</span><h2>CHỌN ĐẤU TRƯỜNG</h2><p>Khám phá bộ môn và các giải đấu nổi bật.</p></div><span class="section-code">MULTI-SPORT / 08 CATEGORIES</span></div>
-  <div class="sport-tabs" role="tablist" aria-label="Danh mục thể thao">
-   <button class="sport-tab active" data-sport="football">⚽ <span>Bóng đá</span></button><button class="sport-tab" data-sport="basketball">🏀 <span>Bóng rổ</span></button><button class="sport-tab" data-sport="tennis">🎾 <span>Quần vợt</span></button><button class="sport-tab" data-sport="volleyball">🏐 <span>Bóng chuyền</span></button><button class="sport-tab" data-sport="motorsport">🏎️ <span>Đua xe</span></button><button class="sport-tab" data-sport="hockey">🏒 <span>Khúc côn cầu</span></button><button class="sport-tab" data-sport="chess">♟️ <span>Cờ vua</span></button><button class="sport-tab" data-sport="esports">🎮 <span>Esports</span></button>
-  </div>
-  <div class="league-heading"><div><span class="kicker" id="sport-kicker">FOOTBALL / COMPETITIONS</span><h3 id="sport-title">Bóng đá thế giới</h3></div><span id="league-count">09 GIẢI ĐẤU</span></div>
-  <div class="league-grid" id="league-grid"></div>
- </section>
- <section class="section editorial" id="news">
-  <div class="section-head"><div><span class="kicker">03 / THE TOUCHLINE</span><h2>NHỊP ĐẬP THỂ THAO</h2><p>Theo dõi tin tức từ các tổ chức và giải đấu.</p></div><span class="section-code">SOURCE FIRST</span></div>
-  <div class="news-grid">
-   <a class="news-card" href="https://www.fifa.com/" target="_blank" rel="noopener noreferrer"><span class="news-art fifa">FIFA<span>WORLD FOOTBALL</span></span><span class="news-copy"><small>FOOTBALL / OFFICIAL</small><b>FIFA · Bóng đá thế giới</b><span>Tin tức, giải đấu và thông tin từ Liên đoàn Bóng đá Thế giới ↗</span></span></a>
-   <a class="news-card" href="https://www.uefa.com/" target="_blank" rel="noopener noreferrer"><span class="news-art uefa">UEFA<span>EUROPEAN FOOTBALL</span></span><span class="news-copy"><small>FOOTBALL / EUROPE</small><b>UEFA · Đấu trường châu Âu</b><span>Champions League, Europa League và các đội tuyển quốc gia ↗</span></span></a>
-   <a class="news-card" href="https://www.olympics.com/" target="_blank" rel="noopener noreferrer"><span class="news-art olympics">OLYMPICS<span>GLOBAL SPORTS</span></span><span class="news-copy"><small>MULTI-SPORT / OFFICIAL</small><b>Olympics · Thể thao đa môn</b><span>Tin tức và câu chuyện từ phong trào Olympic ↗</span></span></a>
-   <a class="news-card" href="https://www.esports.net/" target="_blank" rel="noopener noreferrer"><span class="news-art esports">ESPORTS<span>COMPETITIVE GAMING</span></span><span class="news-copy"><small>ESPORTS / NEWS</small><b>Esports.net · Thế giới esports</b><span>Tin tức, giải đấu và cập nhật các bộ môn esports ↗</span></span></a>
-  </div>
- </section>
- <section class="watch-section" id="watch"><div><span class="kicker">04 / WHERE TO WATCH</span><h2>XEM ĐÚNG TRẬN.<br><em>ĐÚNG NGUỒN.</em></h2><p>RoBong ưu tiên trang phát sóng chính thức, lịch truyền hình và đơn vị sở hữu bản quyền. Không tự lưu trữ hoặc phát lại nội dung có bản quyền.</p></div><div class="watch-links"><a href="https://www.fifa.com/" target="_blank" rel="noopener noreferrer">FIFA <span>↗</span></a><a href="https://www.uefa.com/" target="_blank" rel="noopener noreferrer">UEFA <span>↗</span></a><a href="https://olympics.com/" target="_blank" rel="noopener noreferrer">Olympics <span>↗</span></a><a href="https://lolesports.com/" target="_blank" rel="noopener noreferrer">LoL Esports <span>↗</span></a></div></section>
 </main>
-<footer><a class="footer-brand" href="rohub.html">RoBong<span>.</span></a><span>AN INDEPENDENT SPORTS & ESPORTS HUB</span><a href="rohub.html">← Trở về RoHub</a></footer>
-<script src="js/robong/sports.js?v=2.3.0" defer></script>
-<script src="js/robong/app.js?v=2.3.0" defer></script>
-<script src="js/robong/live.js?v=2.3.0" defer></script>
-</body></html>
+
+<footer class="rb-footer">
+  <a href="rohub.html">← RoHub</a>
+  <span>RoBong · Sports hub · Không lưu trữ nội dung có bản quyền</span>
+  <a href="https://github.com/HOANGJKERD/roflix-hub" target="_blank" rel="noopener">GitHub</a>
+</footer>
+
+<script src="js/robong/app.js?v=3.0.0" defer></script>
+</body>
+</html>
