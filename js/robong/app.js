@@ -181,7 +181,7 @@ function renderChannels() {
     const card = document.createElement('div');
     card.className = 'rb-match-card' + (selectedChannel && selectedChannel.id === ch.id ? ' active' : '');
     card.innerHTML =
-      '<div class="mc-left"><span class="mc-live">LIVE</span></div>' +
+      '<div class="mc-left">' + (ch.source === 'user-provided' ? '<span class="mc-status">THỬ NGHIỆM</span>' : '<span class="mc-live">LIVE</span>') + '</div>' +
       '<div class="mc-mid ch">' +
         (ch.logo ? '<img class="ch-logo" src="' + ch.logo + '" alt="" loading="lazy">' : '') +
         '<div><b>' + (ch.name || ch.id) + '</b><small>' + (ch.group || '') + '</small></div>' +
@@ -211,7 +211,7 @@ function selectChannel(ch, enableCta = true) {
   if (away) away.textContent = ch.group || 'Live';
   if (league) league.textContent = ch.group || 'ROBONG LIVE';
   if (score) score.textContent = '▶';
-  if (hint) hint.textContent = (ch.type || 'stream').toUpperCase() + ' · ' + (ch.source || 'curated');
+  if (hint) hint.textContent = (ch.type || 'stream').toUpperCase() + ' · ' + (ch.source || 'curated') + (ch.rightsStatus === 'unverified' ? ' · CHƯA XÁC MINH QUYỀN' : '');
   if (bg && ch.logo) bg.style.backgroundImage = 'url(' + ch.logo + ')';
   if (cta) {
     cta.disabled = !enableCta;
@@ -241,22 +241,39 @@ async function playChannel(id) {
 
     const url = item.url;
     const type = (item.type || '').toLowerCase();
+    video.onplaying = () => {
+      if (hint) hint.textContent = 'Đang phát' + (item.rightsStatus === 'unverified' ? ' · Nguồn chưa xác minh quyền' : '');
+    };
+    video.onerror = () => {
+      if (hint) hint.textContent = 'Không phát được nguồn này. Có thể URL hết hạn, CORS bị chặn hoặc luồng không tương thích.';
+    };
 
     if (type === 'hls' || url.includes('.m3u8')) {
       if (window.Hls && Hls.isSupported()) {
         hls = new Hls({ enableWorker: true, lowLatencyMode: true });
         hls.loadSource(url);
         hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {
+          if (hint) hint.textContent = 'Đã tải playlist. Nhấn Play để bắt đầu phát.';
+        }));
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data && data.fatal && hint) hint.textContent = 'Lỗi HLS: nguồn không truy cập được hoặc yêu cầu quyền/token.';
+        });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
-        video.play().catch(() => {});
+        video.play().catch(() => {
+          if (hint) hint.textContent = 'Đã nạp nguồn. Nhấn Play để bắt đầu phát.';
+        });
+      } else if (hint) {
+        hint.textContent = 'Trình duyệt này không hỗ trợ HLS.';
       }
     } else {
       video.src = url;
-      video.play().catch(() => {});
+      video.play().catch(() => {
+        if (hint) hint.textContent = 'Đã nạp nguồn. Nhấn Play để bắt đầu phát.';
+      });
     }
-    if (hint) hint.textContent = 'Đang phát';
+    if (hint) hint.textContent = 'Đang kết nối nguồn phát…';
   } catch (e) {
     if (hint) hint.textContent = e.message || 'Lỗi phát';
   }
