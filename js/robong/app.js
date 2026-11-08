@@ -4,14 +4,12 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-// ---------- state ----------
 let channels = [];
 let currentGroup = '';
 let selectedChannel = null;
 let hls = null;
 let resultsDay = 'today';
 
-// ---------- helpers ----------
 function dateStr(offset = 0) {
   const d = new Date();
   d.setDate(d.getDate() + offset);
@@ -25,7 +23,6 @@ async function api(path) {
   return body;
 }
 
-// ---------- standings ----------
 async function loadStandings(league = 'eng.1') {
   const el = $('#bxh-list');
   if (!el) return;
@@ -54,7 +51,6 @@ async function loadStandings(league = 'eng.1') {
   }
 }
 
-// ---------- results / matches ----------
 async function loadResults() {
   const el = $('#results-list');
   const matchEl = $('#match-list');
@@ -71,7 +67,6 @@ async function loadResults() {
     renderMatchCards(el, items.slice(0, 12), true);
     if (matchEl) renderMatchCards(matchEl, items, false);
 
-    // schedule from same data or tomorrow
     const sched = $('#schedule-list');
     if (sched) {
       const upcoming = items.filter(m => {
@@ -100,7 +95,7 @@ async function loadResults() {
   }
 }
 
-function renderMatchCards(container, items, compact) {
+function renderMatchCards(container, items) {
   container.replaceChildren();
   if (!items.length) {
     container.innerHTML = '<div class="rb-empty">Không có trận</div>';
@@ -125,9 +120,7 @@ function renderMatchCards(container, items, compact) {
         '<span class="mc-away">' + (m.away || '?') + '</span>' +
       '</div>' +
       '<button type="button" class="mc-watch">Xem TT</button>';
-    const btn = card.querySelector('.mc-watch');
-    btn.addEventListener('click', () => {
-      // jump to live section / first channel
+    card.querySelector('.mc-watch').addEventListener('click', () => {
       if (channels[0]) {
         selectChannel(channels[0]);
         document.getElementById('feature-box')?.scrollIntoView({ behavior: 'smooth' });
@@ -137,13 +130,12 @@ function renderMatchCards(container, items, compact) {
   });
 }
 
-// ---------- live channels ----------
 async function loadChannels() {
   const list = $('#channel-list');
   if (!list) return;
   list.innerHTML = '<div class="rb-loading">Đang tải kênh…</div>';
   try {
-    const data = await api('/api/robong-live?resource=channels');
+    const data = await api('/api/robong?resource=channels');
     channels = data.items || [];
     renderPills();
     renderChannels();
@@ -237,7 +229,7 @@ async function playChannel(id) {
 
   if (hint) hint.textContent = 'Đang lấy link…';
   try {
-    const data = await api('/api/robong-live?resource=play&id=' + encodeURIComponent(id));
+    const data = await api('/api/robong?resource=play&id=' + encodeURIComponent(id));
     const item = data.item;
     if (!item || !item.url) throw new Error('Không có link');
 
@@ -280,13 +272,10 @@ function stopPlayer() {
   if (body) body.style.display = '';
 }
 
-// ---------- UI bindings ----------
 function bindUI() {
   const menu = $('#rb-menu');
   const nav = $('#rb-nav');
-  if (menu && nav) {
-    menu.onclick = () => nav.classList.toggle('open');
-  }
+  if (menu && nav) menu.onclick = () => nav.classList.toggle('open');
 
   $('#bxh-league')?.addEventListener('change', e => loadStandings(e.target.value));
   $('#bxh-more')?.addEventListener('click', () => loadStandings($('#bxh-league')?.value || 'eng.1'));
@@ -296,10 +285,7 @@ function bindUI() {
       const lg = btn.dataset.league;
       const sel = $('#bxh-league');
       if (sel) {
-        // add option if missing
-        if (![...sel.options].some(o => o.value === lg)) {
-          sel.add(new Option(btn.textContent, lg));
-        }
+        if (![...sel.options].some(o => o.value === lg)) sel.add(new Option(btn.textContent, lg));
         sel.value = lg;
       }
       loadStandings(lg);
@@ -346,7 +332,6 @@ function bindUI() {
   });
 }
 
-// ---------- init ----------
 bindUI();
 loadStandings('eng.1');
 loadResults();
