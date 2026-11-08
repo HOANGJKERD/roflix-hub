@@ -74,7 +74,7 @@ async function loadData(){
  const sport=(sportFilter?.value&&sportFilter.value!=='all')?sportFilter.value:currentSport,resource=resourceFilter?.value||'matches';
  let league=leagueFilter?.value||'all';if(league==='all')league=sport==='basketball'?'NBA':sport==='hockey'?'NHL':sport==='football'?'EPL':'';
  const params=new URLSearchParams({sport,resource});
- if(league&&leagueMap[league])params.set('league',leagueMap[league]);
+ if(league&&leagueMap[league])params.set('league',leagueMap[league]);\n if(sport==='football'&&resource==='teams')params.set('league','bl1');
  if(resource==='matches'&&(sport==='football'||sport==='basketball'))params.set('date',dateParam());
  if(resource==='lineups')params.set('team','arsenal');
  if(resource==='sessions')params.set('year',String(new Date().getFullYear()-1));
