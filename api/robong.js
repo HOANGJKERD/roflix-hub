@@ -135,6 +135,7 @@ function normalizeItems(data, sport, resource, provider) {
     else if (Array.isArray(data && data.data)) rows = data.data;
     else if (Array.isArray(data && data.athletes)) rows = data.athletes;
     else if (Array.isArray(data && data.items)) rows = data.items;
+    else if (Array.isArray(data && data.sports)) rows = data.sports.flatMap(sport => (sport.leagues || []).flatMap(league => (league.teams || []).map(item => item.team || item)));
     else if (resource === 'players' || resource === 'roster') rows = ['forwards','defensemen','goalies'].flatMap(key => Array.isArray(data && data[key]) ? data[key] : []);
     return rows.map((row, index) => ({
       id: String(row.id || row.athleteId || row.teamId || row.session_key || row.key || index),
@@ -243,7 +244,7 @@ async function espnRequest(sport, resource, q) {
   const league = cleanLeague(q.league) || leagueMap[sport];
   const category = sport === 'basketball' ? 'basketball' : 'soccer';
   if (resource === 'matches') {
-    const date = str(q.date, '', 8).replace(/[^0-9]/g, '');
+    const date = str(q.date, '', 17).replace(/[^0-9-]/g, '');
     const data = removeBettingFields(await getJson(ESPN + '/' + category + '/' + encodeURIComponent(league) + '/scoreboard' + (date ? '?dates=' + date : '')));
     return ok(data, 'espn-public', sport, resource, 90);
   }
