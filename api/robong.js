@@ -179,8 +179,13 @@ async function footballRequest(resource, q) {
   if (resource === 'standings') {
     if (!league) throw new Error('Missing or invalid league. Use an ESPN league id such as eng.1 or an OpenLigaDB shortcut such as bl1.');
     if (league.includes('.')) {
-      const data = await getJson(FOOTBALL + '/leagues/' + encodeURIComponent(league) + '/standings?season=' + season + '&sort=asc');
-      return ok(data, 'football-standings', 'football', resource, 900);
+      try {
+        const data = await getJson(FOOTBALL + '/leagues/' + encodeURIComponent(league) + '/standings?season=' + season + '&sort=asc');
+        return ok(data, 'football-standings', 'football', resource, 900);
+      } catch (_) {
+        const data = removeBettingFields(await getJson(ESPN + '/soccer/' + encodeURIComponent(league) + '/standings'));
+        return ok(data, 'espn-public', 'football', resource, 900);
+      }
     }
     const data = await getJson(OPENLIGA + '/getbltable/' + encodeURIComponent(league) + '/' + season);
     return ok(data, 'openligadb', 'football', resource, 900);
@@ -262,7 +267,13 @@ async function f1Request(resource, q) {
   if (!ALLOWED_OPENF1.has(resource)) throw new Error('Unsupported OpenF1 resource');
   const params = queryParams(q, ALLOWED_QUERY_KEYS);
   if (q.year) params.set('year', String(int(q.year, new Date().getUTCFullYear(), 2023, 2200)));
-  if (!params.has('year') && !params.has('session_key') && !params.has('meeting_key')) params.set('year', String(new Date().getUTCFullYear()));
+  if (!params.has('session_key') && !params.has('meeting_key')) {
+    if (resource === 'sessions' || resource === 'meetings') {
+      if (!params.has('year')) params.set('year', String(new Date().getUTCFullYear()));
+    } else {
+      params.set('session_key', 'latest');
+    }
+  }
   const data = await getJson(OPENF1 + '/' + resource + (params.toString() ? '?' + params.toString() : ''));
   return ok(data, 'openf1', 'motorsport', resource, 1800);
 }
