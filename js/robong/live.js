@@ -2,23 +2,48 @@
 'use strict';
 
 const channelsEl = document.getElementById('live-channels');
-const groupEl = document.getElementById('live-group');
+const pillsEl = document.getElementById('live-pills');
 const refreshBtn = document.getElementById('live-refresh');
 const video = document.getElementById('live-video');
-const overlay = document.getElementById('live-overlay');
-const nowTitle = document.getElementById('live-now-title');
-const nowMeta = document.getElementById('live-now-meta');
+const playerBox = document.getElementById('live-player-box');
+const heroCta = document.getElementById('live-hero-cta');
+const heroTitle = document.getElementById('live-hero-title');
+const heroSub = document.getElementById('live-hero-sub');
+const heroGroup = document.getElementById('live-hero-group');
+const heroBg = document.getElementById('live-hero-bg');
 const statusEl = document.getElementById('live-status');
 const stopBtn = document.getElementById('live-stop');
 
 if (!channelsEl || !video) return;
 
 let allChannels = [];
+let currentGroup = '';
+let selected = null;
 let currentId = null;
 let hls = null;
 
 function setStatus(text) {
   if (statusEl) statusEl.textContent = text;
+}
+
+function setHero(ch) {
+  selected = ch || null;
+  if (heroTitle) heroTitle.textContent = ch ? ch.name : 'Chọn kênh bên dưới';
+  if (heroSub) heroSub.textContent = ch
+    ? ((ch.group || '') + (ch.type ? ' · ' + String(ch.type).toUpperCase() : ''))
+    : 'RoBong Live · curated channels';
+  if (heroGroup) heroGroup.textContent = (ch && ch.group) ? ch.group : 'LIVE';
+  if (heroBg) {
+    if (ch && ch.logo) {
+      heroBg.style.backgroundImage = 'url(' + ch.logo + ')';
+    } else {
+      heroBg.style.backgroundImage = '';
+    }
+  }
+  if (heroCta) {
+    heroCta.disabled = !ch;
+    heroCta.onclick = ch ? () => playChannel(ch.id) : null;
+  }
 }
 
 function stopPlayback() {
@@ -29,12 +54,9 @@ function stopPlayback() {
   video.removeAttribute('src');
   video.load();
   currentId = null;
-  if (stopBtn) stopBtn.hidden = true;
-  if (overlay) overlay.style.opacity = '1';
-  if (nowTitle) nowTitle.textContent = 'Chọn kênh để xem';
-  if (nowMeta) nowMeta.textContent = 'RoBong Live · curated channels';
+  if (playerBox) playerBox.hidden = true;
   setStatus('Đã dừng');
-  document.querySelectorAll('.live-channel.active').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.live-card.active').forEach(el => el.classList.remove('active'));
 }
 
 async function playChannel(id) {
@@ -49,32 +71,25 @@ async function playChannel(id) {
     }
     const item = body.item;
     currentId = item.id;
+    setHero(item);
 
-    if (nowTitle) nowTitle.textContent = item.name || id;
-    if (nowMeta) nowMeta.textContent = (item.group || '') + ' · ' + (item.type || 'stream').toUpperCase();
-    if (overlay) overlay.style.opacity = '0';
-    if (stopBtn) stopBtn.hidden = false;
-
-    document.querySelectorAll('.live-channel').forEach(el => {
+    document.querySelectorAll('.live-card').forEach(el => {
       el.classList.toggle('active', el.dataset.id === item.id);
     });
 
-    // Cleanup previous
     if (hls) {
       try { hls.destroy(); } catch (_) {}
       hls = null;
     }
     video.removeAttribute('src');
+    if (playerBox) playerBox.hidden = false;
 
     const url = item.url;
     const type = (item.type || '').toLowerCase();
 
     if (type === 'hls' || url.includes('.m3u8')) {
       if (window.Hls && Hls.isSupported()) {
-        hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true
-        });
+        hls = new Hls({ enableWorker: true, lowLatencyMode: true });
         hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -92,15 +107,47 @@ async function playChannel(id) {
         setStatus('Trình duyệt không hỗ trợ HLS');
       }
     } else {
-      // flv / progressive / other — try native
       video.src = url;
-      video.play().catch(() => setStatus('Nhấn play hoặc mở bằng player ngoài'));
+      video.play().catch(() => setStatus('Nhấn play hoặc mở player ngoài'));
       setStatus(type === 'flv' ? 'FLV · thử native / player ngoài' : 'Đang phát');
     }
+
+    // scroll player into view on mobile
+    const hero = document.getElementById('live-hero');
+    if (hero) hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (err) {
     setStatus(err.message || 'Không phát được');
-    if (overlay) overlay.style.opacity = '1';
   }
+}
+
+function renderPills(channels) {
+  if (!pillsEl) return;
+  const groups = [...new Set(channels.map(c => c.group).filter(Boolean))].sort();
+  pillsEl.replaceChildren();
+  const all = document.createElement('button');
+  all.type = 'button';
+  all.className = 'live-pill' + (!currentGroup ? ' active' : '');
+  all.dataset.group = '';
+  all.textContent = 'Tất cả';
+  all.addEventListener('click', () => {
+    currentGroup = '';
+    renderPills(allChannels);
+    applyFilter();
+  });
+  pillsEl.append(all);
+  groups.forEach(g => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'live-pill' + (currentGroup === g ? ' active' : '');
+    btn.dataset.group = g;
+    btn.innerHTML = (g.toLowerCase().includes('world') || g.includes('FIFA') ? '<i class="dot"></i> ' : '') + g;
+    btn.addEventListener('click', () => {
+      currentGroup = g;
+      renderPills(allChannels);
+      applyFilter();
+    });
+    pillsEl.append(btn);
+  });
 }
 
 function renderChannels(list) {
@@ -114,13 +161,14 @@ function renderChannels(list) {
   }
   const frag = document.createDocumentFragment();
   list.forEach(ch => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'live-channel' + (ch.id === currentId ? ' active' : '');
-    btn.dataset.id = ch.id;
+    const card = document.createElement('article');
+    card.className = 'live-card' + (ch.id === currentId ? ' active' : '');
+    card.dataset.id = ch.id;
 
+    const left = document.createElement('div');
+    left.className = 'live-card-left';
     const logo = document.createElement('span');
-    logo.className = 'live-logo';
+    logo.className = 'live-card-logo';
     if (ch.logo) {
       const img = document.createElement('img');
       img.src = ch.logo;
@@ -131,33 +179,42 @@ function renderChannels(list) {
     } else {
       logo.textContent = (ch.name || '?').slice(0, 1);
     }
-
-    const copy = document.createElement('span');
-    copy.className = 'live-copy';
+    const info = document.createElement('div');
+    info.className = 'live-card-info';
     const name = document.createElement('b');
     name.textContent = ch.name || ch.id;
     const meta = document.createElement('small');
-    meta.textContent = (ch.group || '') + (ch.type ? ' · ' + ch.type.toUpperCase() : '');
-    copy.append(name, meta);
+    meta.innerHTML = '<span class="live-tag">LIVE</span> ' + (ch.group || 'Kênh');
+    info.append(name, meta);
+    left.append(logo, info);
 
-    const mark = document.createElement('span');
-    mark.className = 'live-play-mark';
-    mark.textContent = '▶';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'live-watch-btn';
+    btn.innerHTML = '<span>▶</span> Xem TT';
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      setHero(ch);
+      playChannel(ch.id);
+    });
 
-    btn.append(logo, copy, mark);
-    btn.addEventListener('click', () => playChannel(ch.id));
-    frag.append(btn);
+    card.append(left, btn);
+    card.addEventListener('click', () => {
+      setHero(ch);
+    });
+    frag.append(card);
   });
   channelsEl.append(frag);
+
+  // auto-select first for hero if none
+  if (!selected && list[0]) setHero(list[0]);
 }
 
-function fillGroups(channels) {
-  if (!groupEl) return;
-  const current = groupEl.value;
-  const groups = [...new Set(channels.map(c => c.group).filter(Boolean))].sort();
-  groupEl.replaceChildren(new Option('Tất cả nhóm', ''));
-  groups.forEach(g => groupEl.add(new Option(g, g)));
-  if (current && groups.includes(current)) groupEl.value = current;
+function applyFilter() {
+  const list = currentGroup
+    ? allChannels.filter(c => (c.group || '') === currentGroup)
+    : allChannels;
+  renderChannels(list);
 }
 
 async function loadChannels() {
@@ -170,7 +227,7 @@ async function loadChannels() {
     const body = await res.json();
     if (!res.ok || !body.ok) throw new Error(body.error || 'API không phản hồi');
     allChannels = Array.isArray(body.items) ? body.items : [];
-    fillGroups(allChannels);
+    renderPills(allChannels);
     applyFilter();
     setStatus(allChannels.length + ' kênh');
   } catch (err) {
@@ -179,15 +236,6 @@ async function loadChannels() {
   }
 }
 
-function applyFilter() {
-  const g = (groupEl && groupEl.value) || '';
-  const list = g
-    ? allChannels.filter(c => (c.group || '').toLowerCase() === g.toLowerCase())
-    : allChannels;
-  renderChannels(list);
-}
-
-if (groupEl) groupEl.addEventListener('change', applyFilter);
 if (refreshBtn) refreshBtn.addEventListener('click', loadChannels);
 if (stopBtn) stopBtn.addEventListener('click', stopPlayback);
 
