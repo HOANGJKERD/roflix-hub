@@ -93,6 +93,20 @@ function removeBettingFields(value) {
 }
 function normalizeItems(data, sport, resource, provider) {
   let rows = [];
+  if (resource === 'leagues') {
+    const sources = Array.isArray(data) ? data : [];
+    return sources.flatMap(source => {
+      const list = Array.isArray(source.data) ? source.data : [];
+      return list.map(row => ({
+        id: String(row.id || row.leagueId || row.leagueShortcut || ''),
+        name: row.name || row.leagueName || '',
+        code: row.abbr || row.leagueShortcut || row.slug || '',
+        season: row.season || row.leagueSeason || null,
+        provider: source.provider || provider,
+        sport: 'football'
+      }));
+    });
+  }
   if (resource === 'matches') {
     if (Array.isArray(data)) rows = data;
     else if (Array.isArray(data && data.events)) rows = data.events;
@@ -115,6 +129,7 @@ function normalizeItems(data, sport, resource, provider) {
     else if (Array.isArray(data && data.data)) rows = data.data;
     else if (Array.isArray(data && data.athletes)) rows = data.athletes;
     else if (Array.isArray(data && data.items)) rows = data.items;
+    else if (resource === 'players' || resource === 'roster') rows = ['forwards','defensemen','goalies'].flatMap(key => Array.isArray(data && data[key]) ? data[key] : []);
     return rows.map((row, index) => ({
       id: String(row.id || row.athleteId || row.teamId || row.session_key || row.key || index),
       name: row.fullName || row.displayName || row.name || row.teamName || row.session_name || row.competitor_name || row.athlete && row.athlete.displayName || 'Unknown',
