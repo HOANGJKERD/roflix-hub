@@ -118,9 +118,14 @@ function normalizeItems(data, sport, resource, provider) {
       }
       if (row.competitions && row.competitions[0]) {
         const event = row.competitions[0], home = (event.competitors || []).find(x => x.homeAway === 'home'), away = (event.competitors || []).find(x => x.homeAway === 'away');
-        return { id: String(row.id || event.id || ''), home: home && home.team && home.team.displayName || '', away: away && away.team && away.team.displayName || '', homeScore: home && home.score != null ? home.score : null, awayScore: away && away.score != null ? away.score : null, status: event.status && event.status.type && event.status.type.state || 'scheduled', startAt: event.date || row.date || null, competition: row.league && row.league.name || '', source: provider };
+        const state = event.status && event.status.type && event.status.type.state || 'scheduled';
+        const hasScore = state !== 'pre' && state !== 'scheduled';
+        return { id: String(row.id || event.id || ''), home: home && home.team && home.team.displayName || '', away: away && away.team && away.team.displayName || '', homeScore: hasScore && home && home.score != null ? home.score : null, awayScore: hasScore && away && away.score != null ? away.score : null, status: state, startAt: event.date || row.date || null, competition: event.altGameNote || row.league && row.league.name || '', source: provider };
       }
-      if (row.homeTeam && row.awayTeam) return { id: String(row.id || row.gameId || ''), home: row.homeTeam.abbrev || row.homeTeam.name || '', away: row.awayTeam.abbrev || row.awayTeam.name || '', homeScore: row.homeTeam.score ?? null, awayScore: row.awayTeam.score ?? null, status: row.gameState || 'scheduled', startAt: row.startTimeUTC || row.gameDate || null, competition: 'NHL', source: provider };
+      if (row.homeTeam && row.awayTeam) {
+        const state = String(row.gameState || 'scheduled').toUpperCase(), hasScore = !['FUT','PRE','SCHEDULED'].includes(state);
+        return { id: String(row.id || row.gameId || ''), home: row.homeTeam.abbrev || row.homeTeam.name || '', away: row.awayTeam.abbrev || row.awayTeam.name || '', homeScore: hasScore ? row.homeTeam.score ?? null : null, awayScore: hasScore ? row.awayTeam.score ?? null : null, status: state, startAt: row.startTimeUTC || row.gameDate || null, competition: 'NHL', source: provider };
+      }
       return { id: String(row.session_key || row.meeting_key || ''), home: row.session_name || row.session_type || 'F1 session', away: row.circuit_short_name || row.country_name || '', homeScore: null, awayScore: null, status: 'session', startAt: row.date_start || null, competition: 'Formula 1', source: provider };
     });
   }
@@ -188,7 +193,7 @@ async function footballRequest(resource, q) {
     const competition = league || 'eng.1';
     const date = str(q.date, '', 17).replace(/[^0-9-]/g, '');
     const suffix = date ? '?dates=' + date : '';
-    const data = await getJson(ESPN + '/soccer/' + encodeURIComponent(competition) + '/scoreboard' + suffix);
+    const data = removeBettingFields(await getJson(ESPN + '/soccer/' + encodeURIComponent(competition) + '/scoreboard' + suffix));
     return ok(data, 'espn-public', 'football', resource, 90);
   }
   if (resource === 'teams') {
