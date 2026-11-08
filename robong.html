@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#08110d">
+<meta name="description" content="RoBong 2.0 - trung tâm thể thao, bóng đá và esports.">
+<title>RoBong 2.0 | The Game Is On</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/robong/main.css?v=2.0.0">
+</head>
+<body>
+<div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+<header class="topbar">
+ <a class="brand" href="rohub.html"><span class="brand-mark">R<span>⚽</span></span><span><b>RoBong<span>.</span></b><small>THE GAME IS ON · 2.0</small></span></a>
+ <nav class="nav" id="main-nav"><a class="active" href="#home">Tổng quan</a><a href="#scores">Tỷ số</a><a href="#sports">Thể thao</a><a href="#news">Tin tức</a><a href="#watch">Nơi xem</a></nav>
+ <div class="top-actions"><span class="status"><i></i> SPORTS HUB</span><a class="back" href="rohub.html">↖ RoHub</a><button class="menu" id="menu-toggle" aria-label="Mở menu" aria-expanded="false">☰</button></div>
+</header>
+<main id="home">
+ <section class="hero">
+  <div class="hero-copy"><span class="eyebrow"><i></i> ONE HUB · EVERY ARENA</span>
+   <h1>THE GAME<br><em>IS ON.</em></h1>
+   <p>Từ sân cỏ đến sàn đấu điện tử. Một điểm đến để theo dõi lịch thi đấu, tỷ số, giải đấu, tin tức và những câu chuyện đáng chú ý của thế giới thể thao.</p>
+   <div class="hero-actions"><a class="btn primary" href="#scores">Khám phá trận đấu <span>↗</span></a><a class="btn secondary" href="#sports">Chọn bộ môn</a></div>
+   <div class="hero-meta"><span>01 / SPORTS</span><span>02 / ESPORTS</span><span>∞ / PASSION</span></div>
+  </div>
+  <div class="hero-visual" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="field"><span class="half"></span><span class="center-circle"></span><span class="box left"></span><span class="box right"></span></div><div class="hero-ball">⚽</div><div class="visual-tag">RO<span>BONG</span><small>SPORTS CULTURE / 2026</small></div><div class="visual-index">RB—002</div></div>
+ </section>
+ <section class="ticker" aria-label="Các môn thể thao"><div>FOOTBALL <b>✳</b> BASKETBALL <b>✳</b> TENNIS <b>✳</b> ESPORTS <b>✳</b> VOLLEYBALL <b>✳</b> MOTORSPORT <b>✳</b> FOOTBALL <b>✳</b> BASKETBALL <b>✳</b> TENNIS <b>✳</b> ESPORTS <b>✳</b></div></section>
+ <section class="section" id="scores">
+  <div class="section-head"><div><span class="kicker">01 / MATCH CENTER</span><h2>TRẬN ĐẤU & TỶ SỐ</h2><p>Một bảng theo dõi cho mọi đấu trường.</p></div><span class="section-code">LIVE DATA / CONNECTOR</span></div>
+  <div class="match-tools"><div class="day-tabs" role="group" aria-label="Khoảng thời gian"><button class="selected" data-period="today">Hôm nay</button><button data-period="tomorrow">Ngày mai</button><button data-period="week">7 ngày tới</button></div>
+   <div class="filters"><label>Bộ môn<select id="sport-filter"><option value="all">Tất cả bộ môn</option><option value="football">Bóng đá</option><option value="basketball">Bóng rổ</option><option value="tennis">Quần vợt</option><option value="volleyball">Bóng chuyền</option><option value="motorsport">Đua xe</option><option value="esports">Esports</option></select></label><label>Giải đấu<select id="league-filter"><option value="all">Tất cả giải đấu</option></select></label></div>
+  </div>
+  <div class="data-panel"><div class="data-icon">◷</div><div><b>Trung tâm dữ liệu đang chờ kết nối</b><p>RoBong 2.0 không hiển thị tỷ số hoặc lịch thi đấu giả. Bảng trận đấu sẽ chỉ xuất hiện khi nguồn dữ liệu được xác thực và đồng bộ.</p><small><i></i> Giao diện đã sẵn sàng · Live scores chưa được cấu hình</small></div></div>
+  <div class="source-note">Dữ liệu trận đấu cần nhà cung cấp riêng. Không có API key hoặc nguồn xác thực thì không thể đảm bảo tỷ số trực tiếp chính xác.</div>
+ </section>
+ <section class="section" id="sports">
+  <div class="section-head"><div><span class="kicker">02 / SPORTS UNIVERSE</span><h2>CHỌN ĐẤU TRƯỜNG</h2><p>Khám phá bộ môn và các giải đấu nổi bật.</p></div><span class="section-code">MULTI-SPORT / 06 CATEGORIES</span></div>
+  <div class="sport-tabs" role="tablist" aria-label="Danh mục thể thao">
+   <button class="sport-tab active" data-sport="football">⚽ <span>Bóng đá</span></button><button class="sport-tab" data-sport="basketball">🏀 <span>Bóng rổ</span></button><button class="sport-tab" data-sport="tennis">🎾 <span>Quần vợt</span></button><button class="sport-tab" data-sport="volleyball">🏐 <span>Bóng chuyền</span></button><button class="sport-tab" data-sport="motorsport">🏎️ <span>Đua xe</span></button><button class="sport-tab" data-sport="esports">🎮 <span>Esports</span></button>
+  </div>
+  <div class="league-heading"><div><span class="kicker" id="sport-kicker">FOOTBALL / COMPETITIONS</span><h3 id="sport-title">Bóng đá thế giới</h3></div><span id="league-count">09 GIẢI ĐẤU</span></div>
+  <div class="league-grid" id="league-grid"></div>
+ </section>
+ <section class="section editorial" id="news">
+  <div class="section-head"><div><span class="kicker">03 / THE TOUCHLINE</span><h2>NHỊP ĐẬP THỂ THAO</h2><p>Theo dõi tin tức từ các tổ chức và giải đấu.</p></div><span class="section-code">SOURCE FIRST</span></div>
+  <div class="news-grid">
+   <a class="news-card" href="https://www.fifa.com/" target="_blank" rel="noopener noreferrer"><span class="news-art fifa">FIFA<span>WORLD FOOTBALL</span></span><span class="news-copy"><small>FOOTBALL / OFFICIAL</small><b>FIFA · Bóng đá thế giới</b><span>Tin tức, giải đấu và thông tin từ Liên đoàn Bóng đá Thế giới ↗</span></span></a>
+   <a class="news-card" href="https://www.uefa.com/" target="_blank" rel="noopener noreferrer"><span class="news-art uefa">UEFA<span>EUROPEAN FOOTBALL</span></span><span class="news-copy"><small>FOOTBALL / EUROPE</small><b>UEFA · Đấu trường châu Âu</b><span>Champions League, Europa League và các đội tuyển quốc gia ↗</span></span></a>
+   <a class="news-card" href="https://www.olympics.com/" target="_blank" rel="noopener noreferrer"><span class="news-art olympics">OLYMPICS<span>GLOBAL SPORTS</span></span><span class="news-copy"><small>MULTI-SPORT / OFFICIAL</small><b>Olympics · Thể thao đa môn</b><span>Tin tức và câu chuyện từ phong trào Olympic ↗</span></span></a>
+   <a class="news-card" href="https://www.esports.net/" target="_blank" rel="noopener noreferrer"><span class="news-art esports">ESPORTS<span>COMPETITIVE GAMING</span></span><span class="news-copy"><small>ESPORTS / NEWS</small><b>Esports.net · Thế giới esports</b><span>Tin tức, giải đấu và cập nhật các bộ môn esports ↗</span></span></a>
+  </div>
+ </section>
+ <section class="watch-section" id="watch"><div><span class="kicker">04 / WHERE TO WATCH</span><h2>XEM ĐÚNG TRẬN.<br><em>ĐÚNG NGUỒN.</em></h2><p>RoBong ưu tiên trang phát sóng chính thức, lịch truyền hình và đơn vị sở hữu bản quyền. Không tự lưu trữ hoặc phát lại nội dung có bản quyền.</p></div><div class="watch-links"><a href="https://www.fifa.com/" target="_blank" rel="noopener noreferrer">FIFA <span>↗</span></a><a href="https://www.uefa.com/" target="_blank" rel="noopener noreferrer">UEFA <span>↗</span></a><a href="https://olympics.com/" target="_blank" rel="noopener noreferrer">Olympics <span>↗</span></a><a href="https://lolesports.com/" target="_blank" rel="noopener noreferrer">LoL Esports <span>↗</span></a></div></section>
+</main>
+<footer><a class="footer-brand" href="rohub.html">RoBong<span>.</span></a><span>AN INDEPENDENT SPORTS & ESPORTS HUB</span><a href="rohub.html">← Trở về RoHub</a></footer>
+<script src="js/robong/sports.js?v=2.0.0" defer></script><script src="js/robong/app.js?v=2.0.0" defer></script>
+</body></html>
