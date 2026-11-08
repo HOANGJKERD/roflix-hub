@@ -52,6 +52,13 @@ function renderRows(data,sport,resource){
  if(!rows.length){setPanel('Nguồn đã phản hồi nhưng chưa có dữ liệu phù hợp','Không có bản ghi cho bộ lọc hiện tại. Hãy thử giải đấu hoặc khoảng thời gian khác.','UPSTREAM OK · 0 RECORDS');return;}
  setPanel('Dữ liệu đã đồng bộ',rows.length+' bản ghi được trả về từ nguồn dữ liệu.','CONNECTED · '+rows.length+' RECORDS');
  rows.slice(0,40).forEach(row=>{
+  if(row.home&&row.away){
+   const score=row.homeScore!=null||row.awayScore!=null?String(row.homeScore??'–')+' : '+String(row.awayScore??'–'):'Chưa có tỷ số';
+   addRow(row.home+' vs '+row.away,score,(row.status||'')+' · '+(row.competition||row.source||''));return;
+  }
+  if(resource==='standings'&&row.team){
+   addRow((row.rank?'#'+row.rank+' ':'')+row.team,'Điểm: '+(row.points??'–')+' · '+(row.played??'–')+' trận','Thắng '+(row.wins??'–')+' · Hòa '+(row.draws??'–')+' · Thua '+(row.losses??'–'));return;
+  }
   if(row.team1&&row.team2){
    const result=(row.matchResults||[]).filter(x=>x.resultTypeID===2).slice(-1)[0]||(row.matchResults||[]).slice(-1)[0];
    addRow((row.team1.teamName||'')+' vs '+(row.team2.teamName||''),result?result.pointsTeam1+' : '+result.pointsTeam2:(row.matchIsFinished?'Đã kết thúc':'Chưa thi đấu'),row.leagueName||row.matchDateTime||'OpenLigaDB');return;
