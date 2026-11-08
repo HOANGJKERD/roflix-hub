@@ -76,7 +76,7 @@ async function loadData(){
  const params=new URLSearchParams({sport,resource});
  if(league&&leagueMap[league])params.set('league',leagueMap[league]);\n if(sport==='football'&&resource==='teams')params.set('league','bl1');
  if(resource==='matches'&&(sport==='football'||sport==='basketball'))params.set('date',dateParam());
- if(resource==='lineups')params.set('team','arsenal');
+ if(resource==='lineups')params.set('team','arsenal');\n if(resource==='players'&&sport==='football')params.set('team_id','359');\n if(resource==='players'&&sport==='basketball')params.set('team_id','13');\n if(resource==='players'&&sport==='hockey')params.set('team','TOR');
  if(resource==='sessions')params.set('year',String(new Date().getFullYear()-1));
  if(resource==='tournaments')params.set('limit','30');
  setPanel('Đang tải dữ liệu…','RoBong Unified API đang truy vấn '+sport+' / '+resource+'.','FETCHING / '+sport.toUpperCase());
