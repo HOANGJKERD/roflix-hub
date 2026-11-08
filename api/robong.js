@@ -26,7 +26,6 @@ const PROVIDERS = [
   { id: 'nhl-public', sport: 'hockey', auth: false, resources: ['matches', 'standings', 'teams', 'players'], note: 'Public NHL web endpoints; coverage is ice hockey.' },
   { id: 'openf1', sport: 'motorsport', auth: false, resources: ['sessions', 'meetings', 'drivers', 'laps', 'pit', 'position', 'race_control', 'stints', 'intervals', 'starting_grid', 'car_data', 'location'], note: 'Historical F1 data from 2023 onward is free; real-time data requires a paid subscription.' },
   { id: 'tourney-radar', sport: 'chess', auth: false, resources: ['tournaments'], note: 'Chess tournament directory, not esports match data.' },
-  { id: 'touchline-wire', sport: 'football', auth: false, resources: ['lineups'], note: 'Premier League-only community API; requires visible attribution and should be treated as an experimental source until runtime checks pass.' }
 ];
 
 const ALLOWED_OPENF1 = new Set(['sessions', 'meetings', 'drivers', 'laps', 'pit', 'position', 'race_control', 'stints', 'intervals', 'starting_grid', 'car_data', 'location']);
