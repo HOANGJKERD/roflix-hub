@@ -61,6 +61,7 @@
     .portal:hover .arrow{transform:translateX(4px);background:rgba(var(--accent-rgb),.12)}
     .portal-ghost{position:absolute;right:-18px;bottom:38px;font-size:115px;line-height:1;font-weight:1000;letter-spacing:-12px;color:rgba(var(--accent-rgb),.055);pointer-events:none;z-index:-1}
     .portal.audio{--accent:#ff9a63;--accent-rgb:255,154,99;border-color:#ff9a6347;background:linear-gradient(140deg,#ff9a6318,transparent 62%),linear-gradient(160deg,#1b1428,#0d0a15 80%)}
+    .portal.sports{--accent:#b6f36b;--accent-rgb:182,243,107;border-color:#b6f36b47;background:linear-gradient(140deg,#b6f36b18,transparent 62%),linear-gradient(160deg,#142318,#0d0a15 80%)}
     .featured{margin-top:32px}
     .feature-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
     .feature{display:flex;align-items:flex-start;gap:13px;padding:18px 16px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(160deg,#1b1426cc,#0d0a15);min-width:0;transform-style:preserve-3d;transition:transform .2s ease,border-color .2s}
@@ -103,7 +104,7 @@
       <div class="scroll-cue"><span></span> CHỌN CỔNG CỦA BẠN <span></span></div>
     </section>
     <section aria-labelledby="portal-heading">
-      <div class="section-head reveal"><div><div class="section-kicker">01 / CHỌN THẾ GIỚI</div><h2 id="portal-heading">Ba cổng. Một vũ trụ.</h2></div><p>Di chuột để cảm nhận chiều sâu ✦</p></div>
+      <div class="section-head reveal"><div><div class="section-kicker">01 / CHỌN THẾ GIỚI</div><h2 id="portal-heading">Bốn cổng. Một vũ trụ.</h2></div><p>Di chuột để cảm nhận chiều sâu ✦</p></div>
       <div class="portals">
         <a class="portal flix reveal" href="roflix.html" aria-label="Mở RoFlix">
           <div class="portal-top"><span class="portal-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></svg></span><span class="chip">MOVIE UNIVERSE</span></div>
@@ -122,6 +123,12 @@
           <h3>RoAudio<span style="color:var(--orange)">.</span></h3>
           <p>Đeo tai nghe và bước vào thế giới âm thanh. Khám phá truyện audio, phát tệp của bạn hoặc mở video YouTube ngay trong giao diện.</p>
           <div class="portal-bottom"><strong>ĐI ĐẾN ROAUDIO ↗</strong><span class="arrow" aria-hidden="true">↗</span></div><span class="portal-ghost" aria-hidden="true">♫</span>
+        </a>
+        <a class="portal sports reveal" href="robong.html" aria-label="Mở RoBong">
+          <div class="portal-top"><span class="portal-icon" aria-hidden="true">⚽</span><span class="chip">SPORTS & ESPORTS</span></div>
+          <h3>RoBong<span style="color:#b6f36b">.</span></h3>
+          <p>Theo dõi bóng đá, nhiều môn thể thao và esports. Một trung tâm cho lịch thi đấu, tỷ số, giải đấu và tin tức.</p>
+          <div class="portal-bottom"><strong>VÀO ĐẤU TRƯỜNG ↗</strong><span class="arrow" aria-hidden="true">↗</span></div><span class="portal-ghost" aria-hidden="true">⚽</span>
         </a>
       </div>
     </section>
