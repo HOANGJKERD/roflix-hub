@@ -61,6 +61,9 @@ function renderRows(data,sport,resource){
    const score=row.homeScore!=null||row.awayScore!=null?String(row.homeScore??'–')+' : '+String(row.awayScore??'–'):'Chưa có tỷ số';
    addRow(row.home+' vs '+row.away,score,(row.status||'')+' · '+(row.competition||row.source||''));return;
   }
+  if(resource==='players'&&row.name){
+   addRow(row.name,row.position||'Vị trí chưa rõ',(row.number?'Số áo '+row.number+' · ':'')+(row.country||'')+(row.birthDate?' · '+row.birthDate:''));return;
+  }
   if(resource==='standings'&&row.team){
    addRow((row.rank?'#'+row.rank+' ':'')+row.team,(row.points!=null?'Điểm: '+row.points+' · ':'')+(row.played??'–')+' trận · '+(row.winRate!=null?'Tỷ lệ thắng '+(Number(row.winRate)*100).toFixed(1)+'%':''),(row.group?row.group+' · ':'')+'Thắng '+(row.wins??'–')+' · Hòa '+(row.draws??'–')+' · Thua '+(row.losses??'–')+(row.goalDifference!=null?' · Chênh lệch '+row.goalDifference:''));return;
   }
@@ -89,7 +92,6 @@ async function loadData(){
  if(league&&leagueMap[league])params.set('league',leagueMap[league]);
  
  if(resource==='matches'&&(sport==='football'||sport==='basketball'))params.set('date',dateParam());
- if(resource==='lineups')params.set('team','arsenal');
  if(resource==='players'&&sport==='football')params.set('team_id','359');
  if(resource==='players'&&sport==='basketball')params.set('team_id','13');
  if(resource==='players'&&sport==='hockey')params.set('team','TOR');
