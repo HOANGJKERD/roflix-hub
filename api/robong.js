@@ -20,7 +20,7 @@ const TOURNAMENTS = 'https://tourneyradar-api.vercel.app';
 const TIMEOUT_MS = 10000;
 
 const PROVIDERS = [
-  { id: 'football-standings', sport: 'football', auth: false, resources: ['leagues', 'standings'], note: 'ESPN-derived football league catalog and standings; no fixtures or player profiles.' },
+  { id: 'football-standings', sport: 'football', auth: false, resources: ['leagues', 'standings'], note: 'Legacy no-key adapter from the public directory; current endpoint may be unavailable, with ESPN V2 used as standings fallback.' },
   { id: 'openligadb', sport: 'football', auth: false, resources: ['leagues', 'matches', 'standings', 'teams'], note: 'Community-maintained results, fixtures and team data; strongest in German leagues and selected competitions.' },
   { id: 'espn-public', sport: 'football,basketball', auth: false, resources: ['matches', 'teams', 'players', 'standings'], note: 'Public ESPN site endpoints, undocumented and subject to change; not an official developer API.' },
   { id: 'nhl-public', sport: 'hockey', auth: false, resources: ['matches', 'standings', 'teams', 'players'], note: 'Public NHL web endpoints; coverage is ice hockey.' },
@@ -182,7 +182,7 @@ async function footballRequest(resource, q) {
     if (standings.status === 'fulfilled') sources.push({ provider: 'football-standings', data: standings.value && standings.value.data || standings.value });
     if (openliga.status === 'fulfilled') sources.push({ provider: 'openligadb', data: openliga.value });
     if (!sources.length) throw new Error('All football league sources are unavailable');
-    return ok(sources, 'football-standings+openligadb', 'football', resource, 3600);
+    return ok(sources, sources.map(source => source.provider).join('+'), 'football', resource, 3600);
   }
   if (resource === 'standings') {
     if (!league) throw new Error('Missing or invalid league. Use an ESPN league id such as eng.1 or an OpenLigaDB shortcut such as bl1.');
