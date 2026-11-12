@@ -2,6 +2,12 @@
         // CHI TIẾT PHIM
         // ============================================================
         async function viewMovieDetail(slug, preferredSrc, titleHint) {
+            const detailRequestId = window.__RF_DETAIL_REQUEST_ID__ = (window.__RF_DETAIL_REQUEST_ID__ || 0) + 1;
+            if (typeof rfResetPlaybackSession === 'function') rfResetPlaybackSession();
+            currentEpisodeList = [];
+            currentMovieData = null;
+            currentMovieTitle = '';
+            currentSlug = slug || '';
             if (!slug) {
                 showToast('error', 'Lỗi', 'Không tìm thấy phim!');
                 return;
@@ -17,10 +23,12 @@
             let movieData = null;
             try { movieData = await fetchMovieDetail(slug, preferredSrc, titleHint); }
             catch (error) {
+                if (detailRequestId !== window.__RF_DETAIL_REQUEST_ID__) return;
                 console.error('[RoFlix] Không tải được chi tiết phim:', error);
                 detailHost.innerHTML = '<div class="glass-premium rounded-3xl p-8 text-center"><h2 class="text-xl font-black text-white">Không tải được phim</h2><p class="text-sm text-gray-400 mt-2">Các nguồn dữ liệu hiện không phản hồi. Vui lòng thử lại sau.</p></div>';
                 return;
             }
+            if (detailRequestId !== window.__RF_DETAIL_REQUEST_ID__) return;
             if (!movieData) {
                 detailHost.innerHTML = '<div class="glass-premium rounded-3xl p-8 text-center"><h2 class="text-xl font-black text-white">Chưa tìm thấy thông tin phim</h2><p class="text-sm text-gray-400 mt-2">Không tìm được phim tương ứng trong NguonC, KKPhim hoặc VSMOV.</p></div>';
                 return;
