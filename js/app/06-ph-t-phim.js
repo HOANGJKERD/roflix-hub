@@ -392,24 +392,20 @@ async function useVsmovPlayback(slug, title) {
 }
 
 async function requestRoFlixB2PlaybackUrl(objectKey) {
-    const client = window.rfSupabase;
-    if (!client?.auth?.getSession) throw new Error('Supabase chưa sẵn sàng.');
-    const sessionResult = await client.auth.getSession();
-    const token = sessionResult?.data?.session?.access_token;
-    if (!token) throw new Error('Bạn cần đăng nhập RoFlix để xem video Private.');
+    // B2 playback is intentionally public at the application level.
+    // The bucket remains private; the API returns a short-lived signed URL.
     const response = await fetch('/api/b2-playback?key=' + encodeURIComponent(objectKey), {
-        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+        headers: { Accept: 'application/json' },
         cache: 'no-store'
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || !payload.url) {
         const messages = {
-            authentication_required: 'Phiên đăng nhập không hợp lệ. Hãy đăng nhập lại.',
             invalid_or_disallowed_object_key: 'Đường dẫn file không nằm trong vùng lưu trữ được phép.',
             b2_configuration_missing: 'Vercel chưa cấu hình đủ biến B2.',
             b2_signing_failed: 'Không thể ký URL truy cập B2.'
         };
-        throw new Error(messages[payload.error] || 'Không lấy được quyền phát video Private (HTTP ' + response.status + ').');
+        throw new Error(messages[payload.error] || 'Không lấy được URL phát video Private (HTTP ' + response.status + ').');
     }
     return payload.url;
 }
