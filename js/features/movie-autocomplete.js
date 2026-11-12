@@ -108,8 +108,15 @@
     try {
       const sb=window.rfSupabase;
       if(sb){
-        const term=q.replace(/[,%()]/g,' ');const customResult=await sb.from('roflix_custom_movies').select('id,title,origin_name,poster_url,year,quality,lang').eq('published',true).or('title.ilike.%'+term+'%,origin_name.ilike.%'+term+'%').limit(9);
-        if(!customResult.error)groups.push((customResult.data||[]).map(m=>({slug:m.id,title:m.title,year:m.year||'',poster:m.poster_url||'',sid:'custom',status:[m.quality||'HD',m.lang||''].filter(Boolean)})));
+        const term=q.replace(/[,%()]/g,' ').trim();
+        const [byTitle,byOrigin]=await Promise.all([
+          sb.from('roflix_custom_movies').select('id,title,origin_name,poster_url,year,quality,lang').eq('published',true).ilike('title','%'+term+'%').limit(9),
+          sb.from('roflix_custom_movies').select('id,title,origin_name,poster_url,year,quality,lang').eq('published',true).ilike('origin_name','%'+term+'%').limit(9)
+        ]);
+        const rows=[...(byTitle.data||[]),...(byOrigin.data||[])];
+        const unique=[...new Map(rows.map(m=>[m.id,m])).values()];
+        if(byTitle.error||byOrigin.error)console.warn('[RoFlix autocomplete] Drive catalog query:',byTitle.error||byOrigin.error);
+        groups.push(unique.map(m=>({slug:m.id,title:m.title,year:m.year||'',poster:m.poster_url||'',sid:'custom',status:['Google Drive',m.quality||'HD',m.lang||''].filter(Boolean)})));
       }
     } catch(error){console.warn('[RoFlix autocomplete] custom catalog lookup failed:',error);}
     // Gộp xen kẽ để VSMOV xuất hiện ngay trong gợi ý, ưu tiên NguonC khi trùng tên/năm.
