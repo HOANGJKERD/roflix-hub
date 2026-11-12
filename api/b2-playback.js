@@ -60,8 +60,8 @@ async function verifySupabaseUser(req) {
   const auth = String(req.headers?.authorization || req.headers?.Authorization || '');
   const match = auth.match(/^Bearer\s+(.+)$/i);
   if (!match) return false;
-  const supabaseUrl = String(process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\/$/, '');
-  const anonKey = process.env.SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+  const supabaseUrl = String(process.env.ROFLIX_SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\/$/, '');
+  const anonKey = process.env.ROFLIX_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 7000);
   try {
