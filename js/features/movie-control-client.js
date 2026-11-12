@@ -143,6 +143,7 @@
     player.setAttribute('allow','autoplay; fullscreen; encrypted-media; picture-in-picture');player.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
     const title=document.getElementById('playing-title');if(title)title.textContent=movie.title+' - '+ep.name;
     navigateTo('play-page');
+    if(typeof renderPlayEpisodeGrid==='function')renderPlayEpisodeGrid(index);
   };
   function renderCustomSection(){
     if(!sb||document.getElementById('rf-custom-movies-section'))return;
