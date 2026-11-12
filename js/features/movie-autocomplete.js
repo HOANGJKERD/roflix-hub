@@ -76,7 +76,7 @@
         IDS.forEach(id => close(document.getElementById(id)?.closest('.search-ios')?.querySelector('.rf-movie-suggest')));
         clearTimeout(window.searchTimeout);
         window.searchKeyword = '';
-        if (typeof window.viewMovieDetail === 'function') window.viewMovieDetail(m.slug, m.sid);
+        if (m.sid === 'custom' && window.rfMovieAccess?.openCustom) window.rfMovieAccess.openCustom(m.slug); else if (typeof window.viewMovieDetail === 'function') window.viewMovieDetail(m.slug, m.sid);
       });
     });
   }
