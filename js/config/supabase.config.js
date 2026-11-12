@@ -1,6 +1,6 @@
-// Supabase public client configuration.
-// Publishable/anon-style client keys are intended for browser use when protected by RLS.
+// Shared Supabase client configuration for RoHub apps.
+// The publishable key is safe for browser use; database access remains controlled by RLS.
 window.ROFLIX_SUPABASE = {
-  url: 'https://rbbudoccewyvmbkpdfju.supabase.co',
-  publishableKey: 'sb_publishable_1nT3mLNJhwMlTaHbBB4A7A_MGhr3BsI'
+  url: 'https://lovoqkjvveooyewjsuxt.supabase.co',
+  publishableKey: 'sb_publishable_ewT8plLm99TscNsRIV2Qxw_PBe5TGSE'
 };
