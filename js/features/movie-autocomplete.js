@@ -6,7 +6,7 @@
   const controllers = new WeakMap();
   const timers = new WeakMap();
   const CACHE_TTL = 90000;
-  const MAX_RESULTS = 7;
+  const MAX_RESULTS = 9;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pick = (...v) => v.find(x => x !== undefined && x !== null && String(x).trim()) || '';
   function sourceUrl(sid, q) {
@@ -104,6 +104,14 @@
       console.warn('[RoFlix autocomplete] source failed:', index ? 'VSMOV' : 'NguonC', result.reason);
       return [];
     });
+    // Gộp phim Drive tự thêm vào gợi ý tìm kiếm ngay cả khi chỉ nhập một phần tên.
+    try {
+      const sb=window.rfSupabase;
+      if(sb){
+        const q=await sb.from('roflix_custom_movies').select('id,title,origin_name,poster_url,year,quality,lang').eq('published',true).or('title.ilike.%'+q.replace(/[,%()]/g,' ')+'%,origin_name.ilike.%'+q.replace(/[,%()]/g,' ')+'%').limit(9);
+        if(!q.error)groups.push((q.data||[]).map(m=>({slug:m.id,title:m.title,year:m.year||'',poster:m.poster_url||'',sid:'custom',status:[m.quality||'HD',m.lang||''].filter(Boolean)})));
+      }
+    } catch(error){console.warn('[RoFlix autocomplete] custom catalog lookup failed:',error);}
     // Gộp xen kẽ để VSMOV xuất hiện ngay trong gợi ý, ưu tiên NguonC khi trùng tên/năm.
     const seen = new Set();
     let found = [];
