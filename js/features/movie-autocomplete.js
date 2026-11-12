@@ -108,8 +108,8 @@
     try {
       const sb=window.rfSupabase;
       if(sb){
-        const q=await sb.from('roflix_custom_movies').select('id,title,origin_name,poster_url,year,quality,lang').eq('published',true).or('title.ilike.%'+q.replace(/[,%()]/g,' ')+'%,origin_name.ilike.%'+q.replace(/[,%()]/g,' ')+'%').limit(9);
-        if(!q.error)groups.push((q.data||[]).map(m=>({slug:m.id,title:m.title,year:m.year||'',poster:m.poster_url||'',sid:'custom',status:[m.quality||'HD',m.lang||''].filter(Boolean)})));
+        const term=q.replace(/[,%()]/g,' ');const customResult=await sb.from('roflix_custom_movies').select('id,title,origin_name,poster_url,year,quality,lang').eq('published',true).or('title.ilike.%'+term+'%,origin_name.ilike.%'+term+'%').limit(9);
+        if(!customResult.error)groups.push((customResult.data||[]).map(m=>({slug:m.id,title:m.title,year:m.year||'',poster:m.poster_url||'',sid:'custom',status:[m.quality||'HD',m.lang||''].filter(Boolean)})));
       }
     } catch(error){console.warn('[RoFlix autocomplete] custom catalog lookup failed:',error);}
     // Gộp xen kẽ để VSMOV xuất hiện ngay trong gợi ý, ưu tiên NguonC khi trùng tên/năm.
