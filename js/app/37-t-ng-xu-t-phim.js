@@ -197,7 +197,10 @@
 
                 const pool = ranked.length ? ranked : recoCache;
                 const tonight = pool[0] || null;
-                const rowList = pool.slice(tonight ? 1 : 0, (tonight ? 1 : 0) + 12);
+                // Luôn dành vị trí cho phim Drive để chúng không bị chìm dưới điểm rating API.
+                const drivePicks = pool.filter(m => m._drive && m.slug !== tonight?.slug).slice(0, 4);
+                const regularPicks = pool.filter(m => !m._drive && m.slug !== tonight?.slug).slice(0, 8);
+                const rowList = [...drivePicks, ...regularPicks].slice(0, 12);
                 renderRecoTonight(tonight);
                 renderRecoRow(rowList, signals);
             } catch (e) {
