@@ -3,8 +3,8 @@ update public.roflix_movie_settings
 set force_login_for_locked = false,
     updated_at = now()
 where id = true;
-insert into public.roflix_movie_settings(id, lock_18_plus, force_login_for_locked, force_site_login)
-values (true, true, false, true)
+insert into public.roflix_movie_settings(id, lock_18_plus)
+values (true, true)
 on conflict (id) do update
 set force_login_for_locked = false,
     updated_at = now();
