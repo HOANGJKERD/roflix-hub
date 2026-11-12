@@ -495,8 +495,8 @@ async function playMovieByIndex(index, options = {}) {
             player.removeAttribute('referrerpolicy');
             player.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
         } catch (_) {}
-        const isHls = ep.linkType === 'hls' || /\.m3u8(?:[?#]|$)/i.test(ep.link);
-        const isDirectVideo = /\.(mp4|webm|ogg)(?:[?#]|$)/i.test(ep.link);
+        const isHls = !ep.b2Key && (ep.linkType === 'hls' || /\.m3u8(?:[?#]|$)/i.test(resolvedLink));
+        const isDirectVideo = /\.(mp4|m4v|webm|ogg)(?:[?#]|$)/i.test(resolvedLink);
         if (isHls || isDirectVideo) {
             try { await playCatalogHls(resolvedLink, `${title} - ${ep.name}`); }
             catch (error) {
