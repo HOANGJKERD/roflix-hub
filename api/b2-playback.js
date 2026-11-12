@@ -109,9 +109,9 @@ module.exports = async function b2PlaybackHandler(req, res) {
       accessKeyId: process.env.B2_ACCESS_KEY_ID,
       secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
       key,
-      expires: 900
+      expires: 14400
     });
-    return res.status(200).json({ ok: true, url, expiresIn: 900, contentType: /\.m3u8$/i.test(key) ? 'application/vnd.apple.mpegurl' : 'video/mp4' });
+    return res.status(200).json({ ok: true, url, expiresIn: 14400, contentType: /\.m3u8$/i.test(key) ? 'application/vnd.apple.mpegurl' : 'video/mp4' });
   } catch (error) {
     console.error('[RoFlix B2 signer]', error && error.message);
     return res.status(502).json({ ok: false, error: 'b2_signing_failed' });
