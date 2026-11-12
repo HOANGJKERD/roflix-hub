@@ -84,7 +84,7 @@
   }
   function coverOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
-    return id && file ? '/api/mangadex-image?host=uploads.mangadex.org&path='+encodeURIComponent('/covers/'+id+'/'+file+'.512.jpg') : '';
+    return id && file ? '/api/mangadex-image/covers/'+encodeURIComponent(id)+'/'+encodeURIComponent(file+'.512.jpg')+'?host=uploads.mangadex.org' : '';
   }
   function coverFallbackOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
@@ -612,7 +612,7 @@
       try { const parsedBase=new URL(base); if(parsedBase.protocol!=='https:')throw new Error(); imageHost=parsedBase.hostname; }
       catch (_) { throw new Error('MangaDex @Home trả về baseUrl không hợp lệ.'); }
       const saverFiles=Array.isArray(data.chapter?.dataSaver)?data.chapter.dataSaver:[];
-      const pageSrc=(kind, file)=>'/api/mangadex-image?host='+encodeURIComponent(imageHost)+'&path='+encodeURIComponent('/'+kind+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file));
+      const pageSrc=(kind, file)=>'/api/mangadex-image/'+kind+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file)+'?host='+encodeURIComponent(imageHost);
       const container=$('#reader-content');
       container.innerHTML=files.map((file,i)=>{const fallback=saverFiles[i]?pageSrc('data-saver', saverFiles[i]):'';return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pageSrc('data', file))+'" data-saver="'+esc(fallback)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
       wireReaderImages();restoreReadProgress();
