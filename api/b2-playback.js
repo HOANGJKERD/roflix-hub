@@ -61,7 +61,7 @@ module.exports = async function b2PlaybackHandler(req, res) {
 
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Accept');
+    res.setHeader('Access-Control-Allow-Headers', 'Accept');
     return res.status(204).end();
   }
   if (req.method !== 'GET') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
