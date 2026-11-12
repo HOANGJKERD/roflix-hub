@@ -338,8 +338,50 @@ async function fetchMovies(page = 1) {
         });
         if (!groups.length) throw new Error('All movie providers failed (NguonC, KKPhim, VSMOV)');
         const merged = mergeMovieListsByIdentity(groups);
-        applyListPagination({currentPage:page,totalPages:maxPages,totalItems:sumItems || merged.length},page,merged.length);
-        return merged;
+        // Tìm kiếm chính phải gộp phim Google Drive đã xuất bản, không chỉ autocomplete.
+        let driveMatches = [];
+        const keyword = String(searchKeyword || '').trim();
+        const sb = window.rfSupabase;
+        if (keyword && sb) {
+            try {
+                const result = await sb.from('roflix_custom_movies')
+                    .select('id,slug,title,origin_name,summary,poster_url,year,quality,lang,categories,actors,directors,locked,published')
+                    .eq('published', true)
+                    .order('updated_at', {ascending:false})
+                    .limit(500);
+                if (result.error) throw result.error;
+                const normalize = value => String(value || '').normalize('NFD')
+                    .replace(/[\\u0300-\\u036f]/g, '').replace(/đ/g, 'd')
+                    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+                const needle = normalize(keyword);
+                driveMatches = (result.data || []).filter(movie =>
+                    normalize(movie.title).includes(needle) ||
+                    normalize(movie.origin_name).includes(needle)
+                ).map(movie => ({
+                    slug: movie.id,
+                    name: movie.title || 'Phim Google Drive',
+                    title: movie.title || 'Phim Google Drive',
+                    origin_name: movie.origin_name || '',
+                    content: movie.summary || '',
+                    poster_url: movie.poster_url || '',
+                    thumb_url: movie.poster_url || '',
+                    year: movie.year || '',
+                    quality: movie.quality || 'HD',
+                    lang: movie.lang || 'Vietsub',
+                    category: Array.isArray(movie.categories) ? movie.categories.map(x => typeof x === 'string' ? {name:x} : x) : [],
+                    actor: movie.actors || [],
+                    director: movie.directors || [],
+                    locked: !!movie.locked,
+                    _src: 'custom',
+                    _customId: movie.id
+                }));
+            } catch (error) {
+                console.warn('[RoFlix] Không thể gộp phim Google Drive vào tìm kiếm:', error);
+            }
+        }
+        const combined = [...driveMatches, ...merged];
+        applyListPagination({currentPage:page,totalPages:maxPages,totalItems:(sumItems || merged.length) + driveMatches.length},page,combined.length);
+        return combined;
     } catch (error) {
         console.error('Lỗi tải phim:', error);
         showToast('error', 'Lỗi kết nối', 'Không thể tải danh sách phim từ NguonC, KKPhim hoặc VSMOV. Vui lòng thử lại!');
