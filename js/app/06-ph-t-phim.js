@@ -204,7 +204,11 @@ async function playCatalogHls(url, title) {
     rfCatalogVideoElement = video;
     video.controls = true;
 
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    const isHlsSource = /\\.m3u8(?:[?#]|$)/i.test(url);
+    if (!isHlsSource) {
+        // MP4/WebM phải đi thẳng vào HTMLMediaElement, không nạp qua hls.js.
+        video.src = url;
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
     } else {
         if (!window.Hls) {
