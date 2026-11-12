@@ -31,12 +31,12 @@ test('B2 SigV4 URL encodes UTF-8 and spaces in object keys', () => {
     accessKeyId: 'test-key-id',
     secretAccessKey: 'test-secret',
     key: 'ben 10/Tập 01.mp4',
-    expires: 900,
+    expires: 14400,
     now: new Date('2026-11-12T00:00:00.000Z')
   });
   assert.match(url, /^https:\/\/s3\.us-east-005\.backblazeb2\.com\/rohub-storage\/ben%2010\/T%E1%BA%ADp%2001\.mp4\?/);
   assert.match(url, /X-Amz-Signature=[a-f0-9]{64}$/);
-  assert.match(url, /X-Amz-Expires=900/);
+  assert.match(url, /X-Amz-Expires=14400/);
 });
 
 test('B2 endpoint rejects unsupported methods', async () => {
