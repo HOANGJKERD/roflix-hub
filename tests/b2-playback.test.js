@@ -31,12 +31,12 @@ test('B2 SigV4 URL encodes UTF-8 and spaces in object keys', () => {
     accessKeyId: 'test-key-id',
     secretAccessKey: 'test-secret',
     key: 'ben 10/Tập 01.mp4',
-    expires: 14400,
+    expires: 7200,
     now: new Date('2026-11-12T00:00:00.000Z')
   });
   assert.match(url, /^https:\/\/s3\.us-east-005\.backblazeb2\.com\/rohub-storage\/ben%2010\/T%E1%BA%ADp%2001\.mp4\?/);
   assert.match(url, /X-Amz-Signature=[a-f0-9]{64}$/);
-  assert.match(url, /X-Amz-Expires=14400/);
+  assert.match(url, /X-Amz-Expires=7200/);
 });
 
 test('B2 endpoint rejects unsupported methods', async () => {
@@ -51,4 +51,29 @@ test('B2 endpoint rejects object keys outside the allowlist before checking cred
   await handler({ method: 'GET', query: { key: '../private.mp4' }, headers: {} }, res);
   assert.equal(res.statusCode, 400);
   assert.equal(res.body.error, 'invalid_or_disallowed_object_key');
+});
+
+test('B2 endpoint issues a signed playback URL without a Supabase session', async () => {
+  const names = ['B2_ENDPOINT', 'B2_REGION', 'B2_BUCKET', 'B2_ACCESS_KEY_ID', 'B2_SECRET_ACCESS_KEY'];
+  const previous = Object.fromEntries(names.map(name => [name, process.env[name]]));
+  Object.assign(process.env, {
+    B2_ENDPOINT: 'https://s3.us-east-005.backblazeb2.com',
+    B2_REGION: 'us-east-005',
+    B2_BUCKET: 'rohub-storage',
+    B2_ACCESS_KEY_ID: 'test-key-id',
+    B2_SECRET_ACCESS_KEY: 'test-secret'
+  });
+  try {
+    const res = makeRes();
+    await handler({ method: 'GET', query: { key: 'ben 10/episode 01.mp4' }, headers: {} }, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.ok, true);
+    assert.equal(res.body.expiresIn, 7200);
+    assert.match(res.body.url, /X-Amz-Expires=7200/);
+  } finally {
+    for (const name of names) {
+      if (previous[name] === undefined) delete process.env[name];
+      else process.env[name] = previous[name];
+    }
+  }
 });
