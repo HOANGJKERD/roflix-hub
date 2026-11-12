@@ -12,7 +12,7 @@ function sendError(res, status, code, message, extra) {
 }
 function allowedHost(value) {
   const host = String(value || DEFAULT_HOST).toLowerCase().replace(/\.$/, '');
-  return host === 'uploads.mangadex.org' || host === 'mangadex.org' || /^[a-z0-9-]+\.mangadex\.network$/.test(host);
+  return host === 'uploads.mangadex.org' || host === 'mangadex.org' || /^[a-z0-9-]+\\.mangadex\\.(?:org|network)$/.test(host);
 }
 function resolveImagePath(parts) {
   if (parts.length === 3 && ['data', 'data-saver'].includes(parts[0]) && HASH.test(parts[1]) && FILE.test(parts[2]) && parts[2] !== '.' && parts[2] !== '..') {
@@ -30,18 +30,34 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET' && req.method !== 'HEAD') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Only GET and HEAD are supported');
 
-  const raw = req.query && req.query.path;
+  // Match the MangaDex API proxy: some Vercel runtimes omit the catch-all
+  // parameter from req.query, so parse the actual URL pathname first.
   let parts = [];
-  if (Array.isArray(raw)) {
-    parts = raw.map(String);
-  } else if (typeof raw === 'string' && raw.trim()) {
-    parts = raw.split('/').filter(Boolean).map(segment => {
+  try {
+    const incoming = new URL(req.url, 'https://rohub.invalid');
+    const marker = '/api/mangadex-image/';
+    const markerIndex = incoming.pathname.indexOf(marker);
+    if (markerIndex >= 0) {
+      parts = incoming.pathname.slice(markerIndex + marker.length).split('/').filter(Boolean).map(segment => {
+        try { return decodeURIComponent(segment); } catch (_) { return segment; }
+      });
+    }
+  } catch (_) {}
+  if (!parts.length) {
+    const raw = req.query && req.query.path;
+    if (Array.isArray(raw)) parts = raw.map(String);
+    else if (typeof raw === 'string' && raw.trim()) parts = raw.split('/').filter(Boolean).map(segment => {
       try { return decodeURIComponent(segment); } catch (_) { return segment; }
     });
   }
   const imagePath = resolveImagePath(parts);
-  if (!imagePath) return sendError(res, 400, 'INVALID_IMAGE_PATH', 'Expected /data/{hash}/{filename}, /data-saver/{hash}/{filename}, or /covers/{mangaId}/{filename}');
-  const host = String(req.query && req.query.host || DEFAULT_HOST).toLowerCase();
+  if (!imagePath) return sendError(res, 400, 'INVALID_IMAGE_PATH', 'Expected /api/mangadex-image/data/{hash}/{filename}, /data-saver/{hash}/{filename}, or /covers/{mangaId}/{filename}');
+  let host = DEFAULT_HOST;
+  try {
+    const incoming = new URL(req.url, 'https://rohub.invalid');
+    host = incoming.searchParams.get('host') || (req.query && req.query.host) || DEFAULT_HOST;
+  } catch (_) { host = (req.query && req.query.host) || DEFAULT_HOST; }
+  host = String(host).toLowerCase();
   if (!allowedHost(host)) return sendError(res, 400, 'INVALID_IMAGE_HOST', 'Image host is not an allowed MangaDex host');
 
   const target = 'https://' + host + imagePath;
