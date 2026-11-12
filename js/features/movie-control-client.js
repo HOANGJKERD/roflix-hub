@@ -3,6 +3,15 @@
   'use strict';
   const sb=window.rfSupabase;
   const esc=s=>String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
+  const asList=value=>{
+    if(Array.isArray(value))return value;
+    if(typeof value==='string'){
+      const raw=value.trim();if(!raw)return [];
+      try{const parsed=JSON.parse(raw);return Array.isArray(parsed)?parsed:[parsed]}catch(_){return raw.split(',').map(x=>x.trim()).filter(Boolean)}
+    }
+    return value==null?[]:[value];
+  };
+  const listText=value=>asList(value).map(x=>typeof x==='string'?x:(x?.name||x?.title||'')).filter(Boolean);
   let settings={lock_18_plus:true,force_login_for_locked:false};
   const overrideCache=new Map();
   const customCache=new Map();
@@ -13,7 +22,7 @@
     return settings;
   }
   function is18(movie){
-    const values=[...(movie?.genre||[]),...(movie?.categories||[])].map(x=>String(x||'').toLowerCase());
+    const values=[...asList(movie?.genre),...asList(movie?.categories)].map(x=>String(typeof x==='string'?x:(x?.name||x?.title||'')).toLowerCase());
     return values.some(v=>/18\s*\+|18plus|adult|người lớn|nguoi lon|hentai/.test(v));
   }
   async function getOverride(source,slug){
@@ -108,7 +117,7 @@
       window.rfCustomEpisodes=eps;
       window.currentSlug=movie.slug||movie.id;
       window.currentMovieTitle=movie.title||'Phim Google Drive';
-      window.currentMovieData={...movie,_src:'custom',type:'Phim tự thêm',genre:movie.categories||[],poster:movie.poster_url,summary:movie.summary,actors:movie.actors||[],directors:movie.directors||[],year:movie.year||'N/A',quality:movie.quality,lang:movie.lang};
+      window.currentMovieData={...movie,_src:'custom',type:'Phim tự thêm',genre:asList(movie.categories),poster:movie.poster_url,summary:movie.summary,actors:listText(movie.actors),directors:listText(movie.directors),year:movie.year||'N/A',quality:movie.quality,lang:movie.lang};
       currentSlug=movie.slug||movie.id;
       currentMovieTitle=movie.title||'Phim Google Drive';
       currentMovieData=window.currentMovieData;
@@ -117,7 +126,7 @@
       const episodeHtml=eps.length
         ? '<div class="md:col-span-4 mt-2"><h3 class="text-sm font-bold text-amber-400 mb-3">📺 Danh sách tập ('+eps.length+')</h3><div class="flex flex-wrap gap-2">'+eps.map((ep,i)=>'<button type="button" class="px-4 py-2 bg-gray-800 hover:bg-amber-500 hover:text-black rounded-xl text-xs font-bold transition" onclick="window.rfPlayCustomEpisode('+i+')">'+esc(ep.name)+'</button>').join('')+'</div></div>'
         : '<div class="md:col-span-4 text-xs text-amber-300">Phim đã mở nhưng chưa có tập được xuất bản hoặc tập chưa có Drive File ID.</div>';
-      detailHost.innerHTML='<div class="glass-premium p-5 md:p-8 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-8"><div><div class="aspect-[2/3] rounded-2xl overflow-hidden border border-gray-800 shadow-xl"><img src="'+esc(movie.poster_url||'')+'" class="w-full h-full object-cover" alt="'+esc(movie.title)+'"></div><button id="rf-custom-play" type="button" class="rf-detail-watch-btn"><i class="fa-solid fa-play"></i> Xem phim</button></div><div class="md:col-span-3 space-y-5"><div class="flex justify-between gap-3"><div><h1 class="text-2xl md:text-3xl font-black text-white">'+esc(movie.title)+'</h1><p class="text-sm mt-1 text-gray-400">'+esc(movie.origin_name||'')+'</p></div>'+(locked?'<span class="rf-locked-badge">18+ · CẢNH BÁO NỘI DUNG</span>':'')+'</div><div class="flex flex-wrap gap-2 text-xs text-gray-300"><span class="bg-amber-500 text-black font-bold px-3 py-1 rounded-lg">'+esc(movie.quality||'HD')+'</span><span>'+esc(movie.year||'N/A')+'</span><span>'+esc(movie.lang||'Vietsub')+'</span></div><div><h3 class="text-sm font-bold text-gray-400 mb-1">Tóm tắt:</h3><p class="text-sm leading-relaxed text-gray-300">'+esc(movie.summary||'Chưa có tóm tắt')+'</p></div><div class="text-xs text-gray-400">Diễn viên: '+esc((movie.actors||[]).join(', ')||'Chưa cập nhật')+'</div><div class="text-xs text-gray-400">Đạo diễn: '+esc((movie.directors||[]).join(', ')||'Chưa cập nhật')+'</div></div>'+episodeHtml+'</div>';
+      detailHost.innerHTML='<div class="glass-premium p-5 md:p-8 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-8"><div><div class="aspect-[2/3] rounded-2xl overflow-hidden border border-gray-800 shadow-xl"><img src="'+esc(movie.poster_url||'')+'" class="w-full h-full object-cover" alt="'+esc(movie.title)+'"></div><button id="rf-custom-play" type="button" class="rf-detail-watch-btn"><i class="fa-solid fa-play"></i> Xem phim</button></div><div class="md:col-span-3 space-y-5"><div class="flex justify-between gap-3"><div><h1 class="text-2xl md:text-3xl font-black text-white">'+esc(movie.title)+'</h1><p class="text-sm mt-1 text-gray-400">'+esc(movie.origin_name||'')+'</p></div>'+(locked?'<span class="rf-locked-badge">18+ · CẢNH BÁO NỘI DUNG</span>':'')+'</div><div class="flex flex-wrap gap-2 text-xs text-gray-300"><span class="bg-amber-500 text-black font-bold px-3 py-1 rounded-lg">'+esc(movie.quality||'HD')+'</span><span>'+esc(movie.year||'N/A')+'</span><span>'+esc(movie.lang||'Vietsub')+'</span></div><div><h3 class="text-sm font-bold text-gray-400 mb-1">Tóm tắt:</h3><p class="text-sm leading-relaxed text-gray-300">'+esc(movie.summary||'Chưa có tóm tắt')+'</p></div><div class="text-xs text-gray-400">Diễn viên: '+esc(listText(movie.actors).join(', ')||'Chưa cập nhật')+'</div><div class="text-xs text-gray-400">Đạo diễn: '+esc(listText(movie.directors).join(', ')||'Chưa cập nhật')+'</div></div>'+episodeHtml+'</div>';
       document.getElementById('rf-custom-play')?.addEventListener('click',()=>window.rfPlayCustomEpisode(0));
       if(!eps.length)showToast?.('warning','Chưa có tập phát','Kiểm tra Drive File ID và trạng thái xuất bản của các tập.');
     }catch(error){
