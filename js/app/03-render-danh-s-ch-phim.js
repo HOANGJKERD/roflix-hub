@@ -111,7 +111,7 @@
                 card.querySelector('[data-rf-watch]')?.addEventListener('click', event => {
                     event.preventDefault();
                     event.stopPropagation();
-                    source === 'custom' ? window.rfMovieAccess?.openCustom(slug) : playMovie(slug, source, title);
+                    source === 'custom' ? window.rfMovieAccess?.openCustom(slug).then(()=>window.rfCustomEpisodes?.length ? window.rfPlayCustomEpisode(0) : null) : playMovie(slug, source, title);
                 });
                 card.querySelector('[data-rf-detail]')?.addEventListener('click', event => {
                     event.preventDefault();
