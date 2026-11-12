@@ -90,12 +90,16 @@
     return true;
   }
   async function openCustom(id){
+    const detailRequestId=window.__RF_DETAIL_REQUEST_ID__=(window.__RF_DETAIL_REQUEST_ID__||0)+1;
+    if(typeof window.rfResetPlaybackSession==='function')window.rfResetPlaybackSession();
+    currentEpisodeList=[];currentMovieData=null;currentMovieTitle='';currentSlug=id||'';
     const detailHost=document.getElementById('detail-content-container');
     if(!detailHost){showToast?.('error','Không mở được phim','Thiếu vùng hiển thị chi tiết phim.');return;}
     navigateTo('detail-page');
     detailHost.innerHTML='<div class="glass-premium p-8 text-center text-white">Đang tải phim Google Drive...</div>';
     try{
       const movie=await getCustom(id);
+      if(detailRequestId!==window.__RF_DETAIL_REQUEST_ID__)return;
       if(!movie){detailHost.innerHTML='<div class="glass-premium p-8 text-center text-white">Không tìm thấy phim hoặc phim chưa xuất bản.</div>';showToast?.('error','Không tìm thấy phim','Phim Drive không tồn tại hoặc chưa được xuất bản.');return;}
       const access=await accessForMovie(movie,'custom',movie.slug||movie.id);
       if(!access.allowed)return;
@@ -104,6 +108,7 @@
         .select('id,episode_number,episode_name,drive_file_id,drive_share_url,published')
         .eq('movie_id',movie.id).eq('published',true).order('episode_number');
       if(q.error)throw q.error;
+      if(detailRequestId!==window.__RF_DETAIL_REQUEST_ID__)return;
       rows=q.data||[];
       if(!rows.length&&movie.drive_file_id)rows=[{episode_number:1,episode_name:'Full',drive_file_id:movie.drive_file_id}];
       const eps=rows.filter(e=>e.drive_file_id).map(e=>({
@@ -136,10 +141,14 @@
     }
   }
   window.rfPlayCustomEpisode=async function(index){
+    const playRequestId=window.__RF_PLAY_REQUEST_ID__=(window.__RF_PLAY_REQUEST_ID__||0)+1;
     const movie=window.rfActiveCustomMovie,ep=window.rfCustomEpisodes?.[index];if(!movie||!ep)return;
-    const ok=await accessForMovie(movie,'custom',movie.slug);if(!ok.allowed)return;
+    const ok=await accessForMovie(movie,'custom',movie.slug);if(!ok.allowed||playRequestId!==window.__RF_PLAY_REQUEST_ID__)return;
     const player=document.getElementById('movie-player');if(!player){showToast?.('error','Player không khả dụng','Không tìm thấy khung phát phim.');return;}
-    player.removeAttribute('sandbox');player.src='https://drive.google.com/file/d/'+encodeURIComponent(ep.drive_file_id)+'/preview';
+    if(typeof cleanupCatalogVideo==='function')cleanupCatalogVideo();
+    player.src='about:blank';
+    player.removeAttribute('sandbox');
+    player.src='https://drive.google.com/file/d/'+encodeURIComponent(ep.drive_file_id)+'/preview';
     player.setAttribute('allow','autoplay; fullscreen; encrypted-media; picture-in-picture');player.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
     const title=document.getElementById('playing-title');if(title)title.textContent=movie.title+' - '+ep.name;
     navigateTo('play-page');
