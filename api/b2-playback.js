@@ -2,9 +2,6 @@
 // Uses Node built-ins only. Never expose B2 credentials to the browser.
 const crypto = require('crypto');
 
-const DEFAULT_SUPABASE_URL = 'https://rbbudoccewyvmbkpdfju.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_1nT3mLNJhwMlTaHbBB4A7A_MGhr3BsI';
-
 function encodeRfc3986(value) {
   return encodeURIComponent(String(value)).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
 }
@@ -56,34 +53,11 @@ function safeObjectKey(value) {
   return key;
 }
 
-async function verifySupabaseUser(req) {
-  const auth = String(req.headers?.authorization || req.headers?.Authorization || '');
-  const match = auth.match(/^Bearer\s+(.+)$/i);
-  if (!match) return false;
-  const supabaseUrl = String(process.env.ROFLIX_SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\/$/, '');
-  const anonKey = process.env.ROFLIX_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 7000);
-  try {
-    const response = await fetch(supabaseUrl + '/auth/v1/user', {
-      headers: { apikey: anonKey, Authorization: 'Bearer ' + match[1] },
-      signal: controller.signal
-    });
-    if (!response.ok) return false;
-    const user = await response.json();
-    return !!(user && user.id);
-  } catch (_) {
-    return false;
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 module.exports = async function b2PlaybackHandler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('Vary', 'Authorization');
 
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -99,8 +73,6 @@ module.exports = async function b2PlaybackHandler(req, res) {
   const missing = required.filter(name => !process.env[name]);
   if (missing.length) return res.status(503).json({ ok: false, error: 'b2_configuration_missing', missing });
 
-  if (!await verifySupabaseUser(req)) return res.status(401).json({ ok: false, error: 'authentication_required' });
-
   try {
     const url = signedGetUrl({
       endpoint: process.env.B2_ENDPOINT,
@@ -109,9 +81,9 @@ module.exports = async function b2PlaybackHandler(req, res) {
       accessKeyId: process.env.B2_ACCESS_KEY_ID,
       secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
       key,
-      expires: 14400
+      expires: 7200
     });
-    return res.status(200).json({ ok: true, url, expiresIn: 14400, contentType: /\.m3u8$/i.test(key) ? 'application/vnd.apple.mpegurl' : 'video/mp4' });
+    return res.status(200).json({ ok: true, url, expiresIn: 7200, contentType: /\.m3u8$/i.test(key) ? 'application/vnd.apple.mpegurl' : 'video/mp4' });
   } catch (error) {
     console.error('[RoFlix B2 signer]', error && error.message);
     return res.status(502).json({ ok: false, error: 'b2_signing_failed' });
