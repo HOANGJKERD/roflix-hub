@@ -106,12 +106,12 @@
                 const title = card.dataset.rfMovieTitle || '';
                 card.addEventListener('click', event => {
                     if (event.target.closest('a, button')) return;
-                    viewMovieDetail(slug, source, title);
+                    source === 'custom' ? window.rfMovieAccess?.openCustom(slug) : viewMovieDetail(slug, source, title);
                 });
                 card.querySelector('[data-rf-watch]')?.addEventListener('click', event => {
                     event.preventDefault();
                     event.stopPropagation();
-                    playMovie(slug, source, title);
+                    source === 'custom' ? window.rfMovieAccess?.openCustom(slug) : playMovie(slug, source, title);
                 });
                 card.querySelector('[data-rf-detail]')?.addEventListener('click', event => {
                     event.preventDefault();
