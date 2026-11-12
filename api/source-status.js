@@ -51,8 +51,11 @@ module.exports = async function handler(req, res) {
     if (isPrivateHost(finalHost)) return res.status(400).json({ ok: false, status: 0 });
     const type = response.headers.get('content-type') || '';
     const ok = response.ok && !/text\/html/i.test(type);
+    // Only definitive not-found responses prove that a source URL is gone.
+    // 403/405/429 and 5xx often mean anti-bot/rate-limit/server trouble, not deletion.
+    const exists = response.status !== 404 && response.status !== 410;
     try { if (response.body) response.body.cancel(); } catch (_) {}
-    return res.status(200).json({ ok, status: response.status });
+    return res.status(200).json({ ok, exists, status: response.status });
   } catch (_) {
     return res.status(200).json({ ok: false, status: 0 });
   } finally {
