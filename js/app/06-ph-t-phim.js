@@ -161,7 +161,7 @@ function playOnVidSrc(season, episode) {
     try {
         if (window.rfAnalytics) {
             window.rfAnalytics.track('movie_view', {
-                movieSlug: currentSlug || '',
+                movieSlug: slugSnapshot,
                 movieTitle: title,
                 metadata: { player: 'vidsrc' }
             });
@@ -432,12 +432,39 @@ async function playB2Object(objectKey, title = 'RoFlix Private Storage') {
     } catch (_) {}
 })();
 
+function rfResetPlaybackSession() {
+    window.__RF_PLAY_REQUEST_ID__ = (window.__RF_PLAY_REQUEST_ID__ || 0) + 1;
+    try { cleanupCatalogVideo(); } catch (_) {}
+    const frame = document.getElementById('movie-player');
+    if (frame) {
+        frame.removeAttribute('src');
+        frame.src = 'about:blank';
+        frame.style.display = '';
+        frame.removeAttribute('sandbox');
+        frame.removeAttribute('referrerpolicy');
+        frame.dataset.rfVidsrcSandboxed = '0';
+    }
+    const title = document.getElementById('playing-title');
+    if (title) title.textContent = 'Đang tải phim...';
+    const grid = document.getElementById('episode-list-grid');
+    if (grid) grid.innerHTML = '<p class="col-span-full text-xs text-gray-500 text-center py-4">Đang tải danh sách tập...</p>';
+    window.__RF_LAST_EP_INDEX__ = 0;
+}
+window.rfResetPlaybackSession = rfResetPlaybackSession;
+
 async function playMovieByIndex(index, options = {}) {
+    const playRequestId = window.__RF_PLAY_REQUEST_ID__ = (window.__RF_PLAY_REQUEST_ID__ || 0) + 1;
+    const episodeSnapshot = Array.isArray(currentEpisodeList) ? currentEpisodeList.slice() : [];
+    const movieSnapshot = currentMovieData;
+    const titleSnapshot = currentMovieTitle || 'Đang phát';
+    const slugSnapshot = currentSlug || '';
+    const sourceSnapshot = currentSourceId || '';
+    const isCurrentRequest = () => playRequestId === window.__RF_PLAY_REQUEST_ID__;
     if ((!options || !options.fromParty) && window.rfWatchPartyBlocksControl && window.rfWatchPartyBlocksControl()) {
         showToast('warning', 'Phòng xem chung', 'Chỉ host được đổi tập. Bạn đang xem theo host.');
         return;
     }
-    const ep = currentEpisodeList[index];
+    const ep = episodeSnapshot[index];
     if (!ep) { showToast('error', 'Lỗi', 'Không có tập này!'); return; }
     window.__RF_LAST_EP_INDEX__ = index;
 
@@ -448,6 +475,7 @@ async function playMovieByIndex(index, options = {}) {
     }
     if (!options.skipSourceCheck && ep.link.includes('player.phimapi.com')) {
         const alive = await kkphimStreamAlive(ep.link);
+        if (!isCurrentRequest()) return;
         if (!alive) {
             cleanupCatalogVideo();
             showToast('warning', 'Link tập không còn tồn tại', 'Máy chủ xác nhận link tập trả về 404/410. RoFlix vẫn giữ phim trong danh sách; hãy chọn tập hoặc nguồn khác.');
@@ -465,19 +493,21 @@ async function playMovieByIndex(index, options = {}) {
                 throw new Error('HLS Private cần HLS Gateway để ký cả playlist và từng segment. Hiện tại chỉ bật MP4/WebM Private.');
             }
             resolvedLink = await requestRoFlixB2PlaybackUrl(ep.b2Key);
+            if (!isCurrentRequest()) return;
         } catch (error) {
             showToast('error', 'B2 Private', error.message || 'Không lấy được URL phát.');
             return;
         }
     }
 
-    const title = currentMovieTitle || 'Đang phát';
+    const title = titleSnapshot;
     try {
-        currentMovieData = currentMovieData || {
+        currentMovieData = movieSnapshot || {
             title, origin_name: '', summary: '', _src: currentSourceId, poster: ''
         };
     } catch (_) {}
 
+    if (!isCurrentRequest()) return;
     const player = document.getElementById('movie-player');
     const titleEl = document.getElementById('playing-title');
     if (titleEl) titleEl.textContent = `${title} - ${ep.name}`;
@@ -487,6 +517,8 @@ async function playMovieByIndex(index, options = {}) {
     // Embed dùng iframe; HLS/MP4 dùng video element tương thích.
     if (player) {
         try {
+            cleanupCatalogVideo();
+            player.src = 'about:blank';
             player.removeAttribute('sandbox');
             delete player.dataset.rfVidsrcSandboxed;
             player.removeAttribute('referrerpolicy');
@@ -506,7 +538,7 @@ async function playMovieByIndex(index, options = {}) {
         }
     }
 
-    try { if (window.rfAnalytics) window.rfAnalytics.movie('movie_play', currentSlug || '', title); } catch (_) {}
+    try { if (window.rfAnalytics) window.rfAnalytics.movie('movie_play', slugSnapshot, title); } catch (_) {}
     try {
         if (window.rfAnalytics) {
             window.rfAnalytics.track('movie_view', {
@@ -518,11 +550,11 @@ async function playMovieByIndex(index, options = {}) {
     } catch (_) {}
 
     const detailPoster = document.querySelector('#detail-content-container img');
-    saveWatchHistory(currentSlug || 'unknown', index, 0, {
+    saveWatchHistory(slugSnapshot || 'unknown', index, 0, {
         episodeName: ep.name || '',
         poster: detailPoster ? detailPoster.src : undefined,
         title: title,
-        sourceId: currentSourceId
+        sourceId: sourceSnapshot
     });
 
     try {
