@@ -204,7 +204,7 @@ async function playCatalogHls(url, title) {
     rfCatalogVideoElement = video;
     video.controls = true;
 
-    const isHlsSource = /\\.m3u8(?:[?#]|$)/i.test(url);
+    const isHlsSource = /\.m3u8(?:[?#]|$)/i.test(url);
     if (!isHlsSource) {
         // MP4/WebM phải đi thẳng vào HTMLMediaElement, không nạp qua hls.js.
         video.src = url;
@@ -468,7 +468,7 @@ async function playMovieByIndex(index, options = {}) {
     let resolvedLink = ep.link || '';
     if (ep.b2Key) {
         try {
-            if (/\\.m3u8(?:[?#]|$)/i.test(ep.b2Key)) {
+            if (/\.m3u8(?:[?#]|$)/i.test(ep.b2Key)) {
                 throw new Error('HLS Private cần HLS Gateway để ký cả playlist và từng segment. Hiện tại chỉ bật MP4/WebM Private.');
             }
             resolvedLink = await requestRoFlixB2PlaybackUrl(ep.b2Key);
