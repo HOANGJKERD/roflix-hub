@@ -3,7 +3,7 @@
   'use strict';
   const sb=window.rfSupabase;
   const esc=s=>String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
-  let settings={lock_18_plus:true,force_login_for_locked:true};
+  let settings={lock_18_plus:true,force_login_for_locked:false};
   const overrideCache=new Map();
   const customCache=new Map();
 
@@ -46,10 +46,8 @@
     const ov=source==='custom'?null:await getOverride(source,slug);
     if(ov?.hidden)return {allowed:false,hidden:true,locked:false,override:ov};
     const locked=!!ov?.locked || !!movie?.locked || (settings.lock_18_plus && is18(movie));
-    if(locked && settings.force_login_for_locked){
-      const ok=await requireLogin('Phim này yêu cầu đăng nhập để xem.');
-      if(!ok)return {allowed:false,locked:true,override:ov};
-    }
+    // RoFlix cho phép khách xem phim, kể cả nội dung từng yêu cầu đăng nhập.
+    // Giữ cờ locked để hiển thị cảnh báo, không dùng làm cổng chặn phát.
     return {allowed:true,locked,override:ov};
   }
   function applyOverride(ov){
