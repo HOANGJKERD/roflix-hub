@@ -5,10 +5,9 @@
 
 // Danh sách phim không có nguồn phát được ẩn trên trình duyệt hiện tại.
 function getRoFlixUnavailableSlugs() {
-    try {
-        const values = JSON.parse(localStorage.getItem('roflix-unavailable-movies') || '[]');
-        return new Set(Array.isArray(values) ? values.map(String) : []);
-    } catch (_) { return new Set(); }
+    // Clear legacy false-positive hides created by the old aggressive link checker.
+    try { localStorage.removeItem('roflix-unavailable-movies'); } catch (_) {}
+    return new Set();
 }
 
 function markRoFlixMovieUnavailable(slug) {
@@ -59,9 +58,9 @@ async function playMovie(slug, preferredSrc, titleHint) {
         if (currentEpisodeList.length > 0) {
             playMovieByIndex(0);
         } else {
-            markRoFlixMovieUnavailable(slug);
-            navigateTo('home-page');
-            showToast('warning', 'Đã ẩn phim', 'Phim không có link phát hợp lệ từ nguồn chính nên đã được ẩn khỏi danh sách trên thiết bị này.');
+            // Do not classify a temporary/unsupported provider response as a deleted source.
+            // Keep the detail page visible so the user can retry without losing the catalog item.
+            showToast('warning', 'Chưa lấy được nguồn phát', 'Thông tin phim đã tải nhưng chưa đọc được danh sách tập. Hãy thử mở lại chi tiết sau ít phút.');
         }
     } catch (e) {
         console.error(e);
@@ -311,7 +310,7 @@ async function kkphimStreamAlive(link) {
         const response = await fetch('/api/source-status?u=' + encodeURIComponent(file));
         if (!response.ok) return true;
         const data = await response.json();
-        return !!data.ok;
+        return data.exists !== false;
     } catch (_) { return true; }
 }
 
@@ -443,19 +442,17 @@ async function playMovieByIndex(index, options = {}) {
     window.__RF_LAST_EP_INDEX__ = index;
 
     if (!ep.link && !ep.b2Key) {
-        markRoFlixMovieUnavailable(currentSlug);
         cleanupCatalogVideo();
-        navigateTo('home-page');
-        showToast('warning', 'Đã ẩn phim', 'Tập này không có link phát hợp lệ từ nguồn chính.');
+        showToast('warning', 'Chưa có link phát', 'Tập này chưa trả về đường dẫn phát hợp lệ. Phim vẫn được giữ trong danh sách, bạn có thể thử tải lại chi tiết.');
         return;
     }
     if (!options.skipSourceCheck && ep.link.includes('player.phimapi.com')) {
         const alive = await kkphimStreamAlive(ep.link);
         if (!alive) {
-            markRoFlixMovieUnavailable(currentSlug);
             cleanupCatalogVideo();
-            navigateTo('home-page');
-            showToast('warning', 'Đã ẩn phim', 'Nguồn phát chính đã xác nhận link không còn hoạt động. Phim đã được ẩn trên thiết bị này.');
+            showToast('warning', 'Nguồn đang từ chối kiểm tra', 'Máy chủ không cho phép kiểm tra tự động link này. RoFlix vẫn giữ phim và sẽ thử mở trình phát trực tiếp.');
+            // A failed probe is not proof that the media was deleted.
+            // Continue to the player instead of hiding the title.
             return;
         }
     }
