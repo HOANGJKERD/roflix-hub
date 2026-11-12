@@ -91,6 +91,40 @@
             }
             await ingest('kkphim');
             if (bySlug.size < 24) await ingest('vsmov');
+            // Thêm phim Google Drive đã xuất bản vào cùng pool đề xuất.
+            // Dùng ID làm slug nội bộ để click luôn mở đúng custom movie.
+            try {
+                const sb = window.rfSupabase;
+                if (sb) {
+                    const result = await sb.from('roflix_custom_movies')
+                        .select('id,slug,title,origin_name,poster_url,year,quality,lang,categories,actors,summary')
+                        .eq('published', true)
+                        .order('updated_at', {ascending:false})
+                        .limit(40);
+                    if (result.error) throw result.error;
+                    (result.data || []).forEach(movie => {
+                        const key = 'drive:' + movie.id;
+                        const genres = Array.isArray(movie.categories) ? movie.categories : [];
+                        const mapped = {
+                            id: movie.id,
+                            slug: movie.id,
+                            title: movie.title || movie.origin_name || 'Phim Google Drive',
+                            origin_name: movie.origin_name || '',
+                            poster: movie.poster_url || '',
+                            year: movie.year || '',
+                            rating: 0,
+                            type: 'Google Drive',
+                            genre: genres,
+                            episode_total: 1,
+                            _src: 'custom',
+                            _drive: true
+                        };
+                        if (!bySlug.has(key)) bySlug.set(key, mapped);
+                    });
+                }
+            } catch (error) {
+                console.warn('[RoFlix recommendations] Không tải được phim Drive:', error);
+            }
             return [...bySlug.values()];
         }
 
@@ -147,7 +181,7 @@
             const row = document.getElementById('reco-row');
             if (row) {
                 row.className = 'reco-row reco-empty';
-                row.textContent = 'Đang tổng hợp đề xuất từ KKPhim + VSMOV...';
+                row.textContent = 'Đang tổng hợp đề xuất từ catalog RoFlix + Google Drive...';
             }
             if (shuffle) recoSeed = Date.now();
             try {
