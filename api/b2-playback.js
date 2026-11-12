@@ -52,7 +52,7 @@ function safeObjectKey(value) {
   if (parts.some(part => !part || part === '.' || part === '..')) return '';
   // Existing test uploads live in "ben 10"; future RoFlix uploads use roflix/.
   if (!(key.startsWith('ben 10/') || key.startsWith('roflix/'))) return '';
-  if (!/\.(?:mp4|m4v|webm|m3u8)$/i.test(key)) return '';
+  if (!/\.(?:mp4|m4v|webm)$/i.test(key)) return '';
   return key;
 }
 
