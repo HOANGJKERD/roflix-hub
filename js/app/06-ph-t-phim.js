@@ -280,10 +280,12 @@ function episodesFromPayload(movie) {
             const embed = safePlayUrl(ep.link_embed);
             const hls = safePlayUrl(ep.link_m3u8);
             const link = embed || hls;
-            if (!link) return;
+            const b2Key = String(ep.b2_key || ep.storage_key || ep.object_key || ep.b2Key || '').trim();
+            if (!link && !b2Key) return;
             epList.push({
                 name: String(ep.name || ep.slug || 'Full'),
                 link,
+                b2Key,
                 linkType: embed ? 'embed' : 'hls',
                 sources: { embed, hls },
                 activeSource: embed ? 'embed' : 'hls'
@@ -385,6 +387,52 @@ async function useVsmovPlayback(slug, title) {
     }
 }
 
+async function requestRoFlixB2PlaybackUrl(objectKey) {
+    const client = window.rfSupabase;
+    if (!client?.auth?.getSession) throw new Error('Supabase chưa sẵn sàng.');
+    const sessionResult = await client.auth.getSession();
+    const token = sessionResult?.data?.session?.access_token;
+    if (!token) throw new Error('Bạn cần đăng nhập RoFlix để xem video Private.');
+    const response = await fetch('/api/b2-playback?key=' + encodeURIComponent(objectKey), {
+        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+        cache: 'no-store'
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.url) {
+        const messages = {
+            authentication_required: 'Phiên đăng nhập không hợp lệ. Hãy đăng nhập lại.',
+            invalid_or_disallowed_object_key: 'Đường dẫn file không nằm trong vùng lưu trữ được phép.',
+            b2_configuration_missing: 'Vercel chưa cấu hình đủ biến B2.',
+            b2_signing_failed: 'Không thể ký URL truy cập B2.'
+        };
+        throw new Error(messages[payload.error] || 'Không lấy được quyền phát video Private (HTTP ' + response.status + ').');
+    }
+    return payload.url;
+}
+
+async function playB2Object(objectKey, title = 'RoFlix Private Storage') {
+    currentMovieTitle = title;
+    currentSlug = 'b2-private-storage';
+    currentEpisodeList = [{ name: 'Private B2', b2Key: objectKey }];
+    currentMovieData = { title, _src: 'b2-private' };
+    await playMovieByIndex(0, { skipSourceCheck: true });
+}
+
+(function bootB2PrivatePlaybackFromQuery() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const key = params.get('b2');
+        if (!key) return;
+        const title = params.get('title') || 'RoFlix Private Storage';
+        window.addEventListener('DOMContentLoaded', () => {
+            playB2Object(key, title).catch(error => {
+                console.error('[RoFlix B2]', error);
+                showToast('error', 'B2 Private', error.message || 'Không mở được video Private.');
+            });
+        }, { once: true });
+    } catch (_) {}
+}
+
 async function playMovieByIndex(index, options = {}) {
     if ((!options || !options.fromParty) && window.rfWatchPartyBlocksControl && window.rfWatchPartyBlocksControl()) {
         showToast('warning', 'Phòng xem chung', 'Chỉ host được đổi tập. Bạn đang xem theo host.');
@@ -394,7 +442,7 @@ async function playMovieByIndex(index, options = {}) {
     if (!ep) { showToast('error', 'Lỗi', 'Không có tập này!'); return; }
     window.__RF_LAST_EP_INDEX__ = index;
 
-    if (!ep.link) {
+    if (!ep.link && !ep.b2Key) {
         markRoFlixMovieUnavailable(currentSlug);
         cleanupCatalogVideo();
         navigateTo('home-page');
@@ -412,6 +460,19 @@ async function playMovieByIndex(index, options = {}) {
         }
     }
     clearPlayerError();
+
+    let resolvedLink = ep.link || '';
+    if (ep.b2Key) {
+        try {
+            if (/\\.m3u8(?:[?#]|$)/i.test(ep.b2Key)) {
+                throw new Error('HLS Private cần HLS Gateway để ký cả playlist và từng segment. Hiện tại chỉ bật MP4/WebM Private.');
+            }
+            resolvedLink = await requestRoFlixB2PlaybackUrl(ep.b2Key);
+        } catch (error) {
+            showToast('error', 'B2 Private', error.message || 'Không lấy được URL phát.');
+            return;
+        }
+    }
 
     const title = currentMovieTitle || 'Đang phát';
     try {
@@ -437,14 +498,14 @@ async function playMovieByIndex(index, options = {}) {
         const isHls = ep.linkType === 'hls' || /\.m3u8(?:[?#]|$)/i.test(ep.link);
         const isDirectVideo = /\.(mp4|webm|ogg)(?:[?#]|$)/i.test(ep.link);
         if (isHls || isDirectVideo) {
-            try { await playCatalogHls(ep.link, `${title} - ${ep.name}`); }
+            try { await playCatalogHls(resolvedLink, `${title} - ${ep.name}`); }
             catch (error) {
                 console.error('[RoFlix HLS] setup failed', error);
                 showToast('error', 'Không khởi tạo được trình phát', error?.message || 'Nguồn HLS không khả dụng.');
             }
         } else {
             cleanupCatalogVideo();
-            player.src = ep.link;
+            player.src = resolvedLink;
         }
     }
 
