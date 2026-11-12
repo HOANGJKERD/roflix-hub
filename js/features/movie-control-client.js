@@ -85,28 +85,28 @@
   async function openCustom(id){
     const movie=await getCustom(id);if(!movie){showToast?.('error','Không tìm thấy phim','Phim tự thêm không tồn tại hoặc đã bị ẩn.');return;}
     const ok=await accessForMovie(movie,'custom',movie.slug);if(!ok.allowed)return;
-    window.rfActiveCustomMovie=movie;window.currentSlug=movie.slug;window.currentMovieTitle=movie.title;
+    let eps=[];
+    try{const q=await sb.from('roflix_custom_movie_episodes').select('id,episode_number,episode_name,drive_file_id,drive_share_url').eq('movie_id',movie.id).eq('published',true).order('episode_number');if(!q.error)eps=(q.data||[]).map(e=>({name:e.episode_name||('Tập '+e.episode_number),number:e.episode_number,drive_file_id:e.drive_file_id}));}catch(e){console.warn('[RoFlix] Không tải được danh sách tập Drive:',e)}
+    if(!eps.length&&movie.drive_file_id)eps=[{name:'Full',number:1,drive_file_id:movie.drive_file_id}];
+    window.rfActiveCustomMovie=movie;window.rfCustomEpisodes=eps;window.currentSlug=movie.slug;window.currentMovieTitle=movie.title;
     window.currentMovieData={...movie,_src:'custom',type:'Phim tự thêm',genre:movie.categories||[],poster:movie.poster_url,summary:movie.summary,actors:movie.actors||[],directors:movie.directors||[],year:movie.year||'N/A',quality:movie.quality,lang:movie.lang};
     const box=document.getElementById('detail-content-container');if(!box)return;
     const locked=movie.locked||is18(movie);
-    box.innerHTML=`<div class="glass-premium p-5 md:p-8 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-8"><div><div class="aspect-[2/3] rounded-2xl overflow-hidden border border-gray-800 shadow-xl"><img src="${esc(movie.poster_url)}" class="w-full h-full object-cover" alt="${esc(movie.title)}"></div><button id="rf-custom-play" class="rf-detail-watch-btn"><i class="fa-solid fa-play"></i> Xem phim</button></div><div class="md:col-span-3 space-y-5"><div class="flex justify-between gap-3"><div><h1 class="text-2xl md:text-3xl font-black text-white">${esc(movie.title)}</h1><p class="text-sm mt-1 text-gray-400">${esc(movie.origin_name)}</p></div>${locked?'<span class="rf-locked-badge">🔒 KHÓA</span>':''}</div><div class="flex flex-wrap gap-2 text-xs text-gray-300"><span class="bg-amber-500 text-black font-bold px-3 py-1 rounded-lg">${esc(movie.quality||'HD')}</span><span>${esc(movie.year||'N/A')}</span><span>${esc(movie.lang||'Vietsub')}</span></div><div><h3 class="text-sm font-bold text-gray-400 mb-1">Tóm tắt:</h3><p class="text-sm leading-relaxed text-gray-300">${esc(movie.summary||'Chưa có tóm tắt')}</p></div><div class="text-xs text-gray-400">Diễn viên: ${(movie.actors||[]).map(esc).join(', ')||'Chưa cập nhật'}</div><div class="text-xs text-gray-400">Đạo diễn: ${(movie.directors||[]).map(esc).join(', ')||'Chưa cập nhật'}</div></div><div class="md:col-span-4 space-y-3"><div class="flex items-center justify-between gap-3"><h3 class="text-sm font-bold text-amber-400">🎬 Xem trước video</h3><span class="text-xs text-gray-500">Preview Google Drive</span></div><div class="relative w-full overflow-hidden rounded-2xl border border-gray-700 bg-black" style="aspect-ratio:16/9"><iframe id="rf-custom-detail-preview" title="Xem trước ${esc(movie.title)}" src="${movie.playback_mode==='drive_preview'&&movie.drive_file_id?'https://drive.google.com/file/d/'+encodeURIComponent(movie.drive_file_id)+'/preview':'about:blank'}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div></div></div>`;
-    document.getElementById('rf-custom-play').onclick=async()=>{
-      const ok2=await accessForMovie(movie,'custom',movie.slug);if(!ok2.allowed)return;
-      const player=document.getElementById('movie-player');
-      if(movie.playback_mode==='drive_preview'&&movie.drive_file_id){
-        if(!player){showToast?.('error','Player không khả dụng','Không tìm thấy khung phát phim.');return;}
-        player.removeAttribute('sandbox');
-        player.src='https://drive.google.com/file/d/'+encodeURIComponent(movie.drive_file_id)+'/preview';
-        player.setAttribute('allow','autoplay; fullscreen; encrypted-media; picture-in-picture');
-        player.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
-      }else{
-        const u=await sb.storage.from('roflix-media').createSignedUrl(movie.video_path,3600);if(u.error){showToast?.('error','Không mở được video',u.error.message);return;}
-        if(player)player.src=u.data.signedUrl;
-      }
-      const title=document.getElementById('playing-title');if(title)title.textContent=movie.title;navigateTo('play-page');
-    };
+    const episodeHtml=eps.length?'<div class="md:col-span-4 mt-2"><h3 class="text-sm font-bold text-amber-400 mb-3">📺 Danh sách tập ('+eps.length+')</h3><div class="flex flex-wrap gap-2">'+eps.map((ep,i)=>'<button type="button" class="px-4 py-2 bg-gray-800 hover:bg-amber-500 hover:text-black rounded-xl text-xs font-bold transition" onclick="window.rfPlayCustomEpisode('+i+')">'+esc(ep.name)+'</button>').join('')+'</div></div>':'<div class="md:col-span-4 text-xs text-gray-500">Chưa có tập nào được xuất bản.</div>';
+    box.innerHTML=`<div class="glass-premium p-5 md:p-8 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-8"><div><div class="aspect-[2/3] rounded-2xl overflow-hidden border border-gray-800 shadow-xl"><img src="${esc(movie.poster_url)}" class="w-full h-full object-cover" alt="${esc(movie.title)}"></div><button id="rf-custom-play" class="rf-detail-watch-btn"><i class="fa-solid fa-play"></i> Xem phim</button></div><div class="md:col-span-3 space-y-5"><div class="flex justify-between gap-3"><div><h1 class="text-2xl md:text-3xl font-black text-white">${esc(movie.title)}</h1><p class="text-sm mt-1 text-gray-400">${esc(movie.origin_name)}</p></div>${locked?'<span class="rf-locked-badge">🔒 KHÓA</span>':''}</div><div class="flex flex-wrap gap-2 text-xs text-gray-300"><span class="bg-amber-500 text-black font-bold px-3 py-1 rounded-lg">${esc(movie.quality||'HD')}</span><span>${esc(movie.year||'N/A')}</span><span>${esc(movie.lang||'Vietsub')}</span></div><div><h3 class="text-sm font-bold text-gray-400 mb-1">Tóm tắt:</h3><p class="text-sm leading-relaxed text-gray-300">${esc(movie.summary||'Chưa có tóm tắt')}</p></div><div class="text-xs text-gray-400">Diễn viên: ${(movie.actors||[]).map(esc).join(', ')||'Chưa cập nhật'}</div><div class="text-xs text-gray-400">Đạo diễn: ${(movie.directors||[]).map(esc).join(', ')||'Chưa cập nhật'}</div></div>${episodeHtml}</div>`;
+    const playFirst=()=>window.rfPlayCustomEpisode(0);
+    document.getElementById('rf-custom-play').onclick=playFirst;
     navigateTo('detail-page');
   }
+  window.rfPlayCustomEpisode=async function(index){
+    const movie=window.rfActiveCustomMovie,ep=window.rfCustomEpisodes?.[index];if(!movie||!ep)return;
+    const ok=await accessForMovie(movie,'custom',movie.slug);if(!ok.allowed)return;
+    const player=document.getElementById('movie-player');if(!player){showToast?.('error','Player không khả dụng','Không tìm thấy khung phát phim.');return;}
+    player.removeAttribute('sandbox');player.src='https://drive.google.com/file/d/'+encodeURIComponent(ep.drive_file_id)+'/preview';
+    player.setAttribute('allow','autoplay; fullscreen; encrypted-media; picture-in-picture');player.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
+    const title=document.getElementById('playing-title');if(title)title.textContent=movie.title+' - '+ep.name;
+    navigateTo('play-page');
+  };
   function renderCustomSection(){
     if(!sb||document.getElementById('rf-custom-movies-section'))return;
     const main=document.getElementById('view-main-site');if(!main)return;
