@@ -435,7 +435,7 @@ async function playB2Object(objectKey, title = 'RoFlix Private Storage') {
             });
         }, { once: true });
     } catch (_) {}
-}
+})();
 
 async function playMovieByIndex(index, options = {}) {
     if ((!options || !options.fromParty) && window.rfWatchPartyBlocksControl && window.rfWatchPartyBlocksControl()) {
