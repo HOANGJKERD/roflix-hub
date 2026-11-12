@@ -100,16 +100,20 @@ function normalizeNguoncMovie(movie, episodes) {
     }
     const rawEpisodes = Array.isArray(movie.episodes) ? movie.episodes : (Array.isArray(episodes) ? episodes : []);
     movie.episodes = rawEpisodes.map(group => {
-        if (Array.isArray(group.server_data)) return group;
-        const items = Array.isArray(group.items) ? group.items : (Array.isArray(group.server_data) ? group.server_data : []);
+        const items = Array.isArray(group?.server_data) ? group.server_data
+            : (Array.isArray(group?.items) ? group.items
+            : (Array.isArray(group?.episodes) ? group.episodes : []));
         return {
-            server_name: group.server_name || group.name || 'NguonC',
+            ...group,
+            server_name: group?.server_name || group?.name || 'NguonC',
             server_data: items.map(ep => ({
-                name: ep.name || ep.slug || 'Tập',
-                slug: ep.slug || ep.name || '',
-                filename: ep.filename || '',
-                link_embed: ep.embed || ep.link_embed || '',
-                link_m3u8: ep.m3u8 || ep.link_m3u8 || ''
+                ...ep,
+                name: ep?.name || ep?.slug || ep?.filename || 'Tập',
+                slug: ep?.slug || ep?.name || '',
+                filename: ep?.filename || '',
+                link_embed: ep?.link_embed || ep?.embed || ep?.link || ep?.url || '',
+                link_m3u8: ep?.link_m3u8 || ep?.m3u8 || ep?.hls || '',
+                b2_key: ep?.b2_key || ep?.storage_key || ep?.object_key || ep?.b2Key || ''
             }))
         };
     });
