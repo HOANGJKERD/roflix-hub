@@ -186,7 +186,8 @@ function cleanupCatalogVideo() {
     if (frame) frame.style.display = '';
 }
 
-async function playCatalogHls(url, title) {
+async function playCatalogHls(url, title, requestId) {
+    const isCurrent = () => requestId == null || requestId === window.__RF_PLAY_REQUEST_ID__;
     const frame = document.getElementById('movie-player');
     if (!frame || !frame.parentElement) throw new Error('Không tìm thấy vùng phát phim.');
     cleanupCatalogVideo();
@@ -224,6 +225,7 @@ async function playCatalogHls(url, title) {
                 script.addEventListener('error', () => reject(new Error('Không tải được thư viện HLS.')), { once: true });
             });
         }
+        if (!isCurrent()) return;
         if (!window.Hls || !window.Hls.isSupported()) throw new Error('Trình duyệt không hỗ trợ phát HLS.');
         rfCatalogHlsInstance = new window.Hls({ enableWorker: true, lowLatencyMode: false });
         rfCatalogHlsInstance.on(window.Hls.Events.ERROR, (_event, data) => {
@@ -236,12 +238,14 @@ async function playCatalogHls(url, title) {
         rfCatalogHlsInstance.attachMedia(video);
     }
 
+    if (!isCurrent()) { try { video.remove(); } catch (_) {} return; }
     video.addEventListener('error', () => {
         const code = video.error && video.error.code;
         console.error('[RoFlix video] media error', code);
         showToast('error', 'Không phát được video', 'Nguồn HLS có thể đã hết hạn hoặc máy chủ từ chối kết nối.');
     }, { once: true });
     try { await video.play(); } catch (_) {}
+    if (!isCurrent()) { try { video.pause(); video.remove(); } catch (_) {} }
 }
 
 function clearPlayerError() {
@@ -527,8 +531,9 @@ async function playMovieByIndex(index, options = {}) {
         const isHls = !ep.b2Key && (ep.linkType === 'hls' || /\.m3u8(?:[?#]|$)/i.test(resolvedLink));
         const isDirectVideo = /\.(mp4|m4v|webm|ogg)(?:[?#]|$)/i.test(resolvedLink);
         if (isHls || isDirectVideo) {
-            try { await playCatalogHls(resolvedLink, `${title} - ${ep.name}`); }
+            try { await playCatalogHls(resolvedLink, `${title} - ${ep.name}`, playRequestId); if (!isCurrent()) return; }
             catch (error) {
+                if (!isCurrent()) return;
                 console.error('[RoFlix HLS] setup failed', error);
                 showToast('error', 'Không khởi tạo được trình phát', error?.message || 'Nguồn HLS không khả dụng.');
             }
