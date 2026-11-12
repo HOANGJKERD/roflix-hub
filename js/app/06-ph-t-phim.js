@@ -450,7 +450,7 @@ async function playMovieByIndex(index, options = {}) {
         const alive = await kkphimStreamAlive(ep.link);
         if (!alive) {
             cleanupCatalogVideo();
-            showToast('warning', 'Nguồn đang từ chối kiểm tra', 'Máy chủ không cho phép kiểm tra tự động link này. RoFlix vẫn giữ phim và sẽ thử mở trình phát trực tiếp.');
+            showToast('warning', 'Link tập không còn tồn tại', 'Máy chủ xác nhận link tập trả về 404/410. RoFlix vẫn giữ phim trong danh sách; hãy chọn tập hoặc nguồn khác.');
             // A failed probe is not proof that the media was deleted.
             // Continue to the player instead of hiding the title.
             return;
