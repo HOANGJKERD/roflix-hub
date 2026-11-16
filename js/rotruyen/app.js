@@ -86,19 +86,20 @@
     const value=String(url||'');
     try {
       const parsed=new URL(value, location.origin);
-      if (parsed.pathname==='/api/mangadex-image' && parsed.searchParams.get('path')) {
-        return '/api/mangadex/image?host='+encodeURIComponent(parsed.searchParams.get('host')||'uploads.mangadex.org')+'&img='+encodeURIComponent(parsed.searchParams.get('path')||parsed.searchParams.get('img'));
-      }
+      let raw='';
+      if (parsed.pathname==='/api/mangadex-image') raw=parsed.searchParams.get('path')||parsed.searchParams.get('img')||'';
       const marker='/api/mangadex-image/';
-      if (parsed.pathname.startsWith(marker)) {
-        return '/api/mangadex/image?host='+encodeURIComponent(parsed.searchParams.get('host')||'uploads.mangadex.org')+'&img='+encodeURIComponent('/'+parsed.pathname.slice(marker.length));
+      if (!raw && parsed.pathname.startsWith(marker)) raw='/'+parsed.pathname.slice(marker.length);
+      const parts=raw.replace(/^\/+/, '').split('/');
+      if (parts.length===3 && ['data','data-saver','covers'].includes(parts[0])) {
+        return '/api/mangadex/image?kind='+encodeURIComponent(parts[0])+'&hash='+encodeURIComponent(parts[1])+'&name='+encodeURIComponent(parts[2])+'&host='+encodeURIComponent(parsed.searchParams.get('host')||'uploads.mangadex.org');
       }
     } catch (_) {}
     return value;
   }
   function coverOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
-    return id && file ? '/api/mangadex/image?host=uploads.mangadex.org&img='+encodeURIComponent('/covers/'+id+'/'+file+'.512.jpg') : '';
+    return id && file ? '/api/mangadex/image?kind=covers&hash='+encodeURIComponent(id)+'&name='+encodeURIComponent(file+'.512.jpg')+'&host=uploads.mangadex.org' : '';
   }
   function coverFallbackOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
@@ -630,7 +631,7 @@
       try { const parsedBase=new URL(base); if(parsedBase.protocol!=='https:')throw new Error(); imageHost=parsedBase.hostname; }
       catch (_) { throw new Error('MangaDex @Home trả về baseUrl không hợp lệ.'); }
       const saverFiles=Array.isArray(data.chapter?.dataSaver)?data.chapter.dataSaver:[];
-      const pageSrc=(kind, file)=>API+'/image?host='+encodeURIComponent(imageHost)+'&img='+encodeURIComponent('/'+kind+'/'+hash+'/'+file);
+      const pageSrc=(kind, file)=>API+'/image?kind='+encodeURIComponent(kind)+'&hash='+encodeURIComponent(hash)+'&name='+encodeURIComponent(file)+'&host='+encodeURIComponent(imageHost);
       const directSrc=(kind, file)=>'https://'+imageHost+'/'+kind+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file);
       const container=$('#reader-content');
       container.innerHTML=files.map((file,i)=>{const fallback=saverFiles[i]?pageSrc('data-saver', saverFiles[i]):'';const direct=directSrc('data', file);return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pageSrc('data', file))+'" data-saver="'+esc(fallback)+'" data-direct="'+esc(direct)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');

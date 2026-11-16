@@ -37,9 +37,20 @@ function resolveImagePath(rawPath) {
   }
   return '';
 }
+function queryValue(req, incoming, key) {
+  const fromUrl = incoming && incoming.searchParams ? incoming.searchParams.get(key) : '';
+  if (fromUrl) return fromUrl;
+  const value = req && req.query ? req.query[key] : '';
+  if (Array.isArray(value)) return String(value[0] || '');
+  return typeof value === 'string' ? value : '';
+}
 async function serveMangaDexImage(req, res, incoming) {
-  const imagePath = resolveImagePath(incoming.searchParams.get('img') || incoming.searchParams.get('path') || '');
-  const host = String(incoming.searchParams.get('host') || 'uploads.mangadex.org').toLowerCase();
+  const kind = queryValue(req, incoming, 'kind');
+  const hash = queryValue(req, incoming, 'hash');
+  const name = queryValue(req, incoming, 'name');
+  const built = kind && hash && name ? '/' + kind + '/' + hash + '/' + name : '';
+  const imagePath = resolveImagePath(built || queryValue(req, incoming, 'img') || (incoming.searchParams.get('path') || ''));
+  const host = String(queryValue(req, incoming, 'host') || 'uploads.mangadex.org').toLowerCase();
   if (!imagePath) return sendError(res, 400, 'INVALID_IMAGE_PATH', 'Expected path /data/{hash}/{file}, /data-saver/{hash}/{file}, or /covers/{mangaId}/{file}');
   if (!allowedImageHost(host)) return sendError(res, 400, 'INVALID_IMAGE_HOST', 'Image host is not an allowed MangaDex host');
   const controller = new AbortController();
