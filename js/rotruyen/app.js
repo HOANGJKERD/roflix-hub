@@ -99,11 +99,11 @@
   }
   function coverOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
-    return id && file ? '/api/mangadex/image?kind=covers&hash='+encodeURIComponent(id)+'&name='+encodeURIComponent(file+'.512.jpg')+'&host=uploads.mangadex.org' : '';
+    return id && file ? '/api/mangadex/image?kind=covers&hash='+encodeURIComponent(id)+'&name='+encodeURIComponent(file+'.256.jpg')+'&host=uploads.mangadex.org' : '';
   }
   function coverFallbackOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
-    return id && file ? 'https://uploads.mangadex.org/covers/'+encodeURIComponent(id)+'/'+encodeURIComponent(file)+'.512.jpg' : '';
+    return id && file ? 'https://uploads.mangadex.org/covers/'+encodeURIComponent(id)+'/'+encodeURIComponent(file)+'.256.jpg' : '';
   }
   window.rtCoverError = function(img) {
     if (!img) return;
@@ -176,33 +176,61 @@
       }
     }
   }
+  async function hasReadableVietnamese(id) {
+    const params=new URLSearchParams({limit:'1','order[chapter]':'asc'});
+    params.append('translatedLanguage[]','vi');
+    params.append('contentRating[]','safe');
+    params.append('contentRating[]','suggestive');
+    const data=await fetchJSON(API+'/manga/'+encodeURIComponent(id)+'/feed?'+params.toString());
+    const chapter=(Array.isArray(data.data)?data.data:[])[0];
+    return !!(chapter && chapter.attributes?.translatedLanguage==='vi' && Number(chapter.attributes?.pages)>0);
+  }
+  async function mapPool(items, limit, fn) {
+    const out=new Array(items.length);
+    let cursor=0;
+    async function worker() {
+      while (cursor<items.length) {
+        const index=cursor++;
+        try { out[index]=await fn(items[index]); }
+        catch (_) { out[index]=null; }
+      }
+    }
+    await Promise.all(Array.from({length:Math.min(limit, items.length)}, () => worker()));
+    return out;
+  }
   async function searchMangaDex() {
+    const cacheKey='rt-vi-readable:v2:'+state.query.trim()+'|'+state.genre;
+    try {
+      const cached=JSON.parse(sessionStorage.getItem(cacheKey)||'null');
+      if (cached && Date.now()-cached.at<6*60*60*1000 && Array.isArray(cached.items) && cached.items.length) return cached.items;
+    } catch (_) {}
     const params=new URLSearchParams({limit:'100',offset:'0'});
     params.set('order[followedCount]','desc');
     params.append('includes[]','cover_art');
     params.append('includes[]','author');
     params.append('contentRating[]','safe');
     params.append('contentRating[]','suggestive');
-    // RoTruyen chỉ hiển thị manga có bản dịch tiếng Việt. Không fallback sang catalog đa ngôn ngữ.
     params.append('availableTranslatedLanguage[]','vi');
     if(state.query.trim()) params.set('title',state.query.trim());
     if(state.genre!=='all') {
       const tagIds={action:'391b0423-d847-456f-aff0-8b0cfc03066b',romance:'423e2eae-a7a2-4a8b-ac03-a8351462d71d',drama:'b9af3a63-f058-46de-a9a0-e0c13906197a',adventure:'3b60b75c-a2d7-4860-ab56-05f391bb889c',fantasy:'cdc58593-87dd-415e-bbc0-2ec27bf404cc'};
       if(tagIds[state.genre]) params.append('includedTags[]',tagIds[state.genre]);
     }
-    // Load several pages so the catalogue is not artificially limited to the first 100 results.
-    // MangaDex caps each request at 100; offsets are deduplicated below.
-    const pages = await Promise.all([0,100,200].map(async offset => {
-      const pageParams = new URLSearchParams(params);
+    const confirmed=[];
+    for (const offset of [0,100,200,300,400,500]) {
+      if (confirmed.length>=160) break;
+      const pageParams=new URLSearchParams(params);
       pageParams.set('offset', String(offset));
-      return fetchMangaDexCatalog(pageParams);
-    }));
-    const results = pages.flatMap(data => Array.isArray(data.data) ? data.data : []);
-    const unique = new Map();
-    results
-      .filter(item=>(item.attributes?.availableTranslatedLanguages||[]).includes('vi'))
-      .forEach(item => { if (!unique.has(item.id)) unique.set(item.id, item); });
-    return [...unique.values()].map(mapManga);
+      const data=await fetchMangaDexCatalog(pageParams);
+      const batch=(Array.isArray(data.data)?data.data:[]).filter(item=>(item.attributes?.availableTranslatedLanguages||[]).includes('vi'));
+      if (!batch.length) break;
+      const flags=await mapPool(batch, 5, item => hasReadableVietnamese(item.id));
+      batch.forEach((item, index) => { if (flags[index]) confirmed.push(item); });
+      if ((data.data||[]).length<100) break;
+    }
+    const items=confirmed.slice(0,180).map(mapManga);
+    try { sessionStorage.setItem(cacheKey, JSON.stringify({at:Date.now(), items})); } catch (_) {}
+    return items;
   }
   function normalizeFilterText(value){return String(value??'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLowerCase();}
   function genreMatches(item,genre){
@@ -264,7 +292,7 @@
   function isStoryLocked(item){return item?.source==='database' && (item.isLocked===true || item.is_locked===true);}
   function coverMarkup(s) {
     const style='--cover:'+esc(s.coverColor||'#282449')+';--glow:'+esc(s.glow||'#8c6ce0')+';--accent:'+esc(s.accent||'#d3b9ff');
-    const visual=s.cover && ['mangadex','database','longbook','truyenviet'].includes(s.source) ? '<img loading="lazy" decoding="async" src="'+esc(s.cover)+'" '+(s.coverFallback?'data-fallback-src="'+esc(s.coverFallback)+'" ':'')+'alt="" onerror="window.rtCoverError(this)">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
+    const visual=s.cover && ['mangadex','database','longbook','truyenviet'].includes(s.source) ? '<img loading="lazy" decoding="async" src="'+esc(s.source==='mangadex'&&s.coverFallback?s.coverFallback:s.cover)+'" '+((s.source==='mangadex'&&s.coverFallback)?'data-fallback-src="'+esc(s.cover)+'" ':s.coverFallback?'data-fallback-src="'+esc(s.coverFallback)+'" ':'')+'alt="" onerror="window.rtCoverError(this)">' : '<i class="fa-solid '+esc(s.icon||'fa-book-open')+'"></i>';
     const locked=isStoryLocked(s),ageLock=isAdultOnly(s)?'<span class="rt-age-lock" title="18+ · cần đăng nhập"><i class="fa-solid fa-lock"></i> 18+</span>':'';
     const lockBadge=locked?'<span class="rt-story-lock-badge"><i class="fa-solid fa-lock"></i> Đã khóa</span>':'';
     return '<div class="cover'+(locked?' is-story-locked':'')+'" style="'+style+'">'+visual+ageLock+lockBadge+'<small>'+esc(s.kind||'Truyện')+'</small><button data-save="'+esc(s.id)+'" class="'+(state.saved.has(s.id)?'saved':'')+'" aria-label="'+(state.saved.has(s.id)?'Bỏ lưu':'Lưu truyện')+'"><i class="fa-'+(state.saved.has(s.id)?'solid':'regular')+' fa-bookmark"></i></button></div>';
@@ -631,10 +659,17 @@
       try { const parsedBase=new URL(base); if(parsedBase.protocol!=='https:')throw new Error(); imageHost=parsedBase.hostname; }
       catch (_) { throw new Error('MangaDex @Home trả về baseUrl không hợp lệ.'); }
       const saverFiles=Array.isArray(data.chapter?.dataSaver)?data.chapter.dataSaver:[];
+      const useSaver=saverFiles.length===files.length;
       const pageSrc=(kind, file)=>API+'/image?kind='+encodeURIComponent(kind)+'&hash='+encodeURIComponent(hash)+'&name='+encodeURIComponent(file)+'&host='+encodeURIComponent(imageHost);
       const directSrc=(kind, file)=>'https://'+imageHost+'/'+kind+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file);
       const container=$('#reader-content');
-      container.innerHTML=files.map((file,i)=>{const fallback=saverFiles[i]?pageSrc('data-saver', saverFiles[i]):'';const direct=directSrc('data', file);return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pageSrc('data', file))+'" data-saver="'+esc(fallback)+'" data-direct="'+esc(direct)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
+      container.innerHTML=files.map((file,i)=>{
+        const saver=useSaver?saverFiles[i]:'';
+        const src=saver?pageSrc('data-saver', saver):pageSrc('data', file);
+        const fallback=!saver?'':pageSrc('data', file);
+        const direct=directSrc(saver?'data-saver':'data', saver||file);
+        return '<img loading="'+(i<1?'eager':'lazy')+'" decoding="async" fetchpriority="'+(i<1?'high':'low')+'" src="'+esc(src)+'" data-saver="'+esc(fallback)+'" data-direct="'+esc(direct)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';
+      }).join('');
       wireReaderImages();restoreReadProgress();
     }catch(e){$('#reader-content').innerHTML='<div class="reader-error"><h3>Không thể tải chương</h3><p>'+esc(e.message)+'</p><p>Thử lại sau hoặc chọn chương khác.</p><button class="btn" id="retry-chapter">Thử lại</button></div>';$('#retry-chapter')?.addEventListener('click',()=>openReader(index));}
   }

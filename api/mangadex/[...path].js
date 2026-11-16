@@ -72,10 +72,26 @@ async function serveMangaDexImage(req, res, incoming) {
     const contentType = String(upstream.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
     if (!IMAGE_TYPES.has(contentType)) return sendError(res, 502, 'UPSTREAM_NOT_IMAGE', 'MangaDex did not return a supported image', { contentType: contentType || null });
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800');
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    const length = upstream.headers.get('content-length');
+    if (length && /^\d+$/.test(length)) res.setHeader('Content-Length', length);
+    const { Readable } = require('stream');
+    if (upstream.body && typeof Readable.fromWeb === 'function') {
+      res.status(200);
+      await new Promise((resolve, reject) => {
+        const stream = Readable.fromWeb(upstream.body);
+        const fail = error => reject(error);
+        stream.on('error', fail);
+        res.on('error', fail);
+        res.on('finish', resolve);
+        stream.pipe(res);
+      });
+      return;
+    }
     return res.status(200).send(Buffer.from(await upstream.arrayBuffer()));
   } catch (error) {
+    if (res.headersSent) return;
     if (error && error.name === 'AbortError') return sendError(res, 504, 'UPSTREAM_TIMEOUT', 'MangaDex image request timed out');
     return sendError(res, 502, 'UPSTREAM_NETWORK_ERROR', 'Could not reach MangaDex image server');
   } finally { clearTimeout(timer); }
