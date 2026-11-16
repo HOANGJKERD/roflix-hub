@@ -82,9 +82,23 @@
     const t=item?.attributes?.title || {};
     return t.vi || t['en'] || Object.values(t)[0] || 'Chưa có tiêu đề';
   }
+  function rtReadableImage(url) {
+    const value=String(url||'');
+    try {
+      const parsed=new URL(value, location.origin);
+      if (parsed.pathname==='/api/mangadex-image' && parsed.searchParams.get('path')) {
+        return '/api/mangadex/image?host='+encodeURIComponent(parsed.searchParams.get('host')||'uploads.mangadex.org')+'&path='+encodeURIComponent(parsed.searchParams.get('path'));
+      }
+      const marker='/api/mangadex-image/';
+      if (parsed.pathname.startsWith(marker)) {
+        return '/api/mangadex/image?host='+encodeURIComponent(parsed.searchParams.get('host')||'uploads.mangadex.org')+'&path='+encodeURIComponent('/'+parsed.pathname.slice(marker.length));
+      }
+    } catch (_) {}
+    return value;
+  }
   function coverOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
-    return id && file ? '/api/mangadex-image/covers/'+encodeURIComponent(id)+'/'+encodeURIComponent(file+'.512.jpg')+'?host=uploads.mangadex.org' : '';
+    return id && file ? '/api/mangadex/image?host=uploads.mangadex.org&path='+encodeURIComponent('/covers/'+id+'/'+file+'.512.jpg') : '';
   }
   function coverFallbackOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
@@ -529,6 +543,10 @@
         if(fallback && !img.dataset.saverTried){
           img.dataset.saverTried='1';img.src=fallback;return;
         }
+        const direct=img.getAttribute('data-direct');
+        if(direct && !img.dataset.directTried){
+          img.dataset.directTried='1';img.src=direct;return;
+        }
         report.hidden=false;wrapper.classList.add('has-error');
       });
     });
@@ -597,7 +615,7 @@
           return;
         }
         if(pages.length){
-          const urls=pages.map(p=>typeof p==='string'?p:p?.url).filter(u=>{try{return new URL(u).protocol==='https:'}catch(_){return false}});
+          const urls=pages.map(p=>typeof p==='string'?p:p?.url).map(rtReadableImage).filter(u=>{try{return new URL(u,location.origin).protocol==='https:'||u.startsWith('/api/mangadex/image')}catch(_){return false}});
           if(urls.length){$('#reader-content').innerHTML=urls.map((url,i)=>'<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(url)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">').join('');wireReaderImages();restoreReadProgress();return;}
         }
         if(chapter.external_url&&/^https:\/\//i.test(chapter.external_url)){ $('#reader-content').innerHTML='<div class="reader-error"><h3>Chương nằm ở nguồn ngoài</h3><p>Để tôn trọng cách phân phối của nguồn, chương này sẽ mở trong tab riêng.</p><a class="btn" href="'+esc(chapter.external_url)+'" target="_blank" rel="noopener noreferrer">Mở chương ↗</a></div>';return; }
@@ -612,9 +630,10 @@
       try { const parsedBase=new URL(base); if(parsedBase.protocol!=='https:')throw new Error(); imageHost=parsedBase.hostname; }
       catch (_) { throw new Error('MangaDex @Home trả về baseUrl không hợp lệ.'); }
       const saverFiles=Array.isArray(data.chapter?.dataSaver)?data.chapter.dataSaver:[];
-      const pageSrc=(kind, file)=>'/api/mangadex-image/'+kind+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file)+'?host='+encodeURIComponent(imageHost);
+      const pageSrc=(kind, file)=>API+'/image?host='+encodeURIComponent(imageHost)+'&path='+encodeURIComponent('/'+kind+'/'+hash+'/'+file);
+      const directSrc=(kind, file)=>'https://'+imageHost+'/'+kind+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file);
       const container=$('#reader-content');
-      container.innerHTML=files.map((file,i)=>{const fallback=saverFiles[i]?pageSrc('data-saver', saverFiles[i]):'';return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pageSrc('data', file))+'" data-saver="'+esc(fallback)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
+      container.innerHTML=files.map((file,i)=>{const fallback=saverFiles[i]?pageSrc('data-saver', saverFiles[i]):'';const direct=directSrc('data', file);return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pageSrc('data', file))+'" data-saver="'+esc(fallback)+'" data-direct="'+esc(direct)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');
       wireReaderImages();restoreReadProgress();
     }catch(e){$('#reader-content').innerHTML='<div class="reader-error"><h3>Không thể tải chương</h3><p>'+esc(e.message)+'</p><p>Thử lại sau hoặc chọn chương khác.</p><button class="btn" id="retry-chapter">Thử lại</button></div>';$('#retry-chapter')?.addEventListener('click',()=>openReader(index));}
   }

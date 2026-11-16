@@ -1,8 +1,13 @@
 // RoHub MangaDex API proxy (Vercel Serverless Function, CommonJS).
 // Only documented read-only MangaDex endpoints are allowed.
+// Chapter images are served from /api/mangadex/image because a separate
+// image function is not deployed on the Vercel Hobby function limit.
 const ORIGIN = 'https://api.mangadex.org';
 const TIMEOUT_MS = 12000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']);
+const IMAGE_HASH = /^[0-9a-f]{32}$/i;
+const IMAGE_FILE = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,240}$/;
 
 function sendError(res, status, code, message, extra) {
   res.setHeader('Cache-Control', 'no-store');
@@ -15,6 +20,54 @@ function endpointAllowed(parts) {
   if (parts.length === 3 && parts[0] === 'manga' && UUID.test(parts[1]) && parts[2] === 'feed') return true;
   if (parts.length === 3 && parts[0] === 'at-home' && parts[1] === 'server' && UUID.test(parts[2])) return true;
   return false;
+}
+function allowedImageHost(value) {
+  const host = String(value || 'uploads.mangadex.org').toLowerCase().replace(/\.$/, '');
+  return host === 'uploads.mangadex.org' || host === 'mangadex.org' || /^[a-z0-9-]+\.mangadex\.(?:org|network)$/.test(host);
+}
+function resolveImagePath(rawPath) {
+  const parts = String(rawPath || '').replace(/^\/+/, '').split('/').filter(Boolean).map(segment => {
+    try { return decodeURIComponent(segment); } catch (_) { return segment; }
+  });
+  if (parts.length === 3 && ['data', 'data-saver'].includes(parts[0]) && IMAGE_HASH.test(parts[1]) && IMAGE_FILE.test(parts[2]) && parts[2] !== '.' && parts[2] !== '..') {
+    return '/' + parts.map(encodeURIComponent).join('/');
+  }
+  if (parts.length === 3 && parts[0] === 'covers' && UUID.test(parts[1]) && IMAGE_FILE.test(parts[2]) && parts[2] !== '.' && parts[2] !== '..') {
+    return '/' + parts.map(encodeURIComponent).join('/');
+  }
+  return '';
+}
+async function serveMangaDexImage(req, res, incoming) {
+  const imagePath = resolveImagePath(incoming.searchParams.get('path') || '');
+  const host = String(incoming.searchParams.get('host') || 'uploads.mangadex.org').toLowerCase();
+  if (!imagePath) return sendError(res, 400, 'INVALID_IMAGE_PATH', 'Expected path /data/{hash}/{file}, /data-saver/{hash}/{file}, or /covers/{mangaId}/{file}');
+  if (!allowedImageHost(host)) return sendError(res, 400, 'INVALID_IMAGE_HOST', 'Image host is not an allowed MangaDex host');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const upstream = await fetch('https://' + host + imagePath, {
+      headers: { Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8', 'User-Agent': 'RoHub-MangaDex-Image-Proxy/1.2', Referer: 'https://mangadex.org/' },
+      signal: controller.signal
+    });
+    if (upstream.status === 429) {
+      const retry = upstream.headers.get('retry-after');
+      if (retry) res.setHeader('Retry-After', retry);
+      return sendError(res, 429, 'UPSTREAM_RATE_LIMITED', 'MangaDex image rate limit reached', retry ? { retryAfter: retry } : undefined);
+    }
+    if (!upstream.ok) {
+      const status = [400, 403, 404, 410, 451].includes(upstream.status) ? upstream.status : 502;
+      return sendError(res, status, 'UPSTREAM_IMAGE_ERROR', 'MangaDex image server returned HTTP ' + upstream.status, { upstreamStatus: upstream.status });
+    }
+    const contentType = String(upstream.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    if (!IMAGE_TYPES.has(contentType)) return sendError(res, 502, 'UPSTREAM_NOT_IMAGE', 'MangaDex did not return a supported image', { contentType: contentType || null });
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    return res.status(200).send(Buffer.from(await upstream.arrayBuffer()));
+  } catch (error) {
+    if (error && error.name === 'AbortError') return sendError(res, 504, 'UPSTREAM_TIMEOUT', 'MangaDex image request timed out');
+    return sendError(res, 502, 'UPSTREAM_NETWORK_ERROR', 'Could not reach MangaDex image server');
+  } finally { clearTimeout(timer); }
 }
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -40,13 +93,14 @@ module.exports = async function handler(req, res) {
     } catch (_) {}
   }
   const parts = (Array.isArray(raw) ? raw : raw == null ? [] : [raw]).map(String);
+  let incoming;
+  try { incoming = new URL(req.url, 'https://rohub.invalid'); }
+  catch (_) { return sendError(res, 400, 'INVALID_URL', 'Invalid request URL'); }
+  if (parts.length === 1 && parts[0] === 'image') return serveMangaDexImage(req, res, incoming);
   if (!endpointAllowed(parts)) {
     return sendError(res, 400, 'ENDPOINT_NOT_ALLOWED', 'MangaDex endpoint or identifier is not allowed');
   }
 
-  let incoming;
-  try { incoming = new URL(req.url, 'https://rohub.invalid'); }
-  catch (_) { return sendError(res, 400, 'INVALID_URL', 'Invalid request URL'); }
   const params = new URLSearchParams();
   incoming.searchParams.forEach((value, key) => {
     // Vercel catch-all routing may inject __path into the incoming query.
@@ -91,4 +145,4 @@ module.exports = async function handler(req, res) {
     clearTimeout(timer);
   }
 };
-module.exports._test = { endpointAllowed, UUID, TIMEOUT_MS };
+module.exports._test = { endpointAllowed, UUID, TIMEOUT_MS, allowedImageHost, resolveImagePath };

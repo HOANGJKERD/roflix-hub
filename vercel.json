@@ -5,6 +5,14 @@
       "destination": "/api/nguonc?path=:path*"
     },
     {
+      "source": "/api/mangadex-image",
+      "destination": "/api/mangadex/image"
+    },
+    {
+      "source": "/api/mangadex-image/:kind/:hash/:file",
+      "destination": "/api/mangadex/image?path=/:kind/:hash/:file"
+    },
+    {
       "source": "/api/robong-live",
       "destination": "/api/robong"
     },
