@@ -38,7 +38,7 @@ function resolveImagePath(rawPath) {
   return '';
 }
 async function serveMangaDexImage(req, res, incoming) {
-  const imagePath = resolveImagePath(incoming.searchParams.get('path') || '');
+  const imagePath = resolveImagePath(incoming.searchParams.get('img') || incoming.searchParams.get('path') || '');
   const host = String(incoming.searchParams.get('host') || 'uploads.mangadex.org').toLowerCase();
   if (!imagePath) return sendError(res, 400, 'INVALID_IMAGE_PATH', 'Expected path /data/{hash}/{file}, /data-saver/{hash}/{file}, or /covers/{mangaId}/{file}');
   if (!allowedImageHost(host)) return sendError(res, 400, 'INVALID_IMAGE_HOST', 'Image host is not an allowed MangaDex host');
@@ -96,7 +96,10 @@ module.exports = async function handler(req, res) {
   let incoming;
   try { incoming = new URL(req.url, 'https://rohub.invalid'); }
   catch (_) { return sendError(res, 400, 'INVALID_URL', 'Invalid request URL'); }
-  if (parts.length === 1 && parts[0] === 'image') return serveMangaDexImage(req, res, incoming);
+  const imageQuery = incoming.searchParams.get('img') || '';
+  const legacyPath = incoming.searchParams.get('path') || '';
+  const imageRoute = incoming.pathname.endsWith('/image') || (parts.length === 1 && parts[0] === 'image') || /^\/(?:data|data-saver|covers)\//.test(legacyPath) || imageQuery.startsWith('/');
+  if (imageRoute) return serveMangaDexImage(req, res, incoming);
   if (!endpointAllowed(parts)) {
     return sendError(res, 400, 'ENDPOINT_NOT_ALLOWED', 'MangaDex endpoint or identifier is not allowed');
   }

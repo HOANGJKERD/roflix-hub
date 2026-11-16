@@ -87,18 +87,18 @@
     try {
       const parsed=new URL(value, location.origin);
       if (parsed.pathname==='/api/mangadex-image' && parsed.searchParams.get('path')) {
-        return '/api/mangadex/image?host='+encodeURIComponent(parsed.searchParams.get('host')||'uploads.mangadex.org')+'&path='+encodeURIComponent(parsed.searchParams.get('path'));
+        return '/api/mangadex/image?host='+encodeURIComponent(parsed.searchParams.get('host')||'uploads.mangadex.org')+'&img='+encodeURIComponent(parsed.searchParams.get('path')||parsed.searchParams.get('img'));
       }
       const marker='/api/mangadex-image/';
       if (parsed.pathname.startsWith(marker)) {
-        return '/api/mangadex/image?host='+encodeURIComponent(parsed.searchParams.get('host')||'uploads.mangadex.org')+'&path='+encodeURIComponent('/'+parsed.pathname.slice(marker.length));
+        return '/api/mangadex/image?host='+encodeURIComponent(parsed.searchParams.get('host')||'uploads.mangadex.org')+'&img='+encodeURIComponent('/'+parsed.pathname.slice(marker.length));
       }
     } catch (_) {}
     return value;
   }
   function coverOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
-    return id && file ? '/api/mangadex/image?host=uploads.mangadex.org&path='+encodeURIComponent('/covers/'+id+'/'+file+'.512.jpg') : '';
+    return id && file ? '/api/mangadex/image?host=uploads.mangadex.org&img='+encodeURIComponent('/covers/'+id+'/'+file+'.512.jpg') : '';
   }
   function coverFallbackOf(item) {
     const id=item?.id, file=item?.relationships?.find(x=>x.type==='cover_art')?.attributes?.fileName;
@@ -630,7 +630,7 @@
       try { const parsedBase=new URL(base); if(parsedBase.protocol!=='https:')throw new Error(); imageHost=parsedBase.hostname; }
       catch (_) { throw new Error('MangaDex @Home trả về baseUrl không hợp lệ.'); }
       const saverFiles=Array.isArray(data.chapter?.dataSaver)?data.chapter.dataSaver:[];
-      const pageSrc=(kind, file)=>API+'/image?host='+encodeURIComponent(imageHost)+'&path='+encodeURIComponent('/'+kind+'/'+hash+'/'+file);
+      const pageSrc=(kind, file)=>API+'/image?host='+encodeURIComponent(imageHost)+'&img='+encodeURIComponent('/'+kind+'/'+hash+'/'+file);
       const directSrc=(kind, file)=>'https://'+imageHost+'/'+kind+'/'+encodeURIComponent(hash)+'/'+encodeURIComponent(file);
       const container=$('#reader-content');
       container.innerHTML=files.map((file,i)=>{const fallback=saverFiles[i]?pageSrc('data-saver', saverFiles[i]):'';const direct=directSrc('data', file);return '<img loading="'+(i<2?'eager':'lazy')+'" src="'+esc(pageSrc('data', file))+'" data-saver="'+esc(fallback)+'" data-direct="'+esc(direct)+'" alt="Trang '+(i+1)+'" referrerpolicy="no-referrer">';}).join('');

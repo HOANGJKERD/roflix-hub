@@ -10,7 +10,7 @@
     },
     {
       "source": "/api/mangadex-image/:kind/:hash/:file",
-      "destination": "/api/mangadex/image?path=/:kind/:hash/:file"
+      "destination": "/api/mangadex/image?img=/:kind/:hash/:file"
     },
     {
       "source": "/api/robong-live",
