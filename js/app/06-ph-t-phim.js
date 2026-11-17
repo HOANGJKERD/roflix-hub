@@ -271,31 +271,34 @@ function showPlayerError(message) {
 
 function safePlayUrl(value) {
     if (typeof value !== 'string' || !value.trim()) return '';
-    try {
-        const parsed = new URL(value.trim());
-        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '';
-        return parsed.href;
-    } catch (_) { return ''; }
+    const raw = value.trim().startsWith('//') ? 'https:' + value.trim() : value.trim();
+    try { const parsed = new URL(raw); return (parsed.protocol === 'https:' || parsed.protocol === 'http:') ? parsed.href : ''; }
+    catch (_) { return ''; }
 }
 
 function episodesFromPayload(movie) {
     const epList = [];
-    const groups = movie && Array.isArray(movie.episodes) ? movie.episodes : [];
-    groups.forEach(group => {
-        const rows = group && Array.isArray(group.server_data) ? group.server_data : [];
-        rows.forEach(ep => {
-            const embed = safePlayUrl(ep.link_embed);
-            const hls = safePlayUrl(ep.link_m3u8);
-            const link = embed || hls;
+    const groups = Array.isArray(movie?.episodes) ? movie.episodes
+        : (movie?.episodes && typeof movie.episodes === 'object' ? Object.values(movie.episodes) : []);
+    groups.forEach((group, groupIndex) => {
+        if (!group || typeof group !== 'object') return;
+        let rows = Array.isArray(group.server_data) ? group.server_data
+            : (group.server_data && typeof group.server_data === 'object' ? Object.values(group.server_data)
+            : (Array.isArray(group.items) ? group.items
+            : (Array.isArray(group.episodes) ? group.episodes
+            : ([group.link_embed,group.link_m3u8,group.embed,group.url,group.link].some(Boolean) ? [group] : []))));
+        rows.forEach((ep, index) => {
+            if (!ep || typeof ep !== 'object') return;
+            const embed = safePlayUrl(ep.link_embed || ep.embed || ep.link || ep.url || ep.file || '');
+            const hls = safePlayUrl(ep.link_m3u8 || ep.m3u8 || ep.hls || '');
             const b2Key = String(ep.b2_key || ep.storage_key || ep.object_key || ep.b2Key || '').trim();
+            const link = embed || hls;
             if (!link && !b2Key) return;
             epList.push({
-                name: String(ep.name || ep.slug || 'Full'),
-                link,
-                b2Key,
-                linkType: embed ? 'embed' : 'hls',
-                sources: { embed, hls },
-                activeSource: embed ? 'embed' : 'hls'
+                name: String(ep.name || ep.slug || ep.filename || ('Tập ' + (index + 1))),
+                link, b2Key, linkType: embed ? 'embed' : 'hls',
+                sources: {embed,hls}, activeSource: embed ? 'embed' : 'hls',
+                serverName: group.server_name || group.name || ('NguonC ' + (groupIndex + 1))
             });
         });
     });
