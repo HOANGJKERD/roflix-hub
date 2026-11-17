@@ -42,6 +42,15 @@ function unwrapList(data) {
     return { items: Array.isArray(items) ? items : [], pag };
 }
 
+function normalizeEpisodeUrl(value) {
+    if (typeof value !== 'string') return '';
+    const raw = value.trim();
+    if (!raw) return '';
+    const candidate = raw.startsWith('//') ? 'https:' + raw : raw;
+    try { const url = new URL(candidate); return (url.protocol === 'https:' || url.protocol === 'http:') ? url.href : ''; }
+    catch (_) { return ''; }
+}
+
 function normalizeNguoncMovie(movie, episodes) {
     if (!movie || typeof movie !== 'object') return movie;
     movie.origin_name = movie.origin_name || movie.original_name || '';
@@ -49,74 +58,67 @@ function normalizeNguoncMovie(movie, episodes) {
     movie.lang = movie.lang || movie.language || '';
     movie.episode_current = movie.episode_current || movie.current_episode || '';
     movie.episode_total = movie.episode_total || movie.total_episodes || '';
-    movie.actor = movie.actor || (movie.casts ? String(movie.casts).split(/,\s*/) : []);
-    const groups = Array.isArray(movie.category)
-        ? movie.category
-        : (movie.category && typeof movie.category === 'object' ? Object.values(movie.category) : []);
+    movie.actor = movie.actor || (movie.casts ? String(movie.casts).split(/,\\s*/) : []);
+    const groups = Array.isArray(movie.category) ? movie.category : (movie.category && typeof movie.category === 'object' ? Object.values(movie.category) : []);
     const hasGroupedCategories = groups.some(group => group && Array.isArray(group.list));
     movie.nguonc_category_groups = hasGroupedCategories ? groups : [];
     const flatCategories = [];
     movie.country = Array.isArray(movie.country) ? movie.country : [];
     if (hasGroupedCategories) groups.forEach(group => {
         const groupName = String(group?.group?.name || '').trim().toLowerCase();
-        const values = Array.isArray(group?.list) ? group.list : [];
-        values.forEach(value => {
-            const name = value?.name || value;
-            if (!name) return;
-            const normalized = String(name).trim().toLowerCase();
-            const entry = {name: String(name).trim(), slug: value?.slug || ''};
-            if (groupName.includes('năm')) {
-                if (!movie.year) movie.year = entry.name;
-                return;
-            }
+        (Array.isArray(group?.list) ? group.list : []).forEach(value => {
+            const name = value?.name || value; if (!name) return;
+            const normalized = String(name).trim().toLowerCase(), entry = {name:String(name).trim(),slug:value?.slug||''};
+            if (groupName.includes('năm')) { if (!movie.year) movie.year=entry.name; return; }
             if (groupName.includes('quốc gia') || groupName.includes('country')) {
-                if (!movie.country.some(x => String(x.name || x).toLowerCase() === entry.name.toLowerCase())) movie.country.push(entry);
-                return;
+                if (!movie.country.some(x=>String(x.name||x).toLowerCase()===entry.name.toLowerCase())) movie.country.push(entry); return;
             }
             if (groupName.includes('định dạng') || groupName.includes('format') || groupName.includes('loại phim')) {
-                if (normalized.includes('phim bộ') || normalized.includes('series')) movie.type = 'series';
-                else if (normalized.includes('phim lẻ') || normalized.includes('movie')) movie.type = 'single';
-                else if (normalized.includes('tv show')) movie.type = 'tvshows';
-                else if (normalized.includes('hoạt hình')) movie.type = 'hoathinh';
-                return;
+                if (normalized.includes('phim bộ')||normalized.includes('series')) movie.type='series';
+                else if (normalized.includes('phim lẻ')||normalized.includes('movie')) movie.type='single';
+                else if (normalized.includes('tv show')) movie.type='tvshows';
+                else if (normalized.includes('hoạt hình')) movie.type='hoathinh'; return;
             }
-            if (groupName.includes('thể loại') || groupName.includes('genre') || !groupName) flatCategories.push(entry);
-            if (normalized.includes('phim bộ')) movie.type = 'series';
-            else if (normalized.includes('phim lẻ')) movie.type = 'single';
-            else if (normalized.includes('tv show')) movie.type = 'tvshows';
-            else if (normalized.includes('hoạt hình')) movie.type = 'hoathinh';
-            if (normalized.includes('đang chiếu')) movie.status = 'ongoing';
+            if (groupName.includes('thể loại')||groupName.includes('genre')||!groupName) flatCategories.push(entry);
+            if (normalized.includes('phim bộ')) movie.type='series';
+            else if (normalized.includes('phim lẻ')) movie.type='single';
+            else if (normalized.includes('tv show')) movie.type='tvshows';
+            else if (normalized.includes('hoạt hình')) movie.type='hoathinh';
+            if (normalized.includes('đang chiếu')) movie.status='ongoing';
         });
     });
-    if (hasGroupedCategories) movie.category = flatCategories;
-    else if (groups.length) movie.category = groups.map(value => ({
-        name: String(value?.name || value || '').trim(),
-        slug: String(value?.slug || '')
-    })).filter(value => value.name);
-    if (!movie.type && movie.tmdb && movie.tmdb.type) {
-        const tmdbType = String(movie.tmdb.type).toLowerCase();
-        if (tmdbType === 'tv') movie.type = 'series';
-        else if (tmdbType === 'movie') movie.type = 'single';
+    if (hasGroupedCategories) movie.category=flatCategories;
+    else if (groups.length) movie.category=groups.map(value=>({name:String(value?.name||value||'').trim(),slug:String(value?.slug||'')})).filter(value=>value.name);
+    if (!movie.type && movie.tmdb?.type) {
+        const type=String(movie.tmdb.type).toLowerCase();
+        if(type==='tv')movie.type='series'; else if(type==='movie')movie.type='single';
     }
-    const rawEpisodes = Array.isArray(movie.episodes) ? movie.episodes : (Array.isArray(episodes) ? episodes : []);
-    movie.episodes = rawEpisodes.map(group => {
-        const items = Array.isArray(group?.server_data) ? group.server_data
-            : (Array.isArray(group?.items) ? group.items
-            : (Array.isArray(group?.episodes) ? group.episodes : []));
-        return {
-            ...group,
-            server_name: group?.server_name || group?.name || 'NguonC',
-            server_data: items.map(ep => ({
-                ...ep,
-                name: ep?.name || ep?.slug || ep?.filename || 'Tập',
-                slug: ep?.slug || ep?.name || '',
-                filename: ep?.filename || '',
-                link_embed: ep?.link_embed || ep?.embed || ep?.link || ep?.url || '',
-                link_m3u8: ep?.link_m3u8 || ep?.m3u8 || ep?.hls || '',
-                b2_key: ep?.b2_key || ep?.storage_key || ep?.object_key || ep?.b2Key || ''
-            }))
-        };
-    });
+    const raw = Array.isArray(movie.episodes) ? movie.episodes
+        : (movie.episodes && typeof movie.episodes==='object' ? Object.values(movie.episodes)
+        : (Array.isArray(episodes) ? episodes : []));
+    movie.episodes = raw.map((group, groupIndex) => {
+        if(!group || typeof group!=='object') return null;
+        const rows = Array.isArray(group.server_data) ? group.server_data
+            : (group.server_data && typeof group.server_data==='object' ? Object.values(group.server_data)
+            : (Array.isArray(group.items) ? group.items
+            : (Array.isArray(group.episodes) ? group.episodes
+            : ([group.link_embed,group.link_m3u8,group.embed,group.url,group.link].some(Boolean) ? [group] : []))));
+        const server_data = rows.map((ep,index)=>{
+            if(!ep || typeof ep!=='object') return null;
+            return {...ep,
+                name:String(ep.name||ep.slug||ep.filename||('Tập '+(index+1))),
+                slug:ep.slug||ep.name||'', filename:ep.filename||'',
+                link_embed:normalizeEpisodeUrl(ep.link_embed||ep.embed||ep.link||ep.url||ep.file||''),
+                link_m3u8:normalizeEpisodeUrl(ep.link_m3u8||ep.m3u8||ep.hls||''),
+                b2_key:ep.b2_key||ep.storage_key||ep.object_key||ep.b2Key||''
+            };
+        }).filter(Boolean);
+        return {...group,server_name:group.server_name||group.name||('NguonC '+(groupIndex+1)),server_data};
+    }).filter(Boolean);
+    if(movie.episodes.length && !movie.episodes.some(group=>group.server_data.length)) {
+        const flat=movie.episodes.filter(group=>group.link_embed||group.link_m3u8||group.b2_key);
+        if(flat.length) movie.episodes=[{server_name:'NguonC',server_data:flat}];
+    }
     return movie;
 }
 
@@ -438,42 +440,43 @@ async function fetchHomePriorityMovies(page = 1) {
 }
 
 async function fetchMovieDetail(slug, preferredSrc, titleHint) {
-    const order = preferredSrc === 'nguonc' ? ['nguonc', 'kkphim', 'vsmov'] : (preferredSrc === 'kkphim' ? ['kkphim', 'nguonc', 'vsmov'] : (preferredSrc === 'vsmov' ? ['vsmov', 'nguonc', 'kkphim'] : ['nguonc', 'kkphim', 'vsmov']));
-    let lastErr = null, bestMovie = null;
-    const accept = (payload, sid) => {
-        const movie = unwrapDetailPayload(payload);
-        if (!movie || (!movie.slug && !movie.name)) return null;
-        normalizeNguoncMovie(movie); movie._src = sid; return movie;
+    const order = preferredSrc === 'nguonc' ? ['nguonc','kkphim','vsmov'] : (preferredSrc === 'kkphim' ? ['kkphim','nguonc','vsmov'] : (preferredSrc === 'vsmov' ? ['vsmov','nguonc','kkphim'] : ['nguonc','kkphim','vsmov']));
+    let lastErr=null,bestMovie=null;
+    const hasPlayableEpisodes=movie=>Array.isArray(movie?.episodes)&&movie.episodes.some(group=>Array.isArray(group?.server_data)&&group.server_data.some(ep=>
+        normalizeEpisodeUrl(ep?.link_embed||ep?.embed||ep?.link||ep?.url||ep?.file||'')||
+        normalizeEpisodeUrl(ep?.link_m3u8||ep?.m3u8||ep?.hls||'')||
+        !!String(ep?.b2_key||ep?.storage_key||ep?.object_key||ep?.b2Key||'').trim()
+    ));
+    const accept=(payload,sid)=>{
+        const movie=unwrapDetailPayload(payload);
+        if(!movie||(!movie.slug&&!movie.name))return null;
+        normalizeNguoncMovie(movie);movie._src=sid;return movie;
     };
-    for (const sid of order) {
-        try {
-            const movie = accept(await fetchJson(srcDetailUrl(slug, sid)), sid);
-            if (!movie) continue;
-            if (Array.isArray(movie.episodes) && movie.episodes.some(group => Array.isArray(group.server_data) && group.server_data.length)) return movie;
-            if (!bestMovie) bestMovie = movie;
-        } catch (error) { lastErr = error; }
+    const tryDetail=async(targetSlug,sid)=>{
+        const movie=accept(await fetchJson(srcDetailUrl(targetSlug,sid)),sid);
+        if(!movie)return null;
+        if(hasPlayableEpisodes(movie))return movie;
+        if(!bestMovie||(movie.episodes||[]).length>(bestMovie.episodes||[]).length)bestMovie=movie;
+        return null;
+    };
+    for(const sid of order){try{const movie=await tryDetail(slug,sid);if(movie)return movie;}catch(error){lastErr=error;}}
+    if(titleHint){
+        const normalize=value=>String(value||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+        const wanted=normalize(titleHint);
+        for(const sid of order){try{
+            const data=await fetchJson(srcListUrl('/tim-kiem?keyword='+encodeURIComponent(titleHint)+'&page=1&limit=20',sid));
+            const rows=unwrapList(data).items;
+            const exact=rows.find(item=>[item.name,item.title,item.origin_name,item.original_name].some(value=>normalize(value)===wanted));
+            if(!exact?.slug)continue;
+            const movie=await tryDetail(exact.slug,sid);if(movie)return movie;
+        }catch(error){lastErr=error;}}
     }
-    if (titleHint) {
-        const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-        const wanted = normalize(titleHint);
-        for (const sid of order) {
-            try {
-                const data = await fetchJson(srcListUrl('/tim-kiem?keyword=' + encodeURIComponent(titleHint) + '&page=1&limit=20', sid));
-                const rows = unwrapList(data).items;
-                const exact = rows.find(item => normalize(item.name || item.title) === wanted || normalize(item.origin_name || item.original_name) === wanted);
-                if (!exact || !exact.slug) continue;
-                const movie = accept(await fetchJson(srcDetailUrl(exact.slug, sid)), sid);
-                if (!movie) continue;
-                if (Array.isArray(movie.episodes) && movie.episodes.some(group => Array.isArray(group.server_data) && group.server_data.length)) return movie;
-                if (!bestMovie) bestMovie = movie;
-            } catch (error) { lastErr = error; }
-        }
-    }
-    if (bestMovie) return bestMovie;
-    console.error('[RoFlix] Không tải được chi tiết phim:', lastErr);
-    showToast('error', 'Lỗi', 'Không thể tải thông tin phim từ các nhà cung cấp. Vui lòng thử lại.');
+    if(bestMovie)return bestMovie;
+    console.error('[RoFlix] Không tải được chi tiết phim có link phát:',lastErr);
+    showToast('error','Lỗi','Không thể tải thông tin hoặc link phát từ các nhà cung cấp. Vui lòng thử lại.');
     return null;
 }
+
 async function loadUnifiedGenreTaxonomy(){
  const ids=activeSourceIds(),norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
  const menu=document.getElementById('roflix-unified-genre-menu'),staticMap=new Map();
