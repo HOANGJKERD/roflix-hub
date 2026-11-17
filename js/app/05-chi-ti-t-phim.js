@@ -42,35 +42,31 @@
             const isFav = isFavorite(slug);
             
             let episodesHTML = '';
+            // Dùng chung bộ chuẩn hóa tập phát với player để trang chi tiết
+            // và màn hình phát không đọc hai kiểu dữ liệu khác nhau.
             let epList = [];
-            if (movie.episodes && movie.episodes.length > 0) {
-                movie.episodes.forEach(epGroup => {
-                    if (epGroup.server_data && epGroup.server_data.length > 0) {
-                        epGroup.server_data.forEach(ep => {
-                            const isSafeHttpUrl = value => {
-                                if (typeof value !== 'string' || !value.trim()) return false;
-                                try {
-                                    const parsed = new URL(value.trim());
-                                    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
-                                } catch (_) { return false; }
-                            };
-                            const embed = isSafeHttpUrl(ep.link_embed) ? ep.link_embed.trim() : '';
-                            const hls = isSafeHttpUrl(ep.link_m3u8) ? ep.link_m3u8.trim() : '';
-                            // Chỉ dùng HLS khi không có embed hợp lệ và link HLS là URL HTTP(S).
-                            const link = embed || hls;
-                            if (!link) return;
-                            epList.push({
-                                name: String(ep.name || ep.slug || 'Full'),
-                                link: link,
-                                linkType: embed ? 'embed' : 'hls',
-                                sources: { embed, hls },
-                                activeSource: embed ? 'embed' : 'hls'
-                            });
-                        });
-                    }
+            if (typeof episodesFromPayload === 'function') {
+                epList = episodesFromPayload(movieData);
+            } else if (Array.isArray(movieData.episodes)) {
+                movieData.episodes.forEach(group => {
+                    const rows = Array.isArray(group?.server_data) ? group.server_data
+                        : (Array.isArray(group?.items) ? group.items : (Array.isArray(group?.episodes) ? group.episodes : []));
+                    rows.forEach(ep => {
+                        const safe = value => {
+                            if (typeof value !== 'string' || !value.trim()) return '';
+                            try { const raw=value.trim().startsWith('//')?'https:'+value.trim():value.trim(); const u=new URL(raw); return /^https?:$/.test(u.protocol)?u.href:''; }
+                            catch (_) { return ''; }
+                        };
+                        const embed=safe(ep.link_embed||ep.embed||ep.link||ep.url||ep.file||'');
+                        const hls=safe(ep.link_m3u8||ep.m3u8||ep.hls||'');
+                        const link=embed||hls;
+                        const b2Key=String(ep.b2_key||ep.storage_key||ep.object_key||ep.b2Key||'').trim();
+                        if(!link&&!b2Key)return;
+                        epList.push({name:String(ep.name||ep.slug||'Full'),link,b2Key,linkType:embed?'embed':'hls',sources:{embed,hls},activeSource:embed?'embed':'hls'});
+                    });
                 });
             }
-            currentEpisodeList = epList;
+                        currentEpisodeList = epList;
             currentMovieTitle = movie.title || '';
             currentMovieData = movie;
             try { if (window.rfAnalytics) window.rfAnalytics.movie('movie_detail', slug, currentMovieTitle); } catch (_) {}
