@@ -246,7 +246,9 @@
         if (isRoHubInstalled()) return;
         if (!deferredRoHubInstall) {
           if (installDescription) installDescription.textContent = 'Chrome chưa cung cấp hộp thoại cài đặt tự động trên phiên duyệt này. Bạn vẫn có thể cài thủ công bằng menu Chrome.';
-          if (installSteps) installSteps.innerHTML = '<li>Mở menu <strong>⋮</strong> ở góc trên bên phải Chrome.</li><li>Chọn <strong>Truyền, lưu và chia sẻ</strong> hoặc <strong>Cài đặt trang</strong> (tên mục tùy phiên bản).</li><li>Chọn <strong>Cài đặt trang dưới dạng ứng dụng</strong> hoặc <strong>Cài đặt RoHub</strong>.</li>';
+          if (installSteps) installSteps.innerHTML = /Android/i.test(navigator.userAgent)
+            ? '<li>Mở menu <strong>⋮</strong> ở góc trên bên phải Chrome.</li><li>Chọn <strong>Cài đặt ứng dụng</strong> hoặc <strong>Thêm vào màn hình chính</strong>.</li><li>Xác nhận <strong>Cài đặt</strong> để tạo biểu tượng RoHub.</li>'
+            : '<li>Mở menu <strong>⋮</strong> ở góc trên bên phải Chrome.</li><li>Chọn <strong>Truyền, lưu và chia sẻ</strong>.</li><li>Chọn <strong>Cài đặt trang dưới dạng ứng dụng</strong> hoặc <strong>Cài đặt RoHub</strong> rồi xác nhận.</li>';
           openInstallHelp();
           return;
         }
