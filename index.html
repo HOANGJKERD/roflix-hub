@@ -6,6 +6,12 @@
   <meta name="theme-color" content="#080610">
   <title>RoHub | Bước vào thế giới của bạn</title>
   <meta name="description" content="RoHub kết nối phim ảnh, truyện, âm thanh, thể thao và esports trong một hệ sinh thái.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="RoHub">
+  <link rel="manifest" href="/rohub.webmanifest">
+  <link rel="icon" href="/icons/rohub-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/rohub-icon.svg">
   <style>
     :root{color-scheme:dark;--bg:#080610;--panel:#120e1d;--text:#f8f5ff;--muted:#aaa2bb;--orange:#ff762e;--purple:#a855f7;--line:#ffffff1c;--mx:0;--my:0}
     *{box-sizing:border-box}
@@ -25,6 +31,19 @@
     .brand small{display:block;color:#8c829e;font-size:9px;letter-spacing:2.8px;font-weight:800;margin-top:2px}
     .hub-nav{display:flex;align-items:center;gap:6px;margin-left:auto}.hub-nav a{color:#c8bfd7;text-decoration:none;font-size:12px;font-weight:800;padding:8px 12px;border-radius:999px;border:1px solid transparent}.hub-nav a:hover{color:#fff;border-color:#ffffff22;background:#ffffff0c}.status{display:flex;align-items:center;gap:9px;padding:9px 13px;border:1px solid var(--line);border-radius:999px;color:#c8bfd7;background:#ffffff05;font-size:10px;letter-spacing:1.6px;font-weight:800}
     .status i{width:7px;height:7px;border-radius:50%;background:#78f5bd;box-shadow:0 0 12px #78f5bd;display:inline-block}
+    .install-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 15px;border:1px solid #ff9a6b80;border-radius:999px;background:linear-gradient(110deg,#ff762e24,#a855f726);color:#fff;font:800 11px/1 inherit;letter-spacing:.2px;cursor:pointer;box-shadow:0 0 24px #ff762e17;transition:transform .2s,border-color .2s,background .2s}
+    .install-btn:hover{transform:translateY(-2px);border-color:#ffb18b;background:linear-gradient(110deg,#ff762e40,#a855f740)}
+    .install-btn[hidden]{display:none}
+    .install-dialog{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:20px;background:#05030bd9;backdrop-filter:blur(12px)}
+    .install-dialog.open{display:flex}
+    .install-card{width:min(420px,100%);padding:25px;border:1px solid #a855f75c;border-radius:24px;background:linear-gradient(145deg,#21152f,#0d0916);box-shadow:0 24px 90px #000b}
+    .install-card h2{margin:0 0 9px;font-size:23px}.install-card p,.install-card li{color:#b9aec8;font-size:13px;line-height:1.7}
+    .install-card ol{padding-left:20px;margin:14px 0}.install-card strong{color:#fff}
+    .install-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}
+    .install-actions button{border:1px solid #ffffff25;border-radius:11px;padding:10px 14px;background:#ffffff0b;color:#fff;font-weight:800;cursor:pointer}
+    .install-actions .primary{border-color:#ff8a50;background:linear-gradient(100deg,#ff762e,#a855f7);color:#130b19}
+    @media(max-width:760px){.install-btn{order:2;margin-left:auto}.topbar .status{order:1}.topbar{row-gap:12px}}
+    @media(max-width:420px){.install-btn{font-size:10px;padding:9px 11px}}
     .hero{position:relative;text-align:center;padding:78px 0 38px;isolation:isolate}
     .hero-orbit{position:absolute;width:470px;height:470px;border:1px solid #a855f725;border-radius:50%;left:50%;top:40px;transform:translateX(-50%);z-index:-1;pointer-events:none}
     .hero-orbit:before,.hero-orbit:after{content:"";position:absolute;border:1px solid #ff762e24;border-radius:50%;inset:38px}
@@ -94,6 +113,7 @@
     <header class="topbar">
       <a class="brand" href="index.html" aria-label="RoHub trang chủ"><span class="mark">R</span><span class="brand-name">Ro<span>Hub</span><small>ONE HUB. MANY WORLDS.</small></span></a>
       <nav class="hub-nav" aria-label="Các thế giới"><a href="roflix.html">RoFlix</a><a href="rotruyen.html">RoTruyện</a><a href="romusic.html">RoMusic</a><a href="robong.html">RoBong</a></nav>
+      <button class="install-btn" id="install-rohub" type="button" aria-haspopup="dialog" aria-controls="rohub-install-dialog"><span aria-hidden="true">⬇</span> CÀI ĐẶT ROHUB</button>
       <div class="status"><i></i> ĐANG MỞ</div>
     </header>
     <section class="hero">
@@ -145,6 +165,21 @@
       <div class="bottom-note">BUILT FOR YOUR NEXT ADVENTURE · © 2026 ROHUB</div>
     </div>
   </main>
+  <div class="install-dialog" id="rohub-install-dialog" role="dialog" aria-modal="true" aria-labelledby="install-title">
+    <div class="install-card">
+      <div class="section-kicker">ROHUB APP</div>
+      <h2 id="install-title">Cài RoHub lên thiết bị</h2>
+      <p id="install-description">Cài RoHub để mở nhanh từ màn hình chính hoặc Start Menu, trong cửa sổ riêng không có thanh địa chỉ.</p>
+      <ol id="install-steps">
+        <li>Trên Chrome, nhấn biểu tượng <strong>Cài đặt</strong> ở bên phải thanh địa chỉ nếu có.</li>
+        <li>Chọn <strong>Cài đặt RoHub</strong> và xác nhận.</li>
+      </ol>
+      <div class="install-actions">
+        <button type="button" id="close-install">Để sau</button>
+        <button type="button" class="primary" id="confirm-install">Thử cài ngay</button>
+      </div>
+    </div>
+  </div>
   <footer>Một cánh cổng. Nhiều thế giới để khám phá.<div class="rohub-legal-footer"><button class="rohub-legal-trigger" type="button" aria-haspopup="dialog" aria-controls="rohub-legal-dialog"><span aria-hidden="true">📜</span> Pháp lý &amp; mục đích RoHub</button></div></footer>
   <script>
     (() => {
@@ -180,6 +215,64 @@
           });
         }, { passive: true });
       }
+      // RoHub PWA installation for Chrome and supported browsers.
+      let deferredRoHubInstall = null;
+      const installButton = document.getElementById('install-rohub');
+      const installDialog = document.getElementById('rohub-install-dialog');
+      const installDescription = document.getElementById('install-description');
+      const installSteps = document.getElementById('install-steps');
+      const openInstallHelp = () => installDialog?.classList.add('open');
+      const closeInstallHelp = () => installDialog?.classList.remove('open');
+      const isRoHubInstalled = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      if (isRoHubInstalled() && installButton) {
+        installButton.innerHTML = '<span aria-hidden="true">✓</span> ĐÃ CÀI ROHUB';
+        installButton.disabled = true;
+        installButton.style.opacity = '.7';
+      }
+      window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        deferredRoHubInstall = event;
+        if (installButton && !isRoHubInstalled()) installButton.hidden = false;
+      });
+      window.addEventListener('appinstalled', () => {
+        deferredRoHubInstall = null;
+        if (installButton) {
+          installButton.innerHTML = '<span aria-hidden="true">✓</span> ĐÃ CÀI ROHUB';
+          installButton.disabled = true;
+        }
+        closeInstallHelp();
+      });
+      installButton?.addEventListener('click', async () => {
+        if (isRoHubInstalled()) return;
+        if (!deferredRoHubInstall) {
+          if (installDescription) installDescription.textContent = 'Chrome chưa cung cấp hộp thoại cài đặt tự động trên phiên duyệt này. Bạn vẫn có thể cài thủ công bằng menu Chrome.';
+          if (installSteps) installSteps.innerHTML = '<li>Mở menu <strong>⋮</strong> ở góc trên bên phải Chrome.</li><li>Chọn <strong>Truyền, lưu và chia sẻ</strong> hoặc <strong>Cài đặt trang</strong> (tên mục tùy phiên bản).</li><li>Chọn <strong>Cài đặt trang dưới dạng ứng dụng</strong> hoặc <strong>Cài đặt RoHub</strong>.</li>';
+          openInstallHelp();
+          return;
+        }
+        deferredRoHubInstall.prompt();
+        const choice = await deferredRoHubInstall.userChoice.catch(() => null);
+        deferredRoHubInstall = null;
+        if (choice?.outcome === 'accepted' && installButton) {
+          installButton.innerHTML = '<span aria-hidden="true">✓</span> ĐANG CÀI ROHUB';
+        }
+      });
+      document.getElementById('close-install')?.addEventListener('click', closeInstallHelp);
+      document.getElementById('confirm-install')?.addEventListener('click', async () => {
+        if (deferredRoHubInstall) {
+          deferredRoHubInstall.prompt();
+          await deferredRoHubInstall.userChoice.catch(() => null);
+          deferredRoHubInstall = null;
+        }
+        closeInstallHelp();
+      });
+      installDialog?.addEventListener('click', event => {
+        if (event.target === installDialog) closeInstallHelp();
+      });
+      if ('serviceWorker' in navigator && location.protocol === 'https:') {
+        window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' }).catch(error => console.warn('RoHub offline support:', error)));
+      }
+
       document.querySelectorAll('a[href]').forEach(link => {
         link.addEventListener('click', event => {
           if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target === '_blank') return;
