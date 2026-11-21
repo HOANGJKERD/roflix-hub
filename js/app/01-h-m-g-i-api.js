@@ -178,11 +178,11 @@ async function fetchJson(url) {
     const proxied = nguoncProxyUrl(url);
     if (!proxied) return fetchJsonDirect(url);
     try {
-        return await fetchJsonDirect(proxied);
+        return await fetchJsonDirect(url);
     } catch (error) {
         const status = Number(error && error.status);
         if (status === 404 || status === 422) throw error;
-        return fetchJsonDirect(url);
+        return fetchJsonDirect(proxied);
     }
 }
 
@@ -402,14 +402,14 @@ function mergeMovieListsByIdentity(groups) {
         const count = parseInt(String(raw).replace(/[^\d]/g, ''), 10);
         return Number.isFinite(count) && count > 0 ? String(count) : 'unknown';
     };
-    const sourceRank = source => source === 'kkphim' || source === 'vsmov' ? 2 : source === 'nguonc' ? 0 : 1;
+    const sourceRank = source => source === 'nguonc' ? 2 : source === 'kkphim' || source === 'vsmov' ? 1 : 0;
     for (let i = 0; i < max; i++) {
         for (const group of groups) {
             const movie = group[i];
             if (!movie) continue;
             const name = normalize(movie.name || movie.title);
             const year = String(movie.year || '').trim();
-            const identity = name ? name + '|' + year + '|' + episodeKey(movie) : String(movie._src || '') + '|' + String(movie.slug || '');
+            const identity = name ? name + '|' + year + '|' + episodeKey(movie) + '|' + String(movie._src || '') : String(movie._src || '') + '|' + String(movie.slug || '');
             const existing = seen.get(identity);
             if (existing) {
                 existing._sources = [...new Set([...(existing._sources || [existing._src]), movie._src].filter(Boolean))];

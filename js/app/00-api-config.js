@@ -61,7 +61,7 @@ function updateSourceUi() {
     const box = document.getElementById('source-switch');
     if (box) box.innerHTML = '<span class="src-label">Kho phim</span><span class="source-pill active" data-source="auto">RoFlix Unified Catalog</span>';
     const note = document.getElementById('source-note');
-    if (note) note.textContent = 'Một kho phim hợp nhất, tự động đồng bộ dữ liệu từ các nhà cung cấp';
+    if (note) note.textContent = 'Kho hợp nhất NguonC, KKPhim và VSMOV. Mỗi nguồn giữ riêng nếu số tập khác nhau.';
 }
 function switchSource(id) {
     if (id === 'vidsrc') {
