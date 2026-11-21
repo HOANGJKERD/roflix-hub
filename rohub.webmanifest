@@ -1,0 +1,28 @@
+{
+  "name": "RoHub",
+  "short_name": "RoHub",
+  "description": "Một cánh cổng, nhiều thế giới. Khám phá hệ sinh thái RoHub.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "background_color": "#080610",
+  "theme_color": "#080610",
+  "lang": "vi-VN",
+  "categories": [
+    "entertainment",
+    "education",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "/icons/rohub-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
