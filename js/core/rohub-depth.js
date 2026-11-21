@@ -25,7 +25,7 @@
 
   var style = document.createElement("style");
   style.textContent = `
-    .rh-world .rh-bridge{position:sticky;top:0;z-index:90;display:flex;align-items:center;gap:14px;flex-wrap:nowrap;height:40px;min-height:40px;padding:0 clamp(14px,3vw,34px);border-bottom:1px solid rgba(255,255,255,.09);background:rgba(8,10,18,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    .rh-world .rh-bridge{position:sticky;top:0;z-index:80;display:flex;align-items:center;gap:14px;flex-wrap:nowrap;height:40px;min-height:40px;padding:0 clamp(14px,3vw,34px);border-bottom:1px solid rgba(255,255,255,.09);background:rgba(8,10,18,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
     .rh-bridge-brand{display:inline-flex;align-items:center;gap:8px;color:#f8fafc;text-decoration:none;font-weight:850;letter-spacing:-.3px}
     .rh-bridge-brand i{display:grid;place-items:center;width:27px;height:27px;border-radius:9px;background:linear-gradient(135deg,#f59e0b,#8b5cf6);font-style:normal;color:#090b12;box-shadow:0 5px 18px rgba(139,92,246,.25)}
     .rh-bridge-here{font-size:10px;letter-spacing:1.7px;font-weight:800;color:#a5b4fc}
@@ -36,6 +36,7 @@
     .rh-world .rh-tilting{will-change:transform;transform-style:preserve-3d}
     .rh-hub .portal,.rh-hub .feature{transform-style:preserve-3d}
     @media(max-width:560px){.rh-world .rh-bridge{gap:8px!important;height:40px;min-height:40px;padding:0 10px}.rh-world .rh-bridge nav{width:auto;margin-left:auto;flex-wrap:nowrap}.rh-world .rh-bridge nav a{font-size:10px;padding:6px 7px}}
+    .rh-world .modal,.rh-world .reader-modal{z-index:240!important}
     @media(prefers-reduced-motion:reduce){.rh-world .rh-bridge nav a,.rh-world .portal,.rh-world .feature,.rh-world .topic-card,.rh-world .stat-card,.rh-world .pull-card,.rh-world .pull-movie,.rh-world .story,.rh-world .subject-card,.rh-world .source-card,.rh-world .quest-card,.rh-world .hero-console,.rh-world .panel,.rh-world .filter-panel,.rh-world .detail-card,.rh-world .submit-story-card,.rh-world .quiz-panel,.rh-world .library,.rh-world .card-grid>*,.rh-world .subject-grid>*{transition:none!important}}
   `;
   document.head.appendChild(style);

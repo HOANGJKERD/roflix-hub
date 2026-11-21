@@ -391,31 +391,40 @@ async function fetchMovies(page = 1) {
     }
 }
 
-// Gộp hai nguồn, ưu tiên NguonC và loại trùng theo tên + năm.
-// Giữ _src của từng phim để trang chi tiết gọi đúng API nguồn.
+// Giữ riêng các bản khác số tập. Bản trùng tên và cùng số tập thì ưu tiên nguồn còn phát được.
 function mergeMovieListsByIdentity(groups) {
     const seen = new Map();
     const out = [];
     const max = Math.max(0, ...groups.map(group => group.length));
-    const normalize = value => String(value || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const episodeKey = movie => {
+        const raw = movie.episode_total || movie.episode_current || '';
+        const count = parseInt(String(raw).replace(/[^\d]/g, ''), 10);
+        return Number.isFinite(count) && count > 0 ? String(count) : 'unknown';
+    };
+    const sourceRank = source => source === 'kkphim' || source === 'vsmov' ? 2 : source === 'nguonc' ? 0 : 1;
     for (let i = 0; i < max; i++) {
         for (const group of groups) {
             const movie = group[i];
             if (!movie) continue;
             const name = normalize(movie.name || movie.title);
-            const origin = normalize(movie.origin_name || movie.original_name);
             const year = String(movie.year || '').trim();
-            const identity = name ? name + '|' + year + '|' + (year ? '' : origin) : String(movie._src || '') + '|' + String(movie.slug || '');
+            const identity = name ? name + '|' + year + '|' + episodeKey(movie) : String(movie._src || '') + '|' + String(movie.slug || '');
             const existing = seen.get(identity);
             if (existing) {
                 existing._sources = [...new Set([...(existing._sources || [existing._src]), movie._src].filter(Boolean))];
                 existing._sourceRefs = [...(existing._sourceRefs || [{source: existing._src, slug: existing.slug}]), {source: movie._src, slug: movie.slug}]
                     .filter((ref, index, all) => ref.source && ref.slug && all.findIndex(x => x.source === ref.source && x.slug === ref.slug) === index);
+                if (sourceRank(movie._src) > sourceRank(existing._src)) {
+                    existing._src = movie._src;
+                    existing.slug = movie.slug;
+                }
                 if (!existing.poster_url && movie.poster_url) existing.poster_url = movie.poster_url;
                 if (!existing.thumb_url && movie.thumb_url) existing.thumb_url = movie.thumb_url;
                 if (!existing.content && movie.content) existing.content = movie.content;
                 if (!existing.category?.length && movie.category?.length) existing.category = movie.category;
                 if (!existing.year && movie.year) existing.year = movie.year;
+                if (!existing.episode_total && movie.episode_total) existing.episode_total = movie.episode_total;
                 continue;
             }
             movie._sources = [...new Set([...(movie._sources || []), movie._src].filter(Boolean))];
@@ -461,14 +470,19 @@ async function fetchMovieDetail(slug, preferredSrc, titleHint) {
     };
     for(const sid of order){try{const movie=await tryDetail(slug,sid);if(movie)return movie;}catch(error){lastErr=error;}}
     if(titleHint){
-        const normalize=value=>String(value||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+        const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
         const wanted=normalize(titleHint);
         for(const sid of order){try{
             const data=await fetchJson(srcListUrl('/tim-kiem?keyword='+encodeURIComponent(titleHint)+'&page=1&limit=20',sid));
-            const rows=unwrapList(data).items;
-            const exact=rows.find(item=>[item.name,item.title,item.origin_name,item.original_name].some(value=>normalize(value)===wanted));
-            if(!exact?.slug)continue;
-            const movie=await tryDetail(exact.slug,sid);if(movie)return movie;
+            const ranked=unwrapList(data).items.map(item=>{
+                const names=[item.name,item.title,item.origin_name,item.original_name].map(normalize).filter(Boolean);
+                const score=names.some(name=>name===wanted)?3:names.some(name=>name.includes(wanted)||wanted.includes(name))?2:0;
+                return {item,score};
+            }).filter(row=>row.score&&row.item.slug).sort((a,b)=>b.score-a.score).slice(0,4);
+            for(const row of ranked){
+                const movie=await tryDetail(row.item.slug,sid);
+                if(movie)return movie;
+            }
         }catch(error){lastErr=error;}}
     }
     if(bestMovie)return bestMovie;

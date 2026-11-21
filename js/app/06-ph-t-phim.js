@@ -38,31 +38,37 @@ async function playMovie(slug, preferredSrc, titleHint) {
         showToast('warning', 'Phòng xem chung', 'Chỉ host được đổi phim. Bạn đang xem theo host.');
         return;
     }
+    const requestId = window.__RF_PLAY_REQUEST_ID__ = (window.__RF_PLAY_REQUEST_ID__ || 0) + 1;
+    const player = document.getElementById('movie-player');
+    if (player) player.src = '';
+    const playingTitle = document.getElementById('playing-title');
+    if (playingTitle) playingTitle.textContent = 'Đang tải phim...';
+    const episodeGrid = document.getElementById('episode-list-grid');
+    if (episodeGrid) episodeGrid.innerHTML = '';
+    if (typeof cleanupCatalogVideo === 'function') cleanupCatalogVideo();
     try {
-        // Nếu người xem vừa mở trang chi tiết phim này, tái sử dụng dữ liệu/tập đã tải.
-        // Tái sử dụng dữ liệu chi tiết nếu người xem vừa mở đúng phim này.
-        const alreadyLoaded = currentSlug === slug
+        const sameMovie = currentSlug === slug
             && currentMovieData
+            && String(currentMovieData._src || '') === String(preferredSrc || currentMovieData._src || '')
             && Array.isArray(currentEpisodeList)
             && currentEpisodeList.length > 0;
-        if (!alreadyLoaded) {
+        let episodes = sameMovie ? currentEpisodeList : [];
+        if (!sameMovie) {
             currentEpisodeList = [];
             currentMovieData = null;
-            await viewMovieDetail(slug, preferredSrc, titleHint);
+            currentMovieTitle = '';
+            const loaded = await viewMovieDetail(slug, preferredSrc, titleHint);
+            if (requestId !== window.__RF_PLAY_REQUEST_ID__) return;
+            episodes = loaded && Array.isArray(loaded.episodes) ? loaded.episodes : currentEpisodeList;
         }
-        let tries = 0;
-        while (currentEpisodeList.length === 0 && tries < 15) {
-            await new Promise(r => setTimeout(r, 120));
-            tries++;
-        }
-        if (currentEpisodeList.length > 0) {
+        if (requestId !== window.__RF_PLAY_REQUEST_ID__) return;
+        if (episodes.length > 0) {
             playMovieByIndex(0);
         } else {
-            // Do not classify a temporary/unsupported provider response as a deleted source.
-            // Keep the detail page visible so the user can retry without losing the catalog item.
             showToast('warning', 'Chưa lấy được nguồn phát', 'Thông tin phim đã tải nhưng chưa đọc được danh sách tập. Hãy thử mở lại chi tiết sau ít phút.');
         }
     } catch (e) {
+        if (requestId !== window.__RF_PLAY_REQUEST_ID__) return;
         console.error(e);
         if (typeof showToastPro === 'function') showToastPro('error', 'Lỗi', 'Không mở được phim');
     }

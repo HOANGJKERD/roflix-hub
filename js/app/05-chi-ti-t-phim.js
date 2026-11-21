@@ -8,6 +8,13 @@
             currentMovieData = null;
             currentMovieTitle = '';
             currentSlug = slug || '';
+            const player = document.getElementById('movie-player');
+            if (player) player.src = '';
+            const playingTitle = document.getElementById('playing-title');
+            if (playingTitle) playingTitle.textContent = 'Đang tải phim...';
+            const episodeGrid = document.getElementById('episode-list-grid');
+            if (episodeGrid) episodeGrid.innerHTML = '';
+            if (typeof cleanupCatalogVideo === 'function') cleanupCatalogVideo();
             if (!slug) {
                 showToast('error', 'Lỗi', 'Không tìm thấy phim!');
                 return;
@@ -23,12 +30,12 @@
             let movieData = null;
             try { movieData = await fetchMovieDetail(slug, preferredSrc, titleHint); }
             catch (error) {
-                if (detailRequestId !== window.__RF_DETAIL_REQUEST_ID__) return;
+                if (detailRequestId !== window.__RF_DETAIL_REQUEST_ID__) return null;
                 console.error('[RoFlix] Không tải được chi tiết phim:', error);
                 detailHost.innerHTML = '<div class="glass-premium rounded-3xl p-8 text-center"><h2 class="text-xl font-black text-white">Không tải được phim</h2><p class="text-sm text-gray-400 mt-2">Các nguồn dữ liệu hiện không phản hồi. Vui lòng thử lại sau.</p></div>';
                 return;
             }
-            if (detailRequestId !== window.__RF_DETAIL_REQUEST_ID__) return;
+            if (detailRequestId !== window.__RF_DETAIL_REQUEST_ID__) return null;
             if (!movieData) {
                 detailHost.innerHTML = '<div class="glass-premium rounded-3xl p-8 text-center"><h2 class="text-xl font-black text-white">Chưa tìm thấy thông tin phim</h2><p class="text-sm text-gray-400 mt-2">Không tìm được phim tương ứng trong NguonC, KKPhim hoặc VSMOV.</p></div>';
                 return;
@@ -206,6 +213,7 @@
             if (typeof window.rfRenderCommentThread2 === 'function') window.rfRenderCommentThread2(slug);
             else if (typeof window.rfMovieCommentsRender === 'function') window.rfMovieCommentsRender(slug);
             else renderComments(slug);
+            return { episodes: epList, movie, slug };
         }
 
 // Nút VidSrc trên trang chi tiết (optional — giống tester)

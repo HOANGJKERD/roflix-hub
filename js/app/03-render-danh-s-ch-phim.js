@@ -86,6 +86,7 @@
                             ${parseFloat(m.rating) >= 8 ? '<span class="badge hot">🔥 Hot</span>' : ''}
                             ${(m.genre||[]).some(g=>/18\s*\+|hentai|người lớn/i.test(String(g))) ? '<span class="badge" style="background:#ef4444;color:#fff">🔒 18+</span>' : ''}
                             ${m.episode_total > 1 ? `<span class="badge eps">${m.episode_total} Tập</span>` : '<span class="badge eps">HD</span>'}
+                            ${m._src ? `<span class="badge">${escapeHtml({kkphim:'KKPhim',vsmov:'VSMOV',nguonc:'NguonC'}[m._src] || m._src)}</span>` : ''}
                             ${m.status === 'Hoàn thành' ? '<span class="badge" style="background: #10b981; color: white;">✅ Full</span>' : ''}
                         </div>
                     </div>
